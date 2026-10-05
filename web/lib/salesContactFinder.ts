@@ -3,12 +3,25 @@
  * Pipeline: site scrape → Linkup evidence extract → Hermes extract-from-evidence only.
  */
 
+import { createDnsEmailVerifier } from "@/lib/adapters/dnsEmailVerifier";
 import { completeOrNull, hermesConfigured } from "@/lib/hermes/client";
 import { parseLastJsonBlock } from "@/lib/hermes/json";
+import {
+  isUndeliverable,
+  type EmailVerification,
+  type EmailVerifier,
+} from "@/lib/ports/emailVerifier";
 import { searchProvider } from "@/lib/providers";
 
 export type EmailVerificationStatus =
-  "verified_public" | "role_inbox" | "non_buyer_inbox" | "unverified" | "valid" | "hermes_evidence";
+  | "verified_public"
+  | "role_inbox"
+  | "non_buyer_inbox"
+  | "unverified"
+  | "valid"
+  | "hermes_evidence"
+  /** The address's domain cannot receive mail (no MX/A/AAAA, null MX, or bad syntax). */
+  | "undeliverable";
 
 export interface FoundContact {
   email: string;
@@ -17,8 +30,10 @@ export interface FoundContact {
   verification_status: EmailVerificationStatus;
   source_url: string;
   method?: "site_scrape" | "web_search" | "hermes";
-  /** True only for persona/buyer-shaped locals — never role/shared/malformed. */
+  /** True only for persona/buyer-shaped locals on a domain that accepts mail. */
   buyer_reachable?: boolean;
+  /** Deliverability check of the address's domain (syntax + MX, A/AAAA fallback). */
+  deliverability?: EmailVerification;
 }
 
 /** Shared/role inboxes — real but not sequence-eligible as a buyer. */
@@ -30,8 +45,12 @@ const NON_BUYER_LOCAL = /^(e|h|last|first|first\.last|name|user|test|asdf|[0-9a-
 
 /** Exported for evals — whether a found contact may enter sequences/send. */
 export function isBuyerReachableContact(
-  contact: Pick<FoundContact, "email" | "verification_status">,
+  contact: Pick<FoundContact, "email" | "verification_status" | "deliverability">,
 ): boolean {
+  // A domain with no mail server is never reachable, whatever the mailbox looks like.
+  if (contact.verification_status === "undeliverable" || isUndeliverable(contact.deliverability)) {
+    return false;
+  }
   const local = (contact.email.split("@")[0] ?? "").toLowerCase();
   if (ROLE_LOCAL.test(local) || NON_BUYER_LOCAL.test(local)) return false;
   if (
@@ -120,10 +139,38 @@ function pickBestEmail(emails: string[]): string | null {
   return ranked[0];
 }
 
+/** Default deliverability checker (DNS-only, no paid provider). */
+const defaultVerifier: EmailVerifier = createDnsEmailVerifier();
+
+/**
+ * Attach the deliverability check. An address whose domain cannot receive mail is
+ * marked `undeliverable` and is never buyer-reachable; `unknown` (DNS hiccup) keeps
+ * the found classification but is recorded so callers can re-check before sending.
+ */
+export async function withDeliverability(
+  contact: FoundContact,
+  verifier: EmailVerifier = defaultVerifier,
+): Promise<FoundContact> {
+  const deliverability = await verifier.verify(contact.email);
+  const verification_status: EmailVerificationStatus = isUndeliverable(deliverability)
+    ? "undeliverable"
+    : contact.verification_status;
+  const verified = { ...contact, verification_status, deliverability };
+  return { ...verified, buyer_reachable: isBuyerReachableContact(verified) };
+}
+
 /**
  * Probe homepage + common contact paths for a public/role inbox on the company domain.
  */
-export async function findPublicContact(domain: string): Promise<FoundContact | null> {
+export async function findPublicContact(
+  domain: string,
+  verifier: EmailVerifier = defaultVerifier,
+): Promise<FoundContact | null> {
+  const found = await scrapePublicContact(domain);
+  return found ? withDeliverability(found, verifier) : null;
+}
+
+async function scrapePublicContact(domain: string): Promise<FoundContact | null> {
   const host = domain.toLowerCase().replace(/^www\./, "");
   if (!host.includes(".")) return null;
 
@@ -220,10 +267,20 @@ Output ONLY a fenced json block:
 }
 
 /**
- * Full contact lookup: scrape → Linkup extract → Hermes extract-from-evidence.
- * Never invents an address.
+ * Full contact lookup: scrape → Linkup extract → Hermes extract-from-evidence,
+ * then a deliverability check of the address's domain. Never invents an address.
  */
 export async function findContactForDomain(
+  domain: string,
+  companyName?: string,
+  kamiSessionId?: string | null,
+  verifier: EmailVerifier = defaultVerifier,
+): Promise<FoundContact | null> {
+  const found = await findCandidateContact(domain, companyName, kamiSessionId);
+  return found ? withDeliverability(found, verifier) : null;
+}
+
+async function findCandidateContact(
   domain: string,
   companyName?: string,
   kamiSessionId?: string | null,
@@ -231,7 +288,7 @@ export async function findContactForDomain(
   const host = domain.toLowerCase().replace(/^www\./, "");
   if (!host.includes(".")) return null;
 
-  const scraped = await findPublicContact(host);
+  const scraped = await scrapePublicContact(host);
   if (scraped) return scraped;
 
   // Gather search evidence even if no email in snippets — the agent may extract carefully

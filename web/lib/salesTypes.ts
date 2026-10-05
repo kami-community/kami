@@ -34,6 +34,10 @@ export type SequenceEnrollmentStatus =
 
 export type MeetingStatus =
   | "proposed"
+  /** Invite claimed; the calendar call is in flight. */
+  | "scheduling"
+  /** Calendar event exists (provider receipt recorded) and the invite was emailed. */
+  | "scheduled"
   | "held"
   | "invited"
   | "accepted"
@@ -376,6 +380,11 @@ export interface Meeting {
   scheduled_at?: string;
   calendar_event_id?: string;
   provider_receipt?: Record<string, unknown>;
+  attendee_email?: string;
+  ends_at?: string;
+  time_zone?: string;
+  meeting_link?: string;
+  last_error?: string;
   created_at?: string;
   updated_at?: string;
 }
