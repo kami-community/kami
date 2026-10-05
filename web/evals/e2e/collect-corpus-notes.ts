@@ -71,7 +71,7 @@ async function main(): Promise<void> {
     const [sessionPack, runs, accounts, drafts, distSetup, opps, salesSetup, plan, segments] =
       await Promise.all([
         get(`/api/sessions/${sid}`),
-        get(`/api/observability/runs?session_id=${encodeURIComponent(sid)}&limit=100`),
+        get(`/api/activity/runs?session_id=${encodeURIComponent(sid)}&limit=100`),
         get(`/api/sales/accounts?session_id=${encodeURIComponent(sid)}`),
         get(`/api/sales/drafts?session_id=${encodeURIComponent(sid)}`),
         get(`/api/marketing/distribution/setup?session_id=${encodeURIComponent(sid)}`),
@@ -83,8 +83,7 @@ async function main(): Promise<void> {
         ),
       ]);
 
-    const brand = (sessionPack.brand ?? null) as AnyRec | null;
-    const dossier = (brand?.raw_dossier ?? null) as AnyRec | null;
+    const dossier = (sessionPack.dossier ?? null) as AnyRec | null;
     const runList = (runs.runs as AnyRec[] | undefined) ?? [];
     const accountList = (accounts.accounts as AnyRec[] | undefined) ?? [];
     const oppList = (opps.opportunities as AnyRec[] | undefined) ?? [];

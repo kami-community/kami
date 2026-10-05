@@ -11,7 +11,7 @@
       "sales": { "discover_companies": false, "sales_default_invalid": true },
       "marketing": { "goal": "early_users", "expect_opportunities": true },
       "must_not": ["invent_consumer_emails", "force_find_companies_as_only_path", "enterprise_outbound_default"],
-      "required_log_kinds": ["dossier_research", "dossier_persist", "distribution_plan", "distribution_research", "distribution_opportunities"]
+      "required_log_kinds": ["research", "dossier_generate", "distribution_plan", "distribution_research", "distribution_opportunities"]
     },
     "notes": "Early-access browser personalization — Marketing/PLG only."
   },
@@ -27,7 +27,7 @@
       "sales": { "discover_companies": true },
       "marketing": { "goal": "credibility", "expect_opportunities": false },
       "must_not": ["invent_consumer_emails", "homonym_biomedical", "invent_customers"],
-      "required_log_kinds": ["dossier_research", "dossier_persist", "sales_segments", "sales_plan", "sales_discover"]
+      "required_log_kinds": ["research", "dossier_generate", "sales_segments", "sales_plan", "sales_discover"]
     },
     "notes": "Homonym stress — must stay agent-pipeline observability."
   },
@@ -43,7 +43,7 @@
       "sales": { "discover_companies": true },
       "marketing": { "goal": "launch", "expect_opportunities": false },
       "must_not": ["invent_consumer_emails", "default_healthcare_only", "listicle_accounts"],
-      "required_log_kinds": ["dossier_research", "dossier_persist", "sales_segments", "sales_plan", "sales_discover"]
+      "required_log_kinds": ["research", "dossier_generate", "sales_segments", "sales_plan", "sales_discover"]
     },
     "notes": "Happy-path B2B scheduling — do not force a single vertical."
   },
@@ -59,7 +59,7 @@
       "sales": { "discover_companies": false, "sales_default_invalid": true },
       "marketing": { "goal": "early_users", "expect_opportunities": true },
       "must_not": ["invent_consumer_emails", "force_find_companies_as_only_path", "shopper_email_blast"],
-      "required_log_kinds": ["dossier_research", "dossier_persist", "distribution_plan", "distribution_research", "distribution_opportunities"]
+      "required_log_kinds": ["research", "dossier_generate", "distribution_plan", "distribution_research", "distribution_opportunities"]
     },
     "notes": "D2C — never invent shopper emails."
   },
@@ -75,7 +75,7 @@
       "sales": { "discover_companies": true },
       "marketing": { "goal": "credibility", "expect_opportunities": false },
       "must_not": ["invent_consumer_emails", "listicle_accounts"],
-      "required_log_kinds": ["dossier_research", "dossier_persist", "sales_segments", "sales_plan", "sales_discover"]
+      "required_log_kinds": ["research", "dossier_generate", "sales_segments", "sales_plan", "sales_discover"]
     }
   },
   {
@@ -90,7 +90,7 @@
       "sales": { "discover_companies": true },
       "marketing": { "goal": "credibility", "expect_opportunities": false },
       "must_not": ["invent_consumer_emails", "guarantee_captcha_bypass", "listicle_accounts"],
-      "required_log_kinds": ["dossier_research", "dossier_persist", "sales_segments", "sales_plan", "sales_discover"]
+      "required_log_kinds": ["research", "dossier_generate", "sales_segments", "sales_plan", "sales_discover"]
     }
   },
   {
@@ -105,7 +105,7 @@
       "sales": { "discover_companies": true },
       "marketing": { "goal": "credibility", "expect_opportunities": true },
       "must_not": ["invent_consumer_emails", "force_single_niche_icp"],
-      "required_log_kinds": ["dossier_research", "dossier_persist"]
+      "required_log_kinds": ["research", "dossier_generate"]
     },
     "notes": "Mixed motion — either Sales or Marketing is OK if rationale is sound."
   },
@@ -121,7 +121,7 @@
       "sales": { "discover_companies": false, "sales_default_invalid": true },
       "marketing": { "goal": "early_users", "expect_opportunities": true },
       "must_not": ["invent_consumer_emails", "sell_paid_schools", "learner_email_blast"],
-      "required_log_kinds": ["dossier_research", "dossier_persist", "distribution_plan", "distribution_research", "distribution_opportunities"]
+      "required_log_kinds": ["research", "dossier_generate", "distribution_plan", "distribution_research", "distribution_opportunities"]
     }
   },
   {
@@ -136,7 +136,7 @@
       "sales": { "discover_companies": true },
       "marketing": { "goal": "credibility", "expect_opportunities": false },
       "must_not": ["invent_consumer_emails", "listicle_accounts", "tutorial_as_account"],
-      "required_log_kinds": ["dossier_research", "dossier_persist", "sales_segments", "sales_plan", "sales_discover"]
+      "required_log_kinds": ["research", "dossier_generate", "sales_segments", "sales_plan", "sales_discover"]
     }
   },
   {
@@ -151,7 +151,7 @@
       "sales": { "discover_companies": false, "sales_default_invalid": true },
       "marketing": { "goal": "early_users", "expect_opportunities": true },
       "must_not": ["invent_consumer_emails", "conflate_arc_dia", "enterprise_arc_licenses"],
-      "required_log_kinds": ["dossier_research", "dossier_persist", "distribution_plan", "distribution_research", "distribution_opportunities"]
+      "required_log_kinds": ["research", "dossier_generate", "distribution_plan", "distribution_research", "distribution_opportunities"]
     },
     "notes": "Arc vs Dia disambiguation is a hard identity gate."
   }
