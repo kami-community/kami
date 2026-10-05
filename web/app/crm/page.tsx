@@ -10,7 +10,13 @@ interface OutreachRow {
   receipt: Record<string, unknown> | null;
   sent_at: string | null;
   created_at: string;
-  contacts: { name: string | null; handle: string | null; platform: string; company: string | null; title: string | null } | null;
+  contacts: {
+    name: string | null;
+    handle: string | null;
+    platform: string;
+    company: string | null;
+    title: string | null;
+  } | null;
   agent_sessions: { domain: string } | null;
 }
 
@@ -95,7 +101,14 @@ export default function CrmPage() {
       </div>
       <hr className="crease" />
 
-      <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "var(--stack-md)" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "0.5rem",
+          flexWrap: "wrap",
+          marginBottom: "var(--stack-md)",
+        }}
+      >
         {STATUSES.map((s) => (
           <button
             key={s}
@@ -118,13 +131,17 @@ export default function CrmPage() {
         {rows.map((r) => (
           <div className="kraft-card" key={r.id} style={{ padding: "0.9rem" }}>
             <div
-              style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem", cursor: "pointer" }}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: "0.5rem",
+                cursor: "pointer",
+              }}
               onClick={() => setExpanded(expanded === r.id ? null : r.id)}
             >
               <div>
-                <strong>
-                  {r.contacts?.name ?? r.contacts?.handle ?? "unknown contact"}
-                </strong>{" "}
+                <strong>{r.contacts?.name ?? r.contacts?.handle ?? "unknown contact"}</strong>{" "}
                 <span className="mono" style={{ color: "var(--ink-soft)" }}>
                   {r.contacts?.company ? `· ${r.contacts.company}` : ""}
                   {r.agent_sessions?.domain ? ` · via ${r.agent_sessions.domain}` : ""}
@@ -146,7 +163,12 @@ export default function CrmPage() {
                 {r.draft && (
                   <pre
                     className="mono"
-                    style={{ whiteSpace: "pre-wrap", background: "var(--paper)", padding: "0.75rem", border: "1px solid var(--crease)" }}
+                    style={{
+                      whiteSpace: "pre-wrap",
+                      background: "var(--paper)",
+                      padding: "0.75rem",
+                      border: "1px solid var(--crease)",
+                    }}
                   >
                     {r.draft}
                   </pre>
@@ -156,23 +178,29 @@ export default function CrmPage() {
                     <p className="label-caps" style={{ color: "var(--moss)" }}>
                       Replies ({r.receipt.replies.length})
                     </p>
-                    {(r.receipt.replies as { author?: string; from?: string; text?: string; preview?: string; at: string }[]).map(
-                      (reply, i) => (
-                        <div
-                          key={i}
-                          style={{
-                            borderLeft: "3px solid var(--moss)",
-                            paddingLeft: "0.75rem",
-                            marginTop: "0.4rem",
-                          }}
-                        >
-                          <span className="mono" style={{ fontWeight: 700 }}>
-                            {reply.author ?? reply.from}
-                          </span>{" "}
-                          <span style={{ fontSize: 14 }}>{reply.text ?? reply.preview}</span>
-                        </div>
-                      ),
-                    )}
+                    {(
+                      r.receipt.replies as {
+                        author?: string;
+                        from?: string;
+                        text?: string;
+                        preview?: string;
+                        at: string;
+                      }[]
+                    ).map((reply, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          borderLeft: "3px solid var(--moss)",
+                          paddingLeft: "0.75rem",
+                          marginTop: "0.4rem",
+                        }}
+                      >
+                        <span className="mono" style={{ fontWeight: 700 }}>
+                          {reply.author ?? reply.from}
+                        </span>{" "}
+                        <span style={{ fontSize: 14 }}>{reply.text ?? reply.preview}</span>
+                      </div>
+                    ))}
                   </div>
                 )}
                 <p className="mono" style={{ color: "var(--ink-soft)", marginTop: "0.4rem" }}>
@@ -192,12 +220,18 @@ export default function CrmPage() {
 
       <section style={{ marginTop: "var(--stack-lg)" }}>
         <h3>Do-not-contact list</h3>
-        <div style={{ marginTop: "var(--stack-sm)", display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+        <div
+          style={{ marginTop: "var(--stack-sm)", display: "flex", gap: "0.5rem", flexWrap: "wrap" }}
+        >
           {suppressed.map((s) => (
             <span
               key={s.id}
               className="mono"
-              style={{ border: "1px solid var(--ink)", padding: "0.25rem 0.6rem", background: "var(--kraft-light)" }}
+              style={{
+                border: "1px solid var(--ink)",
+                padding: "0.25rem 0.6rem",
+                background: "var(--kraft-light)",
+              }}
             >
               ✗ {s.handle}
             </span>

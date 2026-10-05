@@ -110,7 +110,11 @@ export default function SalesDraftQueue({ sessionDbId, paused, onSent }: SalesDr
         const res = await fetch("/api/sales/drafts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "send", touchpoint_id: draft.id, session_id: sessionDbId }),
+          body: JSON.stringify({
+            action: "send",
+            touchpoint_id: draft.id,
+            session_id: sessionDbId,
+          }),
         });
         const json = await res.json();
         if (!res.ok) {
@@ -133,22 +137,39 @@ export default function SalesDraftQueue({ sessionDbId, paused, onSent }: SalesDr
     individualSendCount < HYBRID_INDIVIDUAL_CAP &&
     approvedPending.length > 0;
 
-  const showBatchAfterCap = individualSendCount >= HYBRID_INDIVIDUAL_CAP && approvedPending.length > 0;
+  const showBatchAfterCap =
+    individualSendCount >= HYBRID_INDIVIDUAL_CAP && approvedPending.length > 0;
 
   return (
     <div className="sales-panel" style={{ marginTop: "var(--stack-md)" }}>
       <p className="sales-intro" style={{ marginBottom: "var(--stack-sm)" }}>
-        Review each email before it goes out. Send the first few one-by-one, then batch the rest when you&apos;re confident.
+        Review each email before it goes out. Send the first few one-by-one, then batch the rest
+        when you&apos;re confident.
       </p>
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--stack-sm)", flexWrap: "wrap", gap: "0.5rem" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "var(--stack-sm)",
+          flexWrap: "wrap",
+          gap: "0.5rem",
+        }}
+      >
         <p className="label-caps">Review emails</p>
         <button
           type="button"
           className="mono"
           onClick={fetchDrafts}
           disabled={!sessionDbId || loading}
-          style={{ border: "1px solid var(--ink)", background: "transparent", padding: "0.3rem 0.6rem", cursor: "pointer", fontSize: 12 }}
+          style={{
+            border: "1px solid var(--ink)",
+            background: "transparent",
+            padding: "0.3rem 0.6rem",
+            cursor: "pointer",
+            fontSize: 12,
+          }}
         >
           refresh
         </button>
@@ -156,7 +177,10 @@ export default function SalesDraftQueue({ sessionDbId, paused, onSent }: SalesDr
       <hr className="crease" />
 
       {needsFirstSendApproval && (
-        <div className="kraft-card" style={{ padding: "var(--stack-sm)", marginBottom: "var(--stack-sm)" }}>
+        <div
+          className="kraft-card"
+          style={{ padding: "var(--stack-sm)", marginBottom: "var(--stack-sm)" }}
+        >
           <p style={{ fontSize: 14, marginBottom: "0.5rem" }}>First send needs your explicit OK.</p>
           <button type="button" className="hanko-btn" onClick={approveFirstSend}>
             Approve first send
@@ -165,7 +189,10 @@ export default function SalesDraftQueue({ sessionDbId, paused, onSent }: SalesDr
       )}
 
       {error && (
-        <p className="mono" style={{ color: "var(--hanko)", fontSize: 12, marginBottom: "var(--stack-sm)" }}>
+        <p
+          className="mono"
+          style={{ color: "var(--hanko)", fontSize: 12, marginBottom: "var(--stack-sm)" }}
+        >
           {error}
         </p>
       )}
@@ -202,14 +229,26 @@ export default function SalesDraftQueue({ sessionDbId, paused, onSent }: SalesDr
         const hasEmail = Boolean(contact?.email);
 
         return (
-          <div key={draft.id} className="kraft-card" style={{ padding: "var(--stack-md)", marginBottom: "var(--stack-sm)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--stack-sm)", flexWrap: "wrap" }}>
+          <div
+            key={draft.id}
+            className="kraft-card"
+            style={{ padding: "var(--stack-md)", marginBottom: "var(--stack-sm)" }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: "var(--stack-sm)",
+                flexWrap: "wrap",
+              }}
+            >
               <div>
                 <p style={{ fontSize: 15, fontWeight: 700 }}>
                   {contact?.name ?? account?.name ?? "Unknown"}
                 </p>
                 <p className="mono" style={{ fontSize: 12, color: "var(--ink-soft)" }}>
-                  {hasEmail ? contact?.email : "No email — go back to Find companies"} · step {draft.step}
+                  {hasEmail ? contact?.email : "No email — go back to Find companies"} · step{" "}
+                  {draft.step}
                 </p>
               </div>
               <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
@@ -218,16 +257,35 @@ export default function SalesDraftQueue({ sessionDbId, paused, onSent }: SalesDr
                   className="mono"
                   disabled={paused || isBusy || draft.status === "sent" || !hasEmail}
                   onClick={() => runAction(draft.id, "review")}
-                  style={{ border: "1px solid var(--ink)", background: "transparent", padding: "0.25rem 0.5rem", fontSize: 11, cursor: "pointer" }}
+                  style={{
+                    border: "1px solid var(--ink)",
+                    background: "transparent",
+                    padding: "0.25rem 0.5rem",
+                    fontSize: 11,
+                    cursor: "pointer",
+                  }}
                 >
                   review
                 </button>
                 <button
                   type="button"
                   className="mono"
-                  disabled={paused || isBusy || !verdict?.approved || draft.status === "approved" || draft.status === "sent" || !hasEmail}
+                  disabled={
+                    paused ||
+                    isBusy ||
+                    !verdict?.approved ||
+                    draft.status === "approved" ||
+                    draft.status === "sent" ||
+                    !hasEmail
+                  }
                   onClick={() => runAction(draft.id, "approve")}
-                  style={{ border: "1px solid var(--ink)", background: "transparent", padding: "0.25rem 0.5rem", fontSize: 11, cursor: "pointer" }}
+                  style={{
+                    border: "1px solid var(--ink)",
+                    background: "transparent",
+                    padding: "0.25rem 0.5rem",
+                    fontSize: 11,
+                    cursor: "pointer",
+                  }}
                 >
                   approve
                 </button>
@@ -267,13 +325,21 @@ export default function SalesDraftQueue({ sessionDbId, paused, onSent }: SalesDr
 
             {verdict && (
               <div style={{ marginTop: "var(--stack-sm)" }}>
-                <p className="mono" style={{ fontSize: 11, color: verdict.approved ? "var(--ink)" : "var(--hanko)" }}>
+                <p
+                  className="mono"
+                  style={{ fontSize: 11, color: verdict.approved ? "var(--ink)" : "var(--hanko)" }}
+                >
                   Review: {verdict.approved ? "pass" : "needs fixes"} · score {verdict.score}
                 </p>
                 {!verdict.approved && verdict.required_fixes.length > 0 && (
-                  <ul style={{ margin: "0.25rem 0 0", paddingLeft: "1.2rem", fontSize: 11 }} className="mono">
+                  <ul
+                    style={{ margin: "0.25rem 0 0", paddingLeft: "1.2rem", fontSize: 11 }}
+                    className="mono"
+                  >
                     {verdict.required_fixes.map((fix) => (
-                      <li key={fix} style={{ color: "var(--hanko)" }}>{fix}</li>
+                      <li key={fix} style={{ color: "var(--hanko)" }}>
+                        {fix}
+                      </li>
                     ))}
                   </ul>
                 )}

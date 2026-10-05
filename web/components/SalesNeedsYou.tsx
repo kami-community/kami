@@ -30,7 +30,13 @@ export default function SalesNeedsYou({ sessionDbId }: SalesNeedsYouProps) {
 
     fetch(`/api/sales/tasks?session_id=${sessionDbId}`)
       .then((r) => r.json())
-      .then((j) => setTasks((j.tasks ?? []).filter((t: SalesTask) => t.status === "open" || t.status === "in_progress")))
+      .then((j) =>
+        setTasks(
+          (j.tasks ?? []).filter(
+            (t: SalesTask) => t.status === "open" || t.status === "in_progress",
+          ),
+        ),
+      )
       .catch(() => {});
 
     fetch(`/api/sales/conversations?session_id=${sessionDbId}`)
@@ -114,13 +120,21 @@ export default function SalesNeedsYou({ sessionDbId }: SalesNeedsYouProps) {
           <p className="label-caps" style={{ fontSize: 11 }}>
             {n.kind?.replace(/_/g, " ") ?? "Notification"}
           </p>
-          <p style={{ fontSize: 14, marginTop: "0.25rem" }}>{n.title ?? n.body ?? "Needs your input"}</p>
+          <p style={{ fontSize: 14, marginTop: "0.25rem" }}>
+            {n.title ?? n.body ?? "Needs your input"}
+          </p>
         </button>
       ))}
 
       {meetings.map((m) => (
-        <div key={m.id} className="kraft-card" style={{ padding: "var(--stack-sm)", marginBottom: "var(--stack-sm)" }}>
-          <p className="label-caps" style={{ fontSize: 11 }}>Meeting proposed</p>
+        <div
+          key={m.id}
+          className="kraft-card"
+          style={{ padding: "var(--stack-sm)", marginBottom: "var(--stack-sm)" }}
+        >
+          <p className="label-caps" style={{ fontSize: 11 }}>
+            Meeting proposed
+          </p>
           <p style={{ fontSize: 14, marginTop: "0.25rem" }}>
             {m.title ?? "New meeting"} — review in More → Meetings
           </p>
@@ -128,8 +142,14 @@ export default function SalesNeedsYou({ sessionDbId }: SalesNeedsYouProps) {
       ))}
 
       {tasks.map((t) => (
-        <div key={t.id} className="kraft-card" style={{ padding: "var(--stack-sm)", marginBottom: "var(--stack-sm)" }}>
-          <p className="label-caps" style={{ fontSize: 11 }}>Task</p>
+        <div
+          key={t.id}
+          className="kraft-card"
+          style={{ padding: "var(--stack-sm)", marginBottom: "var(--stack-sm)" }}
+        >
+          <p className="label-caps" style={{ fontSize: 11 }}>
+            Task
+          </p>
           <p style={{ fontSize: 14, marginTop: "0.25rem" }}>{t.title}</p>
         </div>
       ))}

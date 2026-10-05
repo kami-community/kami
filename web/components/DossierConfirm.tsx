@@ -144,18 +144,31 @@ export default function DossierConfirm({
                 setEditing(false);
                 setDraft(cloneDossier(dossier));
               }}
-              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-soft)" }}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: "var(--ink-soft)",
+              }}
             >
               Cancel
             </button>
-            <button type="button" className="hanko-btn" onClick={() => void saveEdits()} disabled={saving || !sessionDbId}>
+            <button
+              type="button"
+              className="hanko-btn"
+              onClick={() => void saveEdits()}
+              disabled={saving || !sessionDbId}
+            >
               {saving ? "Saving…" : "Save"}
             </button>
           </div>
         )}
       </div>
 
-      <div className="kraft-card" style={{ padding: "var(--stack-md)", marginBottom: "var(--stack-md)" }}>
+      <div
+        className="kraft-card"
+        style={{ padding: "var(--stack-md)", marginBottom: "var(--stack-md)" }}
+      >
         {editing ? (
           <>
             <div className="form-line" style={{ marginBottom: "var(--stack-sm)" }}>
@@ -215,7 +228,10 @@ export default function DossierConfirm({
               Competitors
             </p>
             {draft.competitor_analysis.map((c, i) => (
-              <div key={i} style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem", flexWrap: "wrap" }}>
+              <div
+                key={i}
+                style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem", flexWrap: "wrap" }}
+              >
                 <input
                   style={{ flex: "1 1 140px" }}
                   value={c.name}
@@ -245,7 +261,10 @@ export default function DossierConfirm({
               >
                 <div className="form-line" style={{ marginBottom: "0.4rem" }}>
                   <label className="mono label-caps">Label</label>
-                  <input value={b.label} onChange={(e) => updateBucket(i, { label: e.target.value })} />
+                  <input
+                    value={b.label}
+                    onChange={(e) => updateBucket(i, { label: e.target.value })}
+                  />
                 </div>
                 <div className="form-line" style={{ marginBottom: "0.4rem" }}>
                   <label className="mono label-caps">Where they live</label>
@@ -263,7 +282,10 @@ export default function DossierConfirm({
                 </div>
                 <div className="form-line" style={{ marginBottom: "0.4rem" }}>
                   <label className="mono label-caps">Size</label>
-                  <input value={b.est_size} onChange={(e) => updateBucket(i, { est_size: e.target.value })} />
+                  <input
+                    value={b.est_size}
+                    onChange={(e) => updateBucket(i, { est_size: e.target.value })}
+                  />
                 </div>
                 <div className="form-line">
                   <label className="mono label-caps">Angle</label>
@@ -293,7 +315,14 @@ export default function DossierConfirm({
         )}
       </div>
 
-      <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginBottom: "var(--stack-md)" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "0.75rem",
+          flexWrap: "wrap",
+          marginBottom: "var(--stack-md)",
+        }}
+      >
         <button type="button" className="hanko-btn" onClick={onConfirm} disabled={editing}>
           That&apos;s us — what&apos;s next?
         </button>
@@ -316,7 +345,10 @@ export default function DossierConfirm({
       </div>
 
       {showRegenerate && (
-        <div className="kraft-card" style={{ padding: "var(--stack-md)", marginBottom: "var(--stack-md)" }}>
+        <div
+          className="kraft-card"
+          style={{ padding: "var(--stack-md)", marginBottom: "var(--stack-md)" }}
+        >
           <p className="label-caps" style={{ marginBottom: "0.5rem" }}>
             What did we misunderstand?
           </p>
@@ -340,7 +372,12 @@ export default function DossierConfirm({
               type="button"
               className="mono"
               onClick={() => setShowRegenerate(false)}
-              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-soft)" }}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: "var(--ink-soft)",
+              }}
             >
               Cancel
             </button>
@@ -349,7 +386,10 @@ export default function DossierConfirm({
       )}
 
       {error && (
-        <p className="mono" style={{ color: "var(--hanko)", fontSize: 13, marginBottom: "var(--stack-sm)" }}>
+        <p
+          className="mono"
+          style={{ color: "var(--hanko)", fontSize: 13, marginBottom: "var(--stack-sm)" }}
+        >
           {error}
         </p>
       )}

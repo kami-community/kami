@@ -51,7 +51,8 @@ export async function discoverXLeads(params: {
   if (!access) {
     return {
       entries: [],
-      error: "X is not connected for this session — Log in with X on the landing page, then launch the campaign",
+      error:
+        "X is not connected for this session — Log in with X on the landing page, then launch the campaign",
     };
   }
 
@@ -84,7 +85,8 @@ export async function discoverXLeads(params: {
         detail?: string;
       };
       if (!res.ok) {
-        const msg = json.detail ?? json.title ?? json.errors?.[0]?.message ?? `X search ${res.status}`;
+        const msg =
+          json.detail ?? json.title ?? json.errors?.[0]?.message ?? `X search ${res.status}`;
         // Continue other queries; surface last error if nothing found
         if (!authorIds.size) {
           return { entries: [], error: msg };

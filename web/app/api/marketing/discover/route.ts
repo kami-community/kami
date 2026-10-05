@@ -37,8 +37,16 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const [{ data: session }, { data: brand }] = await Promise.all([
-    sb.from("agent_sessions").select("domain, hermes_session_id").eq("id", session_id).maybeSingle(),
-    sb.from("brand_profiles").select("raw_dossier, company, competitor_analysis").eq("session_id", session_id).maybeSingle(),
+    sb
+      .from("agent_sessions")
+      .select("domain, hermes_session_id")
+      .eq("id", session_id)
+      .maybeSingle(),
+    sb
+      .from("brand_profiles")
+      .select("raw_dossier, company, competitor_analysis")
+      .eq("session_id", session_id)
+      .maybeSingle(),
   ]);
 
   const marketingConfig: MarketingConfig = {

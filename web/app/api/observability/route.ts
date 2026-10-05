@@ -5,8 +5,7 @@ export async function GET(): Promise<Response> {
     id: r.id,
     source: r.source,
     started_at: r.started_at ? new Date(r.started_at * 1000).toISOString() : null,
-    duration_s:
-      r.ended_at && r.started_at ? Math.round(r.ended_at - r.started_at) : null,
+    duration_s: r.ended_at && r.started_at ? Math.round(r.ended_at - r.started_at) : null,
     messages: r.message_count,
     tool_calls: r.tool_call_count,
     input_tokens: r.input_tokens,

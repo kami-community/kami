@@ -8,7 +8,7 @@ describe("parseLastJsonBlock", () => {
   });
 
   it("accepts an unlabelled fence", () => {
-    expect(parseLastJsonBlock('```\n[1, 2]\n```')).toEqual([1, 2]);
+    expect(parseLastJsonBlock("```\n[1, 2]\n```")).toEqual([1, 2]);
   });
 
   it("falls back to bare JSON surrounded by prose", () => {
@@ -26,6 +26,6 @@ describe("parseLastJsonBlock", () => {
   });
 
   it("returns null when both fenced and bare JSON are invalid", () => {
-    expect(parseLastJsonBlock('```json\n{broken\n```')).toBeNull();
+    expect(parseLastJsonBlock("```json\n{broken\n```")).toBeNull();
   });
 });

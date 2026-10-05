@@ -154,7 +154,9 @@ export default function SegmentConfirm({ sessionDbId, onConfirmed }: SegmentConf
         i === segIndex
           ? {
               ...s,
-              example_user_personas: (s.example_user_personas ?? []).filter((_, j) => j !== personaIndex),
+              example_user_personas: (s.example_user_personas ?? []).filter(
+                (_, j) => j !== personaIndex,
+              ),
             }
           : s,
       ),
@@ -165,7 +167,10 @@ export default function SegmentConfirm({ sessionDbId, onConfirmed }: SegmentConf
     setSegments((prev) =>
       prev.map((s, i) => {
         if (i !== index) return s;
-        if (motion === "plg_self_serve" && (!s.example_user_personas || s.example_user_personas.length < 1)) {
+        if (
+          motion === "plg_self_serve" &&
+          (!s.example_user_personas || s.example_user_personas.length < 1)
+        ) {
           const seed = (s.target_persona || "Example user").split(",")[0]?.trim() || "Example user";
           return {
             ...s,
@@ -296,25 +301,36 @@ export default function SegmentConfirm({ sessionDbId, onConfirmed }: SegmentConf
 
       <h3 style={{ marginBottom: "var(--stack-sm)" }}>Confirm who you&apos;re selling to</h3>
       <p className="sales-intro">
-        Edit anything that looks wrong. B2B needs seed company domains for Find. PLG needs an example
-        user (who would try the product themselves — not a company email list).
+        Edit anything that looks wrong. B2B needs seed company domains for Find. PLG needs an
+        example user (who would try the product themselves — not a company email list).
       </p>
 
       {source && (
-        <p className="mono" style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: "var(--stack-md)" }}>
+        <p
+          className="mono"
+          style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: "var(--stack-md)" }}
+        >
           Source: {source}
-          {confirmedAt ? ` · confirmed ${new Date(confirmedAt).toLocaleString()}` : " · not confirmed yet"}
+          {confirmedAt
+            ? ` · confirmed ${new Date(confirmedAt).toLocaleString()}`
+            : " · not confirmed yet"}
         </p>
       )}
 
       {error && (
-        <p className="mono" style={{ color: "var(--hanko)", fontSize: 13, marginBottom: "var(--stack-md)" }}>
+        <p
+          className="mono"
+          style={{ color: "var(--hanko)", fontSize: 13, marginBottom: "var(--stack-md)" }}
+        >
           {error}
         </p>
       )}
 
       {!segments.length && !busy && (
-        <p className="mono" style={{ color: "var(--ink-soft)", fontSize: 13, marginBottom: "var(--stack-md)" }}>
+        <p
+          className="mono"
+          style={{ color: "var(--ink-soft)", fontSize: 13, marginBottom: "var(--stack-md)" }}
+        >
           No segments yet — click Refresh from dossier.
         </p>
       )}
@@ -347,7 +363,12 @@ export default function SegmentConfirm({ sessionDbId, onConfirmed }: SegmentConf
                   <option value="plg_self_serve">PLG — individual users</option>
                 </select>
               </div>
-              <button type="button" className="mono" onClick={() => removeSegment(i)} style={{ ...ghostBtn, alignSelf: "flex-end" }}>
+              <button
+                type="button"
+                className="mono"
+                onClick={() => removeSegment(i)}
+                style={{ ...ghostBtn, alignSelf: "flex-end" }}
+              >
                 Remove
               </button>
             </div>
@@ -407,7 +428,14 @@ export default function SegmentConfirm({ sessionDbId, onConfirmed }: SegmentConf
                 <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>
                   Seed companies
                 </p>
-                <p className="mono" style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: "var(--stack-sm)" }}>
+                <p
+                  className="mono"
+                  style={{
+                    fontSize: 12,
+                    color: "var(--ink-soft)",
+                    marginBottom: "var(--stack-sm)",
+                  }}
+                >
                   Real domains Kami will verify in Find. Required for B2B.
                 </p>
                 {(seg.candidate_companies ?? []).map((c, ci) => (
@@ -427,12 +455,22 @@ export default function SegmentConfirm({ sessionDbId, onConfirmed }: SegmentConf
                       value={c.why ?? ""}
                       onChange={(e) => updateCandidate(i, ci, { why: e.target.value })}
                     />
-                    <button type="button" className="mono" onClick={() => removeCandidate(i, ci)} style={ghostBtn}>
+                    <button
+                      type="button"
+                      className="mono"
+                      onClick={() => removeCandidate(i, ci)}
+                      style={ghostBtn}
+                    >
                       Remove
                     </button>
                   </div>
                 ))}
-                <button type="button" className="mono" onClick={() => addCandidate(i)} style={{ ...ghostBtn, marginTop: "0.5rem" }}>
+                <button
+                  type="button"
+                  className="mono"
+                  onClick={() => addCandidate(i)}
+                  style={{ ...ghostBtn, marginTop: "0.5rem" }}
+                >
                   + Add company
                 </button>
               </div>
@@ -443,11 +481,22 @@ export default function SegmentConfirm({ sessionDbId, onConfirmed }: SegmentConf
                 <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>
                   Example users
                 </p>
-                <p className="mono" style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: "var(--stack-sm)" }}>
-                  Who would try this themselves? One short description is enough — not a company, not an email.
+                <p
+                  className="mono"
+                  style={{
+                    fontSize: 12,
+                    color: "var(--ink-soft)",
+                    marginBottom: "var(--stack-sm)",
+                  }}
+                >
+                  Who would try this themselves? One short description is enough — not a company,
+                  not an email.
                 </p>
                 {(seg.example_user_personas ?? []).map((p, pi) => (
-                  <div key={`${seg.key}-p-${pi}`} className="sales-segment-row sales-segment-row--persona">
+                  <div
+                    key={`${seg.key}-p-${pi}`}
+                    className="sales-segment-row sales-segment-row--persona"
+                  >
                     <input
                       placeholder="e.g. Indie hacker with 40 Chrome extensions"
                       value={p.label}
@@ -458,12 +507,22 @@ export default function SegmentConfirm({ sessionDbId, onConfirmed }: SegmentConf
                       value={p.why_fit}
                       onChange={(e) => updatePersona(i, pi, { why_fit: e.target.value })}
                     />
-                    <button type="button" className="mono" onClick={() => removePersona(i, pi)} style={ghostBtn}>
+                    <button
+                      type="button"
+                      className="mono"
+                      onClick={() => removePersona(i, pi)}
+                      style={ghostBtn}
+                    >
                       Remove
                     </button>
                   </div>
                 ))}
-                <button type="button" className="mono" onClick={() => addPersona(i)} style={{ ...ghostBtn, marginTop: "0.5rem" }}>
+                <button
+                  type="button"
+                  className="mono"
+                  onClick={() => addPersona(i)}
+                  style={{ ...ghostBtn, marginTop: "0.5rem" }}
+                >
                   + Add example user
                 </button>
               </div>
@@ -472,14 +531,33 @@ export default function SegmentConfirm({ sessionDbId, onConfirmed }: SegmentConf
         ))}
       </div>
 
-      <div style={{ display: "flex", gap: "var(--stack-sm)", marginTop: "var(--stack-lg)", flexWrap: "wrap", alignItems: "center" }}>
-        <button type="button" className="mono" onClick={addSegment} disabled={busy} style={ghostBtn}>
+      <div
+        style={{
+          display: "flex",
+          gap: "var(--stack-sm)",
+          marginTop: "var(--stack-lg)",
+          flexWrap: "wrap",
+          alignItems: "center",
+        }}
+      >
+        <button
+          type="button"
+          className="mono"
+          onClick={addSegment}
+          disabled={busy}
+          style={ghostBtn}
+        >
           + Add segment
         </button>
         <button type="button" className="mono" onClick={rederive} disabled={busy} style={ghostBtn}>
           Refresh from dossier
         </button>
-        <button type="button" className="hanko-btn" onClick={confirm} disabled={busy || !segments.length}>
+        <button
+          type="button"
+          className="hanko-btn"
+          onClick={confirm}
+          disabled={busy || !segments.length}
+        >
           {busy && busyMode === "confirm" ? "Saving…" : "Confirm segments"}
         </button>
       </div>

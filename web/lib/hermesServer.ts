@@ -6,8 +6,7 @@
 
 import { logAgentRunAsync } from "@/lib/agentRunLog";
 
-const GATEWAY =
-  process.env.HERMES_GATEWAY_URL ?? "http://127.0.0.1:8642/v1/chat/completions";
+const GATEWAY = process.env.HERMES_GATEWAY_URL ?? "http://127.0.0.1:8642/v1/chat/completions";
 const KEY = process.env.HERMES_API_KEY;
 
 const DEFAULT_TIMEOUT_MS = 90_000;

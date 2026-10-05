@@ -1,12 +1,7 @@
 /** Machine-testable E2E fixture + scorecard types. */
 
 export type ExpectedJob = "find_customers" | "create_distribution" | "mixed";
-export type RcaClass =
-  | "patch"
-  | "prompt_skill"
-  | "architecture"
-  | "data_research"
-  | "environment";
+export type RcaClass = "patch" | "prompt_skill" | "architecture" | "data_research" | "environment";
 
 export interface CompanyFixture {
   id: string;

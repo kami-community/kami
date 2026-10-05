@@ -13,7 +13,10 @@ export async function POST(request: Request): Promise<Response> {
   };
 
   if (!session_id || !account_id || !email?.includes("@")) {
-    return Response.json({ error: "session_id, account_id, and valid email required" }, { status: 400 });
+    return Response.json(
+      { error: "session_id, account_id, and valid email required" },
+      { status: 400 },
+    );
   }
 
   const { data: account } = await sb

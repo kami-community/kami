@@ -104,7 +104,10 @@ export async function POST(request: Request): Promise<Response> {
 
   if (clsErr) return Response.json({ error: clsErr.message }, { status: 500 });
 
-  await sb.from("sales_conversation_messages").update({ classification_id: cls.id }).eq("id", message.id);
+  await sb
+    .from("sales_conversation_messages")
+    .update({ classification_id: cls.id })
+    .eq("id", message.id);
 
   const notifKind = classification.escalation_required ? "escalation" : "reply";
   await sb.from("sales_notifications").insert({

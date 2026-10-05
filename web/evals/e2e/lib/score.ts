@@ -47,7 +47,12 @@ function termInBlob(hay: string, term: string): boolean {
 
 function classifyGap(symptom: string): { class: RcaClass; severity: GapEntry["severity"] } {
   const s = symptom.toLowerCase();
-  if (s.includes("hermes") || s.includes("gateway") || s.includes("503") || s.includes("migration")) {
+  if (
+    s.includes("hermes") ||
+    s.includes("gateway") ||
+    s.includes("503") ||
+    s.includes("migration")
+  ) {
     return { class: "environment", severity: "blocker" };
   }
   if (s.includes("homonym") || s.includes("identity") || s.includes("wrong vertical")) {
@@ -87,22 +92,24 @@ export function scoreRun(input: {
   const gaps: GapEntry[] = [];
   const step_checks: Scorecard["step_checks"] = {};
 
-  const foundKinds = evidence.runLogs
-    .map((r) => String(r.kind ?? ""))
-    .filter(Boolean);
-  const foundIds = evidence.runLogs
-    .map((r) => String(r.id ?? ""))
-    .filter(Boolean);
+  const foundKinds = evidence.runLogs.map((r) => String(r.kind ?? "")).filter(Boolean);
+  const foundIds = evidence.runLogs.map((r) => String(r.id ?? "")).filter(Boolean);
 
   // Identity lock
   const domainOk =
     Boolean(evidence.dossier) &&
-    includesAny(blob, fixture.expected.company_name_hints.map((h) => h.toLowerCase())) &&
+    includesAny(
+      blob,
+      fixture.expected.company_name_hints.map((h) => h.toLowerCase()),
+    ) &&
     !includesAny(blob, fixture.expected.dossier_must_not);
   const identity_lock = gate(domainOk && Boolean(evidence.dossier));
   step_checks.dossier_identity = {
     ok: identity_lock === "pass",
-    detail: identity_lock === "pass" ? "company/name hints match" : "identity mismatch or missing dossier",
+    detail:
+      identity_lock === "pass"
+        ? "company/name hints match"
+        : "identity mismatch or missing dossier",
   };
   if (identity_lock === "fail") {
     const c = classifyGap("identity / homonym");
@@ -116,7 +123,8 @@ export function scoreRun(input: {
       evidence: `session=${input.sessionId}`,
       severity: c.severity,
       class: c.class,
-      next_action: "Inspect dossier_research run log and domain_check; tighten identity prompt/validation",
+      next_action:
+        "Inspect dossier_research run log and domain_check; tighten identity prompt/validation",
       status: "open",
     });
   }
@@ -153,7 +161,10 @@ export function scoreRun(input: {
   const expected = fixture.expected.job_primary;
   let routeOk = false;
   if (expected === "mixed") {
-    routeOk = input.actualRoute === "sales" || input.actualRoute === "marketing" || input.actualRoute === "mixed";
+    routeOk =
+      input.actualRoute === "sales" ||
+      input.actualRoute === "marketing" ||
+      input.actualRoute === "mixed";
   } else if (expected === "find_customers") {
     routeOk = input.actualRoute === "sales";
   } else if (expected === "create_distribution") {
@@ -192,9 +203,7 @@ export function scoreRun(input: {
     return email ? [email] : [];
   });
   const drafts = evidence.drafts as Array<{ status?: string; recipient?: string }>;
-  const sentWithoutReceipt = drafts.some(
-    (d) => d.status === "sent" || d.status === "delivered",
-  );
+  const sentWithoutReceipt = drafts.some((d) => d.status === "sent" || d.status === "delivered");
   // Heuristic: emails that look guessed (firstname.lastname without source) are hard to detect;
   // we fail if must_not includes invent and we somehow marked sent, or if sales_default_invalid but contacts were invented for consumers.
   const contact_safety = gate(!sentWithoutReceipt);
@@ -289,7 +298,8 @@ export function scoreRun(input: {
 
   // Discover companies expectation
   if (expected === "find_customers" && fixture.expected.sales.discover_companies) {
-    const discoverOk = evidence.accounts.length > 0 || evidence.warnings.some((w) => /plg|individual/i.test(w));
+    const discoverOk =
+      evidence.accounts.length > 0 || evidence.warnings.some((w) => /plg|individual/i.test(w));
     step_checks.discover = {
       ok: evidence.accounts.length > 0,
       detail:
@@ -316,7 +326,10 @@ export function scoreRun(input: {
   }
 
   // Marketing opportunities — rows alone are not enough; scaffold/fallback must not be green when Hermes ran.
-  if (expected === "create_distribution" || (expected === "mixed" && input.actualRoute === "marketing")) {
+  if (
+    expected === "create_distribution" ||
+    (expected === "mixed" && input.actualRoute === "marketing")
+  ) {
     const opps = evidence.opportunities as Array<{
       source_url?: string;
       evidence?: string | null;

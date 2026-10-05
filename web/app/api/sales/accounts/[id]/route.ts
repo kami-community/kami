@@ -47,10 +47,7 @@ export async function GET(
     .eq("account_id", id)
     .order("captured_at", { ascending: false });
 
-  const { data: contacts } = await sb
-    .from("sales_contacts")
-    .select("*")
-    .eq("account_id", id);
+  const { data: contacts } = await sb.from("sales_contacts").select("*").eq("account_id", id);
 
   const { data: scores } = await sb
     .from("sales_lead_scores")

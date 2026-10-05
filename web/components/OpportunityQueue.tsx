@@ -15,10 +15,18 @@ interface OpportunityQueueProps {
 
 const OUTCOMES: { key: DistributionOutcome; label: string; next?: string }[] = [
   { key: "posted", label: "Posted", next: "Logged — keep watching for replies." },
-  { key: "got_reply", label: "Got a reply", next: "Nice — note what they asked and reply personally." },
+  {
+    key: "got_reply",
+    label: "Got a reply",
+    next: "Nice — note what they asked and reply personally.",
+  },
   { key: "got_interest", label: "Got interest", next: "Follow up with one clear next step." },
   { key: "got_signup", label: "Got a signup", next: "Great — move them into onboarding." },
-  { key: "not_relevant", label: "Not relevant", next: "Skipped for learning — we won’t push this angle." },
+  {
+    key: "not_relevant",
+    label: "Not relevant",
+    next: "Skipped for learning — we won’t push this angle.",
+  },
   { key: "skipped", label: "Skipped", next: "Marked skipped." },
 ];
 
@@ -50,7 +58,11 @@ export default function OpportunityQueue({
         );
         if (!res.ok) return;
         const json = await res.json();
-        const accounts = (json.accounts ?? []) as { platform?: string; handle?: string; status?: string }[];
+        const accounts = (json.accounts ?? []) as {
+          platform?: string;
+          handle?: string;
+          status?: string;
+        }[];
         const x = accounts.find((a) => a.platform === "x" && a.status !== "pending");
         if (!cancelled) {
           setXConnected(Boolean(x));
@@ -105,7 +117,9 @@ export default function OpportunityQueue({
       setFlash((f) => ({ ...f, [o.id]: "Draft is empty." }));
       return;
     }
-    if (!window.confirm(`Post this to X${xHandle ? ` as @${xHandle}` : ""}?\n\n${text.slice(0, 280)}`)) {
+    if (
+      !window.confirm(`Post this to X${xHandle ? ` as @${xHandle}` : ""}?\n\n${text.slice(0, 280)}`)
+    ) {
       return;
     }
     setSavingId(o.id);
@@ -149,7 +163,14 @@ export default function OpportunityQueue({
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--stack-sm)" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "var(--stack-sm)",
+        }}
+      >
         <p className="label-caps">Today&apos;s distribution opportunities</p>
         <button
           type="button"
@@ -162,19 +183,29 @@ export default function OpportunityQueue({
       </div>
 
       {(researchSource || researchNote) && (
-        <p className="mono" style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: "var(--stack-sm)" }}>
+        <p
+          className="mono"
+          style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: "var(--stack-sm)" }}
+        >
           {researchSource === "scaffold" ? "Starter queue · " : "Hermes · "}
           {researchNote || "Review each item before posting."}
         </p>
       )}
 
-      <p className="mono" style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: "var(--stack-sm)" }}>
-        X: {xConnected ? `connected${xHandle ? ` (@${xHandle})` : ""} — Post to X available on X drafts` : "not connected — Login with X on the landing page to publish"}
+      <p
+        className="mono"
+        style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: "var(--stack-sm)" }}
+      >
+        X:{" "}
+        {xConnected
+          ? `connected${xHandle ? ` (@${xHandle})` : ""} — Post to X available on X drafts`
+          : "not connected — Login with X on the landing page to publish"}
       </p>
 
       {opportunities.length === 0 && (
         <p style={{ color: "var(--ink-soft)" }}>
-          No opportunities yet. Click <strong>Find opportunities</strong> for a short, reviewable queue.
+          No opportunities yet. Click <strong>Find opportunities</strong> for a short, reviewable
+          queue.
         </p>
       )}
 
@@ -187,7 +218,14 @@ export default function OpportunityQueue({
 
           return (
             <div key={o.id} className="kraft-card" style={{ padding: "var(--stack-md)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: "1rem",
+                  flexWrap: "wrap",
+                }}
+              >
                 <p className="label-caps">{o.platform}</p>
                 <span className="mono" style={{ fontSize: 12, color: "var(--ink-soft)" }}>
                   {o.approval_status} · {o.action_status}
@@ -200,7 +238,10 @@ export default function OpportunityQueue({
                 <strong>Action:</strong> {o.suggested_action}
               </p>
               {o.risks && (
-                <p className="mono" style={{ fontSize: 12, marginTop: "0.35rem", color: "var(--hanko)" }}>
+                <p
+                  className="mono"
+                  style={{ fontSize: 12, marginTop: "0.35rem", color: "var(--hanko)" }}
+                >
                   Risk / rules: {o.risks}
                 </p>
               )}
@@ -254,8 +295,15 @@ export default function OpportunityQueue({
                 </p>
               )}
 
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginTop: "0.75rem" }}>
-                <button type="button" className="hanko-btn" onClick={() => copyDraft(draft)} disabled={savingId === o.id}>
+              <div
+                style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginTop: "0.75rem" }}
+              >
+                <button
+                  type="button"
+                  className="hanko-btn"
+                  onClick={() => copyDraft(draft)}
+                  disabled={savingId === o.id}
+                >
                   Copy draft
                 </button>
                 {isX && xConnected && o.action_status !== "published" && (
@@ -271,7 +319,12 @@ export default function OpportunityQueue({
                 <button
                   type="button"
                   className="mono"
-                  style={{ border: "1px solid var(--ink)", background: "transparent", padding: "0.4rem 0.75rem", cursor: "pointer" }}
+                  style={{
+                    border: "1px solid var(--ink)",
+                    background: "transparent",
+                    padding: "0.4rem 0.75rem",
+                    cursor: "pointer",
+                  }}
                   onClick={() =>
                     patch(
                       o.id,
@@ -290,9 +343,18 @@ export default function OpportunityQueue({
                 <button
                   type="button"
                   className="mono"
-                  style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--ink-soft)" }}
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    cursor: "pointer",
+                    color: "var(--ink-soft)",
+                  }}
                   onClick={() =>
-                    patch(o.id, { approval_status: "skipped", outcome: "skipped", action_status: "draft" }, "Skipped.")
+                    patch(
+                      o.id,
+                      { approval_status: "skipped", outcome: "skipped", action_status: "draft" },
+                      "Skipped.",
+                    )
                   }
                   disabled={savingId === o.id}
                 >
@@ -310,7 +372,8 @@ export default function OpportunityQueue({
                   }}
                 >
                   <p style={{ fontSize: 14, marginBottom: "0.5rem" }}>
-                    Review the draft above, then confirm. Kami will publish with your connected X account.
+                    Review the draft above, then confirm. Kami will publish with your connected X
+                    account.
                   </p>
                   <button
                     type="button"
@@ -323,7 +386,9 @@ export default function OpportunityQueue({
                 </div>
               )}
 
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem", marginTop: "0.75rem" }}>
+              <div
+                style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem", marginTop: "0.75rem" }}
+              >
                 <span className="mono label-caps" style={{ width: "100%" }}>
                   What happened?
                 </span>
@@ -334,7 +399,8 @@ export default function OpportunityQueue({
                     className="mono"
                     style={{
                       fontSize: 11,
-                      border: outcome === out.key ? "1px solid var(--hanko)" : "1px solid var(--outline)",
+                      border:
+                        outcome === out.key ? "1px solid var(--hanko)" : "1px solid var(--outline)",
                       background: outcome === out.key ? "var(--kraft)" : "transparent",
                       padding: "0.25rem 0.5rem",
                       cursor: "pointer",
@@ -347,13 +413,19 @@ export default function OpportunityQueue({
                 ))}
               </div>
               {flash[o.id] && (
-                <p className="mono" style={{ fontSize: 12, color: "var(--hanko)", marginTop: "0.5rem" }}>
+                <p
+                  className="mono"
+                  style={{ fontSize: 12, color: "var(--hanko)", marginTop: "0.5rem" }}
+                >
                   {flash[o.id]}
                   {outcomeMeta?.next && flash[o.id] === outcomeMeta.next ? null : null}
                 </p>
               )}
               {outcome !== "none" && outcomeMeta?.next && !flash[o.id] && (
-                <p className="mono" style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: "0.5rem" }}>
+                <p
+                  className="mono"
+                  style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: "0.5rem" }}
+                >
                   {outcomeMeta.next}
                 </p>
               )}

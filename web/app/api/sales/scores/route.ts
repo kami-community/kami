@@ -45,10 +45,7 @@ export async function GET(request: Request): Promise<Response> {
   const accountIds = [...latestByAccount.keys()];
   let accountRows: Record<string, unknown>[] = [];
   if (accountIds.length) {
-    const { data: accounts } = await sb
-      .from("sales_accounts")
-      .select("*")
-      .in("id", accountIds);
+    const { data: accounts } = await sb.from("sales_accounts").select("*").in("id", accountIds);
     accountRows = accounts ?? [];
   }
   const accountById = new Map(accountRows.map((a) => [a.id as string, a]));
@@ -99,9 +96,7 @@ export async function POST(request: Request): Promise<Response> {
     .from("sales_accounts")
     .update({
       pipeline_stage: nextStage,
-      notes: account.notes
-        ? `${account.notes}; ${inclusionNote}`
-        : inclusionNote,
+      notes: account.notes ? `${account.notes}; ${inclusionNote}` : inclusionNote,
       updated_at: new Date().toISOString(),
     })
     .eq("id", account_id)

@@ -14,7 +14,14 @@ export default function LeadTable({ leads, onApprove }: LeadTableProps) {
   return (
     <div>
       {identified.length > 0 && (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--stack-sm)" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "var(--stack-sm)",
+          }}
+        >
           <p className="mono" style={{ color: "var(--ink-soft)", fontSize: 12 }}>
             {identified.length} leads awaiting approval
           </p>
@@ -35,7 +42,15 @@ export default function LeadTable({ leads, onApprove }: LeadTableProps) {
         )}
         {leads.map((lead) => (
           <div className="kraft-card" key={lead.id} style={{ padding: "0.75rem 1rem" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: "1rem",
+                flexWrap: "wrap",
+              }}
+            >
               <div style={{ flex: 1, minWidth: 160 }}>
                 <strong style={{ fontFamily: "var(--font-headline)", fontSize: 14 }}>
                   {lead.name ?? lead.handle}
@@ -45,7 +60,8 @@ export default function LeadTable({ leads, onApprove }: LeadTableProps) {
                 </p>
               </div>
               <div className="mono" style={{ fontSize: 12, color: "var(--ink-soft)" }}>
-                {lead.niche_match_score != null && `relevance: ${Math.round(lead.niche_match_score * 100)}%`}
+                {lead.niche_match_score != null &&
+                  `relevance: ${Math.round(lead.niche_match_score * 100)}%`}
               </div>
               <StatusChip label={lead.status} />
             </div>

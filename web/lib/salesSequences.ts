@@ -42,9 +42,7 @@ function trimToWordLimit(text: string, maxWords: number): string {
 function pickSignal(signals: AccountSignal[]): AccountSignal | null {
   if (!signals.length) return null;
   return (
-    signals.find((s) => s.source_url && s.detail) ??
-    signals.find((s) => s.detail) ??
-    signals[0]
+    signals.find((s) => s.source_url && s.detail) ?? signals.find((s) => s.detail) ?? signals[0]
   );
 }
 
@@ -89,9 +87,7 @@ function buildOpener(
     subject,
     body,
     cta,
-    evidence_refs: signal
-      ? [signal.id, signal.source_url].filter(Boolean) as string[]
-      : [],
+    evidence_refs: signal ? ([signal.id, signal.source_url].filter(Boolean) as string[]) : [],
     sequence_step: 1,
     signal_ref: signal?.source_url ?? signal?.id,
   };
@@ -108,9 +104,7 @@ function buildValueFollowUp(
     claims[1]?.trim() ||
     claim ||
     `Teams like yours use us to move faster on ${offer.toLowerCase()}.`;
-  const signalNote = signal
-    ? `Given your recent ${signal.signal_type.replace(/_/g, " ")}, `
-    : "";
+  const signalNote = signal ? `Given your recent ${signal.signal_type.replace(/_/g, " ")}, ` : "";
 
   const bodyCore = trimToWordLimit(
     `Hi ${firstName},\n\n${signalNote}I wanted to share one angle we haven't covered: ${angle}\n\nHappy to send a one-pager if useful — should I?`,
@@ -123,8 +117,10 @@ function buildValueFollowUp(
     body,
     cta: "Happy to send a one-pager if useful — should I?",
     evidence_refs: signal
-      ? [signal.id, signal.source_url].filter(Boolean) as string[]
-      : claim ? ["approved_claim"] : [],
+      ? ([signal.id, signal.source_url].filter(Boolean) as string[])
+      : claim
+        ? ["approved_claim"]
+        : [],
     sequence_step: 2,
     signal_ref: signal?.source_url ?? signal?.id,
   };

@@ -4,7 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import Landing, { type LaunchParams } from "@/components/Landing";
 import Dashboard from "@/components/Dashboard";
 import { parseActivity, type ActivityEvent } from "@/components/ActivityFeed";
-import { newSessionId, parseDossierRaw, streamChat, type Dossier as DossierData } from "@/lib/hermes";
+import {
+  newSessionId,
+  parseDossierRaw,
+  streamChat,
+  type Dossier as DossierData,
+} from "@/lib/hermes";
 import { createSession, persist } from "@/lib/persist";
 import { onboardingPrompt } from "@/lib/prompts";
 import { validateDossier } from "@/lib/dossierValidation";
@@ -204,10 +209,7 @@ export default function Home() {
     });
     setDbId(dbId);
     if (dbId) {
-      localStorage.setItem(
-        "kami_session",
-        JSON.stringify({ dbId, hermesId: sessionRef.current }),
-      );
+      localStorage.setItem("kami_session", JSON.stringify({ dbId, hermesId: sessionRef.current }));
     }
 
     setEvents((e) => [
@@ -249,7 +251,11 @@ export default function Home() {
       const validated = validateDossier(raw, identity, evidenceText);
       if (validated.ok && validated.dossier) {
         setDossier(validated.dossier);
-        persist(dbIdRef.current, "dossier", validated.dossier as unknown as Record<string, unknown>);
+        persist(
+          dbIdRef.current,
+          "dossier",
+          validated.dossier as unknown as Record<string, unknown>,
+        );
       } else {
         setDossier(null);
         persist(dbIdRef.current, "status", { status: "failed" });

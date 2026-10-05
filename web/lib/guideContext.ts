@@ -38,8 +38,7 @@ export function buildCompanyContextPack(input: GuideContextInput): string {
     blockers,
   } = input;
   const host = (canonicalDomain || dossier?.canonical_domain || domain).replace(/^www\./, "");
-  const company =
-    dossier?.company?.trim() || host.replace(/^www\./, "").split(".")[0] || host;
+  const company = dossier?.company?.trim() || host.replace(/^www\./, "").split(".")[0] || host;
 
   if (!dossier) {
     return [

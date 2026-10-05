@@ -100,4 +100,3 @@ export function draftFromTouchpoint(row: Record<string, unknown>): ReviewDraftIn
     signal_ref: metadata.signal_ref as string | undefined,
   };
 }
-

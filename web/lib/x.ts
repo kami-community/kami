@@ -68,11 +68,9 @@ export async function getReplies(postId: string, accessToken: string): Promise<T
   const users = new Map(
     (json.includes?.users ?? []).map((u: { id: string; username: string }) => [u.id, u.username]),
   );
-  return (json.data ?? []).map(
-    (t: { author_id: string; text: string; created_at: string }) => ({
-      author: `@${users.get(t.author_id) ?? t.author_id}`,
-      text: t.text,
-      at: t.created_at,
-    }),
-  );
+  return (json.data ?? []).map((t: { author_id: string; text: string; created_at: string }) => ({
+    author: `@${users.get(t.author_id) ?? t.author_id}`,
+    text: t.text,
+    at: t.created_at,
+  }));
 }

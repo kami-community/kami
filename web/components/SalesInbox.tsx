@@ -30,7 +30,9 @@ export default function SalesInbox({ sessionDbId }: SalesInboxProps) {
       .catch(() => {});
   }, [sessionDbId]);
 
-  useEffect(() => { fetchInbox(); }, [fetchInbox]);
+  useEffect(() => {
+    fetchInbox();
+  }, [fetchInbox]);
 
   async function markRead(id: string) {
     await fetch("/api/sales/inbox", {
@@ -55,7 +57,10 @@ export default function SalesInbox({ sessionDbId }: SalesInboxProps) {
     return (
       <SalesConversationThread
         conversation={activeConv}
-        onBack={() => { setActiveConv(null); fetchInbox(); }}
+        onBack={() => {
+          setActiveConv(null);
+          fetchInbox();
+        }}
         onRefresh={fetchInbox}
       />
     );
@@ -66,7 +71,9 @@ export default function SalesInbox({ sessionDbId }: SalesInboxProps) {
   return (
     <div>
       {items.length === 0 && (
-        <p className="mono" style={{ color: "var(--ink-soft)", fontSize: 13 }}>No pending decisions.</p>
+        <p className="mono" style={{ color: "var(--ink-soft)", fontSize: 13 }}>
+          No pending decisions.
+        </p>
       )}
       {items.map((n) => (
         <button
@@ -85,7 +92,13 @@ export default function SalesInbox({ sessionDbId }: SalesInboxProps) {
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span className="label-caps" style={{ fontSize: 10, color: n.kind === "escalation" ? "var(--hanko)" : "var(--moss)" }}>
+            <span
+              className="label-caps"
+              style={{
+                fontSize: 10,
+                color: n.kind === "escalation" ? "var(--hanko)" : "var(--moss)",
+              }}
+            >
               {n.kind}
             </span>
             <span className="mono" style={{ fontSize: 10, color: "var(--outline)" }}>
@@ -93,7 +106,14 @@ export default function SalesInbox({ sessionDbId }: SalesInboxProps) {
             </span>
           </div>
           <p style={{ fontSize: 13, margin: "0.25rem 0 0", fontWeight: 600 }}>{n.title}</p>
-          {n.body && <p className="mono" style={{ fontSize: 12, color: "var(--ink-soft)", margin: "0.15rem 0 0" }}>{n.body}</p>}
+          {n.body && (
+            <p
+              className="mono"
+              style={{ fontSize: 12, color: "var(--ink-soft)", margin: "0.15rem 0 0" }}
+            >
+              {n.body}
+            </p>
+          )}
         </button>
       ))}
     </div>

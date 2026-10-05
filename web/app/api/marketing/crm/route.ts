@@ -9,7 +9,11 @@ export async function GET(request: Request): Promise<Response> {
   const type = url.searchParams.get("type");
   const status = url.searchParams.get("status");
 
-  let query = sb.from("marketing_crm").select("*").order("created_at", { ascending: false }).limit(200);
+  let query = sb
+    .from("marketing_crm")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(200);
   if (sessionId) query = query.eq("session_id", sessionId);
   if (type) query = query.eq("type", type);
   if (status) query = query.eq("status", status);

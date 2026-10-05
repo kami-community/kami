@@ -46,7 +46,16 @@ export async function POST(request: Request): Promise<Response> {
   if (!sb) return Response.json({ error: "supabase not configured" }, { status: 503 });
 
   const body = await request.json();
-  const { session_id, title, description, account_id, contact_id, conversation_id, priority, due_at } = body as {
+  const {
+    session_id,
+    title,
+    description,
+    account_id,
+    contact_id,
+    conversation_id,
+    priority,
+    due_at,
+  } = body as {
     session_id: string;
     title: string;
     description?: string;
@@ -106,7 +115,12 @@ export async function PATCH(request: Request): Promise<Response> {
   if (description !== undefined) updates.description = description;
   if (due_at !== undefined) updates.due_at = due_at;
 
-  const { data, error } = await sb.from("sales_tasks").update(updates).eq("id", id).select("*").single();
+  const { data, error } = await sb
+    .from("sales_tasks")
+    .update(updates)
+    .eq("id", id)
+    .select("*")
+    .single();
   if (error) return Response.json({ error: error.message }, { status: 500 });
   return Response.json({ task: rowToTask(data) });
 }

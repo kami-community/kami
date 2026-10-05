@@ -101,7 +101,10 @@ export async function POST(request: Request): Promise<Response> {
     .maybeSingle();
 
   if (!campaign) {
-    return Response.json({ error: "sales campaign not configured — run setup first" }, { status: 400 });
+    return Response.json(
+      { error: "sales campaign not configured — run setup first" },
+      { status: 400 },
+    );
   }
 
   const { data: latest } = await sb
@@ -134,9 +137,7 @@ export async function POST(request: Request): Promise<Response> {
     segments_confirmed_at: campaign.segments_confirmed_at ?? null,
   };
 
-  const segments = Array.isArray(campaign.segments)
-    ? (campaign.segments as SalesSegment[])
-    : null;
+  const segments = Array.isArray(campaign.segments) ? (campaign.segments as SalesSegment[]) : null;
 
   // Prefer client-supplied plan only when explicitly provided (tests); else Hermes strategist.
   let synthesized = body.plan as Omit<SalesPlan, "id" | "created_at" | "updated_at"> | undefined;

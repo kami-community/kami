@@ -1,8 +1,7 @@
 import type { DiscoveredCrmEntry } from "@/lib/marketingDiscoverTypes";
 
 const APIFY_TOKEN = process.env.APIFY_API_TOKEN;
-const ACTOR =
-  process.env.APIFY_IG_HASHTAG_ACTOR ?? "apify/instagram-hashtag-scraper";
+const ACTOR = process.env.APIFY_IG_HASHTAG_ACTOR ?? "apify/instagram-hashtag-scraper";
 
 export function apifyConfigured(): boolean {
   return Boolean(APIFY_TOKEN);

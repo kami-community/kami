@@ -26,8 +26,7 @@ export interface ResearchSnapshot {
 }
 
 export type ResearchResult =
-  | { ok: true; snapshot: ResearchSnapshot }
-  | { ok: false; reason: string };
+  { ok: true; snapshot: ResearchSnapshot } | { ok: false; reason: string };
 
 interface LinkupResult {
   name: string;
@@ -47,7 +46,10 @@ export async function searchLinkup(q: string): Promise<LinkupResult[]> {
   return (json.results ?? []).slice(0, 8);
 }
 
-function classifySource(url: string, canonical: string): "first_party" | "third_party_mention" | null {
+function classifySource(
+  url: string,
+  canonical: string,
+): "first_party" | "third_party_mention" | null {
   try {
     const host = new URL(url.includes("://") ? url : `https://${url}`).hostname;
     if (sameRegistrableHost(host, canonical)) return "first_party";

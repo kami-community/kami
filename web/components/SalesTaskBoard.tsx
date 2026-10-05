@@ -19,7 +19,9 @@ export default function SalesTaskBoard({ sessionDbId }: SalesTaskBoardProps) {
       .catch(() => {});
   }, [sessionDbId]);
 
-  useEffect(() => { fetchTasks(); }, [fetchTasks]);
+  useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks]);
 
   async function updateStatus(id: string, status: SalesTaskStatus) {
     await fetch("/api/sales/tasks", {
@@ -49,18 +51,36 @@ export default function SalesTaskBoard({ sessionDbId }: SalesTaskBoardProps) {
     <div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--stack-sm)" }}>
         <div>
-          <p className="label-caps" style={{ marginBottom: "0.35rem" }}>Open ({open.length})</p>
+          <p className="label-caps" style={{ marginBottom: "0.35rem" }}>
+            Open ({open.length})
+          </p>
           {open.map((t) => (
-            <div key={t.id} className="kraft-card" style={{ padding: "0.5rem 0.75rem", marginBottom: "0.35rem" }}>
+            <div
+              key={t.id}
+              className="kraft-card"
+              style={{ padding: "0.5rem 0.75rem", marginBottom: "0.35rem" }}
+            >
               <p style={{ fontSize: 13, margin: 0 }}>{t.title}</p>
-              <p className="mono" style={{ fontSize: 10, color: "var(--outline)", marginTop: "0.15rem" }}>
-                {t.priority}{t.due_at ? ` · due ${new Date(t.due_at).toLocaleDateString()}` : ""}
+              <p
+                className="mono"
+                style={{ fontSize: 10, color: "var(--outline)", marginTop: "0.15rem" }}
+              >
+                {t.priority}
+                {t.due_at ? ` · due ${new Date(t.due_at).toLocaleDateString()}` : ""}
               </p>
               <button
                 type="button"
                 className="mono"
                 onClick={() => updateStatus(t.id!, "done")}
-                style={{ marginTop: "0.25rem", border: "1px solid var(--moss)", color: "var(--moss)", background: "transparent", padding: "0.15rem 0.4rem", fontSize: 10, cursor: "pointer" }}
+                style={{
+                  marginTop: "0.25rem",
+                  border: "1px solid var(--moss)",
+                  color: "var(--moss)",
+                  background: "transparent",
+                  padding: "0.15rem 0.4rem",
+                  fontSize: 10,
+                  cursor: "pointer",
+                }}
               >
                 Mark done
               </button>
@@ -68,9 +88,15 @@ export default function SalesTaskBoard({ sessionDbId }: SalesTaskBoardProps) {
           ))}
         </div>
         <div>
-          <p className="label-caps" style={{ marginBottom: "0.35rem" }}>Done ({done.length})</p>
+          <p className="label-caps" style={{ marginBottom: "0.35rem" }}>
+            Done ({done.length})
+          </p>
           {done.slice(0, 8).map((t) => (
-            <p key={t.id} className="mono" style={{ fontSize: 12, color: "var(--ink-soft)", margin: "0.2rem 0" }}>
+            <p
+              key={t.id}
+              className="mono"
+              style={{ fontSize: 12, color: "var(--ink-soft)", margin: "0.2rem 0" }}
+            >
               ✓ {t.title}
             </p>
           ))}
@@ -79,10 +105,24 @@ export default function SalesTaskBoard({ sessionDbId }: SalesTaskBoardProps) {
 
       <div style={{ display: "flex", gap: "0.5rem", marginTop: "var(--stack-sm)" }}>
         <div className="form-line" style={{ flex: 1 }}>
-          <label className="mono label-caps" htmlFor="new-task">New task</label>
-          <input id="new-task" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addTask()} placeholder="Follow up with…" />
+          <label className="mono label-caps" htmlFor="new-task">
+            New task
+          </label>
+          <input
+            id="new-task"
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && addTask()}
+            placeholder="Follow up with…"
+          />
         </div>
-        <button className="hanko-btn" onClick={addTask} style={{ alignSelf: "flex-end", fontSize: 12 }}>Add</button>
+        <button
+          className="hanko-btn"
+          onClick={addTask}
+          style={{ alignSelf: "flex-end", fontSize: 12 }}
+        >
+          Add
+        </button>
       </div>
     </div>
   );

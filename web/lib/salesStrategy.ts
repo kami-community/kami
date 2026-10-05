@@ -35,12 +35,14 @@ function normalizeMotion(raw: unknown): SalesPlanMotion | null {
   const o = raw as Record<string, unknown>;
   const allowed: SalesMotion[] = ["outbound_email", "signal_outreach", "x_dm", "multi_channel"];
   const motionRaw = typeof o.motion === "string" ? o.motion : "signal_outreach";
-  const motion = (allowed.includes(motionRaw as SalesMotion)
-    ? motionRaw
-    : "signal_outreach") as SalesMotion;
+  const motion = (
+    allowed.includes(motionRaw as SalesMotion) ? motionRaw : "signal_outreach"
+  ) as SalesMotion;
   const rationale = typeof o.rationale === "string" ? o.rationale.trim() : "";
   if (!rationale) return null;
-  const channel = (typeof o.primary_channel === "string" ? o.primary_channel : "email") as SalesChannel;
+  const channel = (
+    typeof o.primary_channel === "string" ? o.primary_channel : "email"
+  ) as SalesChannel;
   return {
     motion,
     rationale,
@@ -119,9 +121,7 @@ function parseStrategistPlan(
   const prerequisites = asStringArray(o.prerequisites);
   const approvalRaw = asStringArray(o.approval_scope) as ApprovalScope[];
   const approval_scope: ApprovalScope[] =
-    approvalRaw.length > 0
-      ? approvalRaw
-      : ["sequence_activation", "target_cohort", "first_send"];
+    approvalRaw.length > 0 ? approvalRaw : ["sequence_activation", "target_cohort", "first_send"];
 
   let estimated_activity: EstimatedActivity = {
     accounts_to_research: qty,
@@ -246,7 +246,8 @@ export async function generateSalesStrategy(params: {
 
   const thinEvidence =
     !params.dossier?.positioning?.trim() ||
-    (!segments?.length && !(params.config.icp?.titles?.length || params.config.icp?.industries?.length));
+    (!segments?.length &&
+      !(params.config.icp?.titles?.length || params.config.icp?.industries?.length));
 
   if (!hermesGatewayConfigured()) {
     const plan = synthesizePlanFromConfig(

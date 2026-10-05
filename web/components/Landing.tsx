@@ -20,12 +20,30 @@ interface LandingProps {
 }
 
 const FEATURES = [
-  { title: "Brand dossier from your domain", body: "One URL in. Kami learns your product, audience, and proof before asking you to configure anything." },
-  { title: "Find customers", body: "A guided first outbound campaign: confirm who to help, check a few companies, approve emails before they send." },
-  { title: "Create distribution", body: "Today’s opportunities across X and research surfaces — drafts you approve, not spam automation." },
-  { title: "Reviewed actions only", body: "Every real send or publish waits for your OK. No invented emails. No surprise posts." },
-  { title: "Ask Kami", body: "A grounded guide on every screen. Ask what to do next — answers use your live campaign state." },
-  { title: "Self-hosted & BYOK", body: "Run locally with your own Hermes, model key, and Supabase. Optional research providers when you want them." },
+  {
+    title: "Brand dossier from your domain",
+    body: "One URL in. Kami learns your product, audience, and proof before asking you to configure anything.",
+  },
+  {
+    title: "Find customers",
+    body: "A guided first outbound campaign: confirm who to help, check a few companies, approve emails before they send.",
+  },
+  {
+    title: "Create distribution",
+    body: "Today’s opportunities across X and research surfaces — drafts you approve, not spam automation.",
+  },
+  {
+    title: "Reviewed actions only",
+    body: "Every real send or publish waits for your OK. No invented emails. No surprise posts.",
+  },
+  {
+    title: "Ask Kami",
+    body: "A grounded guide on every screen. Ask what to do next — answers use your live campaign state.",
+  },
+  {
+    title: "Self-hosted & BYOK",
+    body: "Run locally with your own Hermes, model key, and Supabase. Optional research providers when you want them.",
+  },
 ];
 
 export default function Landing({
@@ -57,15 +75,17 @@ export default function Landing({
         <h1 className="landing-brand">
           KA<span style={{ color: "var(--hanko)" }}>MI</span>
         </h1>
-        <p className="landing-tagline">
-          Your AI go-to-market agency for early-stage startups
-        </p>
+        <p className="landing-tagline">Your AI go-to-market agency for early-stage startups</p>
         <p className="landing-sub">
-          Tell Kami what you built. It helps you find customers and get your product in front of the right people.
+          Tell Kami what you built. It helps you find customers and get your product in front of the
+          right people.
         </p>
 
         {resumePrompt && (
-          <div className="kraft-card landing-fade" style={{ maxWidth: 420, textAlign: "left", padding: "var(--stack-md)" }}>
+          <div
+            className="kraft-card landing-fade"
+            style={{ maxWidth: 420, textAlign: "left", padding: "var(--stack-md)" }}
+          >
             <p style={{ marginBottom: "var(--stack-sm)" }}>
               Continue previous campaign for <strong>{resumePrompt.domain}</strong>?
             </p>
@@ -78,7 +98,12 @@ export default function Landing({
                 className="mono"
                 onClick={onDismissResume}
                 disabled={busy}
-                style={{ border: "1px solid var(--ink)", background: "transparent", padding: "0.4rem 0.75rem", cursor: "pointer" }}
+                style={{
+                  border: "1px solid var(--ink)",
+                  background: "transparent",
+                  padding: "0.4rem 0.75rem",
+                  cursor: "pointer",
+                }}
               >
                 Start new
               </button>

@@ -58,7 +58,11 @@ export default function SalesPlanView({
       const res = await fetch("/api/sales/plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionDbId, action: "approve", plan_id: currentPlan.id }),
+        body: JSON.stringify({
+          session_id: sessionDbId,
+          action: "approve",
+          plan_id: currentPlan.id,
+        }),
       });
       const json = await res.json();
       if (res.ok && json.plan) onApproved(json.plan as SalesPlan);
@@ -92,10 +96,23 @@ export default function SalesPlanView({
   const statusColor = plan.status === "approved" ? "var(--hanko)" : "var(--ink-soft)";
 
   return (
-    <div className="kraft-card" style={{ padding: "var(--stack-md)", marginBottom: "var(--stack-md)" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "var(--stack-sm)" }}>
+    <div
+      className="kraft-card"
+      style={{ padding: "var(--stack-md)", marginBottom: "var(--stack-md)" }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "baseline",
+          marginBottom: "var(--stack-sm)",
+        }}
+      >
         <p className="label-caps">Your outbound plan</p>
-        <span className="mono" style={{ color: statusColor, textTransform: "uppercase", fontSize: 12 }}>
+        <span
+          className="mono"
+          style={{ color: statusColor, textTransform: "uppercase", fontSize: 12 }}
+        >
           {plan.status === "approved" ? "Approved" : "Draft"}
         </span>
       </div>
@@ -127,7 +144,10 @@ export default function SalesPlanView({
       )}
 
       {offer && (
-        <p className="mono" style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: "var(--stack-sm)" }}>
+        <p
+          className="mono"
+          style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: "var(--stack-sm)" }}
+        >
           Selling: {offer.slice(0, 160)}
           {offer.length > 160 ? "…" : ""}
         </p>
@@ -144,15 +164,28 @@ export default function SalesPlanView({
           <ul style={{ marginBottom: "var(--stack-sm)", paddingLeft: "1.2rem" }}>
             {plan.motions.map((m, i) => (
               <li key={i} style={{ fontSize: 13 }}>
-                <strong>{motionLabel(m.motion)}</strong> via {channelLabel(m.primary_channel)} — {m.rationale}
+                <strong>{motionLabel(m.motion)}</strong> via {channelLabel(m.primary_channel)} —{" "}
+                {m.rationale}
               </li>
             ))}
           </ul>
-          <div style={{ display: "flex", gap: "var(--stack-sm)", flexWrap: "wrap", marginBottom: "var(--stack-sm)" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: "var(--stack-sm)",
+              flexWrap: "wrap",
+              marginBottom: "var(--stack-sm)",
+            }}
+          >
             {plan.tiers.map((t) => (
               <div
                 key={t.tier}
-                style={{ border: "1px solid var(--outline)", padding: "0.5rem", flex: "1 1 140px", fontSize: 12 }}
+                style={{
+                  border: "1px solid var(--outline)",
+                  padding: "0.5rem",
+                  flex: "1 1 140px",
+                  fontSize: 12,
+                }}
               >
                 <strong>{t.label}</strong>
                 <p style={{ color: "var(--ink-soft)", margin: "0.25rem 0" }}>{t.criteria}</p>
@@ -194,7 +227,12 @@ export default function SalesPlanView({
               className="mono"
               onClick={revise}
               disabled={busy}
-              style={{ border: "1px solid var(--ink)", background: "transparent", padding: "0.4rem 0.75rem", cursor: "pointer" }}
+              style={{
+                border: "1px solid var(--ink)",
+                background: "transparent",
+                padding: "0.4rem 0.75rem",
+                cursor: "pointer",
+              }}
             >
               Regenerate with note
             </button>
@@ -203,7 +241,10 @@ export default function SalesPlanView({
       )}
 
       {plan.status === "approved" && (
-        <p className="mono" style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: "var(--stack-sm)" }}>
+        <p
+          className="mono"
+          style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: "var(--stack-sm)" }}
+        >
           Plan approved — continue to Find companies.
         </p>
       )}

@@ -132,7 +132,14 @@ h3 {
   font-size: 16px;
   padding: 0.85rem 2rem;
   cursor: pointer;
-  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  clip-path: polygon(
+    0 0,
+    calc(100% - 10px) 0,
+    100% 10px,
+    100% 100%,
+    10px 100%,
+    0 calc(100% - 10px)
+  );
   transition: background 120ms ease;
 }
 .hanko-btn:hover {
@@ -144,7 +151,9 @@ h3 {
 }
 
 .hanko-btn.landing-cta {
-  transition: background 120ms ease, transform 160ms ease;
+  transition:
+    background 120ms ease,
+    transform 160ms ease;
 }
 .hanko-btn.landing-cta:hover:not(:disabled) {
   transform: translateY(-1px);

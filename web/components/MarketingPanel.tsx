@@ -150,7 +150,12 @@ export default function MarketingPanel({
             type="button"
             className="mono"
             onClick={() => setShowAdvancedCrm(false)}
-            style={{ marginBottom: "var(--stack-sm)", background: "none", border: "none", cursor: "pointer" }}
+            style={{
+              marginBottom: "var(--stack-sm)",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+            }}
           >
             ← Back to distribution
           </button>
@@ -175,11 +180,19 @@ export default function MarketingPanel({
           type="button"
           className="mono"
           onClick={() => setShowAdvancedCrm(false)}
-          style={{ marginBottom: "var(--stack-sm)", background: "none", border: "none", cursor: "pointer" }}
+          style={{
+            marginBottom: "var(--stack-sm)",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+          }}
         >
           ← Back to distribution
         </button>
-        <p className="mono" style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: "var(--stack-sm)" }}>
+        <p
+          className="mono"
+          style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: "var(--stack-sm)" }}
+        >
           Advanced · X/IG CRM & cold DMs (later feature — not the default Marketing loop)
         </p>
         <div className="dashboard-grid">
@@ -227,7 +240,11 @@ export default function MarketingPanel({
             {distConfig.angle ? ` · ${distConfig.angle.slice(0, 80)}` : ""}
           </p>
         </div>
-        <KillSwitch paused={paused} onChange={handlePauseChange} disabled={pauseSaving || !sessionDbId} />
+        <KillSwitch
+          paused={paused}
+          onChange={handlePauseChange}
+          disabled={pauseSaving || !sessionDbId}
+        />
       </div>
       <hr className="crease" />
 
@@ -249,8 +266,17 @@ export default function MarketingPanel({
           Cold DM / creator CRM is preserved but not the primary Marketing product. Open only if you
           know what you&apos;re doing.
         </p>
-        <button type="button" className="mono" onClick={() => setShowAdvancedCrm(true)}
-          style={{ border: "1px solid var(--ink)", background: "transparent", padding: "0.4rem 0.75rem", cursor: "pointer" }}>
+        <button
+          type="button"
+          className="mono"
+          onClick={() => setShowAdvancedCrm(true)}
+          style={{
+            border: "1px solid var(--ink)",
+            background: "transparent",
+            padding: "0.4rem 0.75rem",
+            cursor: "pointer",
+          }}
+        >
           Open Advanced CRM
         </button>
       </details>

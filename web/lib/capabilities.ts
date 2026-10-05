@@ -45,12 +45,14 @@ export function detectCapabilities(): KamiCapabilities {
 
   const notes: string[] = [];
   if (!modelConfigured) notes.push("Set HERMES_API_KEY to match your local Hermes API_SERVER_KEY.");
-  if (!database) notes.push("Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY for persistence.");
+  if (!database)
+    notes.push("Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY for persistence.");
   if (!browserConnected && !researchProvider) {
     notes.push("No browser CDP or research provider — agents will ask for manual domains/URLs.");
   }
   if (!agentMail) notes.push("No AgentMail — Sales can draft but Send stays hidden.");
-  if (!xConfigured) notes.push("No X OAuth — Marketing can draft opportunities; Publish stays hidden.");
+  if (!xConfigured)
+    notes.push("No X OAuth — Marketing can draft opportunities; Publish stays hidden.");
 
   return {
     hermes,

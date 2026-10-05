@@ -64,7 +64,9 @@ export default function SalesPanel({
   onCreateDistribution,
 }: SalesPanelProps) {
   const [plan, setPlan] = useState<SalesPlan | null>(null);
-  const [planSource, setPlanSource] = useState<"hermes" | "offline_fallback" | "client" | null>(null);
+  const [planSource, setPlanSource] = useState<"hermes" | "offline_fallback" | "client" | null>(
+    null,
+  );
   const [planNote, setPlanNote] = useState<string | null>(null);
   const [segments, setSegments] = useState<SalesSegment[] | null>(
     (config?.segments as SalesSegment[] | null) ?? null,
@@ -124,7 +126,12 @@ export default function SalesPanel({
       return;
     }
     if (focusStep === "segments") setStep("segments");
-    else if (focusStep === "plan" || focusStep === "find" || focusStep === "emails" || focusStep === "needs") {
+    else if (
+      focusStep === "plan" ||
+      focusStep === "find" ||
+      focusStep === "emails" ||
+      focusStep === "needs"
+    ) {
       setStep(focusStep);
     }
   }, [focusStep, config?.segments_confirmed_at]);
@@ -226,19 +233,36 @@ export default function SalesPanel({
   if (!segmentsConfirmed) {
     return (
       <div className="sales-panel">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--stack-sm)" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "var(--stack-sm)",
+          }}
+        >
           <p className="label-caps">Outbound sales</p>
           <div style={{ display: "flex", gap: "var(--stack-sm)", alignItems: "center" }}>
             <button
               type="button"
               className="mono"
               onClick={() => setShowSettings(true)}
-              style={{ border: "1px solid var(--ink)", background: "transparent", padding: "0.3rem 0.6rem", cursor: "pointer", fontSize: 12 }}
+              style={{
+                border: "1px solid var(--ink)",
+                background: "transparent",
+                padding: "0.3rem 0.6rem",
+                cursor: "pointer",
+                fontSize: 12,
+              }}
               title="Edit who and what"
             >
               ⚙
             </button>
-            <KillSwitch paused={paused} onChange={handlePauseChange} disabled={pauseSaving || !sessionDbId} />
+            <KillSwitch
+              paused={paused}
+              onChange={handlePauseChange}
+              disabled={pauseSaving || !sessionDbId}
+            />
           </div>
         </div>
         <hr className="crease" />
@@ -268,19 +292,36 @@ export default function SalesPanel({
 
   return (
     <div className="sales-panel">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--stack-sm)" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "var(--stack-sm)",
+        }}
+      >
         <p className="label-caps">Outbound sales</p>
         <div style={{ display: "flex", gap: "var(--stack-sm)", alignItems: "center" }}>
           <button
             type="button"
             className="mono"
             onClick={() => setShowSettings(true)}
-            style={{ border: "1px solid var(--ink)", background: "transparent", padding: "0.3rem 0.6rem", cursor: "pointer", fontSize: 12 }}
+            style={{
+              border: "1px solid var(--ink)",
+              background: "transparent",
+              padding: "0.3rem 0.6rem",
+              cursor: "pointer",
+              fontSize: 12,
+            }}
             title="Edit who and what"
           >
             ⚙
           </button>
-          <KillSwitch paused={paused} onChange={handlePauseChange} disabled={pauseSaving || !sessionDbId} />
+          <KillSwitch
+            paused={paused}
+            onChange={handlePauseChange}
+            disabled={pauseSaving || !sessionDbId}
+          />
         </div>
       </div>
       <hr className="crease" />
@@ -365,7 +406,14 @@ export default function SalesPanel({
             type="button"
             className="mono"
             onClick={() => setShowMore(!showMore)}
-            style={{ border: "1px solid var(--outline)", background: "transparent", padding: "0.35rem 0.65rem", cursor: "pointer", fontSize: 11, marginBottom: "var(--stack-sm)" }}
+            style={{
+              border: "1px solid var(--outline)",
+              background: "transparent",
+              padding: "0.35rem 0.65rem",
+              cursor: "pointer",
+              fontSize: 11,
+              marginBottom: "var(--stack-sm)",
+            }}
           >
             {showMore ? "Hide More" : "More — Pipeline, Inbox, Meetings, Tasks"}
           </button>

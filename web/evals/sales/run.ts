@@ -15,13 +15,14 @@ import {
   assignTierFromAxes,
 } from "../../lib/salesResearch";
 import { synthesizePlanFromConfig } from "../../lib/salesPlan";
-import { cleanPositioningLine, salesWhoLabel, dossierToNlPrefill } from "../../lib/salesDossierPrefill";
+import {
+  cleanPositioningLine,
+  salesWhoLabel,
+  dossierToNlPrefill,
+} from "../../lib/salesDossierPrefill";
 import { isSameBrandHost, normalizeDomainInput } from "../../lib/domainIdentity";
 import { validateDossier } from "../../lib/dossierValidation";
-import {
-  segmentsFromDossier,
-  type SalesSegment,
-} from "../../lib/salesSegments";
+import { segmentsFromDossier, type SalesSegment } from "../../lib/salesSegments";
 import { validateSegmentsForConfirm } from "../../lib/salesSegmentGates";
 import { setupInvalidatesSegments } from "../../lib/salesSetupIntegrity";
 import { ctaFromGoal } from "../../lib/salesSequences";
@@ -152,7 +153,9 @@ function assertEqual<T>(actual: T, expected: T, label: string, errors: string[])
 
 function assertIncludes(actual: string[], expected: string, label: string, errors: string[]): void {
   if (!actual.includes(expected)) {
-    errors.push(`${label}: expected failed_criteria to include "${expected}", got ${JSON.stringify(actual)}`);
+    errors.push(
+      `${label}: expected failed_criteria to include "${expected}", got ${JSON.stringify(actual)}`,
+    );
   }
 }
 
@@ -207,7 +210,12 @@ function runReplies(fixtures: ReplyFixture[], passed: string[], failed: string[]
     const errors: string[] = [];
 
     assertEqual(result.label, fixture.expect.label, "label", errors);
-    assertEqual(result.escalation_required, fixture.expect.escalation_required, "escalation_required", errors);
+    assertEqual(
+      result.escalation_required,
+      fixture.expect.escalation_required,
+      "escalation_required",
+      errors,
+    );
 
     if (errors.length) {
       failed.push(`reply/${fixture.id}: ${errors.join("; ")}`);
@@ -224,7 +232,12 @@ function runSequences(fixtures: SequenceFixture[], passed: string[], failed: str
     const step1 = drafts[0];
 
     assertEqual(drafts.length, fixture.expect.step_count, "step_count", errors);
-    assertEqual(Boolean(step1?.signal_ref), fixture.expect.step1_has_signal_ref, "step1_has_signal_ref", errors);
+    assertEqual(
+      Boolean(step1?.signal_ref),
+      fixture.expect.step1_has_signal_ref,
+      "step1_has_signal_ref",
+      errors,
+    );
 
     const step1Verdict = step1
       ? reviewEmailDraft({
@@ -237,7 +250,12 @@ function runSequences(fixtures: SequenceFixture[], passed: string[], failed: str
         })
       : null;
 
-    assertEqual(step1Verdict?.approved ?? false, fixture.expect.step1_reviewer_approved, "step1_reviewer_approved", errors);
+    assertEqual(
+      step1Verdict?.approved ?? false,
+      fixture.expect.step1_reviewer_approved,
+      "step1_reviewer_approved",
+      errors,
+    );
 
     const allOptOut = drafts.every(
       (d) => d.body.includes("unsubscribe") || d.body.includes("won't follow up"),
@@ -273,7 +291,15 @@ function runResearchAndPlanGates(passed: string[], failed: string[]): void {
   }
 
   // Shorteners / aggregators from overhaul
-  for (const host of ["ow.ly", "ift.tt", "lnkd.in", "bit.ly", "ziprecruiter.com", "topstartups.io", "growthlist.co"]) {
+  for (const host of [
+    "ow.ly",
+    "ift.tt",
+    "lnkd.in",
+    "bit.ly",
+    "ziprecruiter.com",
+    "topstartups.io",
+    "growthlist.co",
+  ]) {
     if (!isDomainBlocked(host)) errors.push(`${host} should be blocked`);
     else passed.push(`research/blocklist_${host.replace(/\./g, "_")}`);
   }
@@ -326,7 +352,9 @@ function runResearchAndPlanGates(passed: string[], failed: string[]): void {
   }
 
   // Intent decay
-  if (!(decayIntent(7, 0.8) > decayIntent(30, 0.8) && decayIntent(30, 0.8) > decayIntent(90, 0.8))) {
+  if (!(
+    decayIntent(7, 0.8) > decayIntent(30, 0.8) && decayIntent(30, 0.8) > decayIntent(90, 0.8)
+  )) {
     errors.push("intent should decay with age");
   } else {
     passed.push("research/intent_decay");
@@ -396,7 +424,10 @@ function runResearchAndPlanGates(passed: string[], failed: string[]): void {
     passed.push("plan/offer_in_synthesis");
   }
 
-  if (!plan.tiers[0]?.criteria.includes("Best-fit") && !plan.tiers[0]?.criteria.toLowerCase().includes("best-fit")) {
+  if (
+    !plan.tiers[0]?.criteria.includes("Best-fit") &&
+    !plan.tiers[0]?.criteria.toLowerCase().includes("best-fit")
+  ) {
     // plain English criteria
     if (plan.tiers[0]?.criteria.includes("bullseye")) {
       errors.push("tier criteria must not use ICP bullseye jargon");
@@ -408,7 +439,12 @@ function runResearchAndPlanGates(passed: string[], failed: string[]): void {
   }
 
   // Email verification gate (logic): contactability without verified email stays low
-  const noEmail = scoreAccountAxes({ fit: 0.9, intentRaw: 0.9, hasVerifiedContact: false, signalAgeDays: 5 });
+  const noEmail = scoreAccountAxes({
+    fit: 0.9,
+    intentRaw: 0.9,
+    hasVerifiedContact: false,
+    signalAgeDays: 5,
+  });
   if (noEmail.contactability >= 0.6) {
     errors.push("missing verified email must keep contactability low");
   } else {
@@ -460,8 +496,20 @@ function runDomainTruthGates(passed: string[], failed: string[]): void {
     canonical_domain: "arguslabs.in",
     evidence_urls: ["https://arguslabs.in/"],
     icp_buckets: [
-      { label: "Clinics", where_they_live: "hospitals", trigger_signal: "FDA", est_size: "1k", angle: "labs" },
-      { label: "Labs", where_they_live: "R&D", trigger_signal: "grant", est_size: "500", angle: "assay" },
+      {
+        label: "Clinics",
+        where_they_live: "hospitals",
+        trigger_signal: "FDA",
+        est_size: "1k",
+        angle: "labs",
+      },
+      {
+        label: "Labs",
+        where_they_live: "R&D",
+        trigger_signal: "grant",
+        est_size: "500",
+        angle: "assay",
+      },
     ],
     opportunities: [{ title: "Lab outreach", playbook: "outbound", detail: "reach clinics" }],
     competitor_analysis: [],
@@ -477,7 +525,8 @@ function runDomainTruthGates(passed: string[], failed: string[]): void {
   const mismatch = validateDossier(
     {
       ...badDossier,
-      positioning: "Argus provides AI agent observability and debugging for production LLM systems.",
+      positioning:
+        "Argus provides AI agent observability and debugging for production LLM systems.",
       canonical_domain: "other-company.com",
       evidence_urls: ["https://other-company.com/"],
     },
@@ -518,7 +567,11 @@ function runDomainTruthGates(passed: string[], failed: string[]): void {
         },
       ],
       opportunities: [
-        { title: "Agent observability outreach", playbook: "outbound", detail: "reach AI eng leads" },
+        {
+          title: "Agent observability outreach",
+          playbook: "outbound",
+          detail: "reach AI eng leads",
+        },
       ],
       competitor_analysis: [{ name: "LangSmith", insight: "broader LLM ops" }],
     },

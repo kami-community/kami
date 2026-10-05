@@ -1,10 +1,6 @@
 import { supabaseServer } from "@/lib/supabase";
 import { setupInvalidatesSegments } from "@/lib/salesSetupIntegrity";
-import type {
-  SalesCampaignConfig,
-  SalesChannel,
-  SalesIcp,
-} from "@/lib/salesTypes";
+import type { SalesCampaignConfig, SalesChannel, SalesIcp } from "@/lib/salesTypes";
 
 function rowToConfig(row: Record<string, unknown>): SalesCampaignConfig {
   return {

@@ -59,7 +59,14 @@ export default function DistributionSetup({ sessionDbId, onComplete }: Distribut
         to review — not a content calendar.
       </p>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginBottom: "var(--stack-md)" }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.5rem",
+          marginBottom: "var(--stack-md)",
+        }}
+      >
         {GOALS.map((g) => (
           <button
             key={g}
@@ -76,7 +83,9 @@ export default function DistributionSetup({ sessionDbId, onComplete }: Distribut
             }}
           >
             <strong>{DISTRIBUTION_GOAL_LABELS[g]}</strong>
-            <span style={{ display: "block", color: "var(--ink-soft)", marginTop: 4 }}>{GOAL_HELP[g]}</span>
+            <span style={{ display: "block", color: "var(--ink-soft)", marginTop: 4 }}>
+              {GOAL_HELP[g]}
+            </span>
           </button>
         ))}
       </div>

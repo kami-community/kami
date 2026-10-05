@@ -31,7 +31,8 @@ export async function GET(request: Request): Promise<Response> {
       headers: { Authorization: `Bearer ${access.token}` },
     });
     const json = await res.json();
-    if (!res.ok) return Response.json({ posts: [], error: `X API ${res.status}`, account: access.handle });
+    if (!res.ok)
+      return Response.json({ posts: [], error: `X API ${res.status}`, account: access.handle });
 
     return Response.json({ posts: json.data ?? [], account: access.handle });
   } catch (error: unknown) {

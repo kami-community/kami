@@ -18,11 +18,7 @@ import { ApiClient, ApiError } from "./lib/apiClient";
 import { collectEvidence } from "./lib/collect";
 import { appendGaps, gapLogPath, writeAggregateReport } from "./lib/gapLog";
 import { scoreRun } from "./lib/score";
-import type {
-  CompanyFixture,
-  Scorecard,
-  StepResult,
-} from "./lib/types";
+import type { CompanyFixture, Scorecard, StepResult } from "./lib/types";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const E2E_DIR = __dirname;
@@ -49,7 +45,10 @@ function parseArgs(argv: string[]): CliArgs {
     if (a === "--all") fixtures = "all";
     else if (a === "--fixture" || a === "--fixtures") {
       const v = argv[++i] ?? "";
-      fixtures = v.split(",").map((s) => s.trim()).filter(Boolean);
+      fixtures = v
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
     } else if (a === "--base-url") baseUrl = argv[++i] ?? baseUrl;
     else if (a === "--environment") environment = argv[++i] ?? environment;
     else if (a === "--no-keep-results") keepResults = false;
@@ -85,9 +84,7 @@ function selectFixtures(all: CompanyFixture[], sel: string[] | "all"): CompanyFi
   return out;
 }
 
-function pickRoute(
-  fixture: CompanyFixture,
-): "sales" | "marketing" {
+function pickRoute(fixture: CompanyFixture): "sales" | "marketing" {
   const job = fixture.expected.job_primary;
   if (job === "create_distribution") return "marketing";
   if (job === "find_customers") return "sales";
@@ -122,8 +119,7 @@ function seedPlgPersonas(segments: unknown[]): unknown[] {
           why_fit:
             (typeof s.why_fit === "string" ? s.why_fit.slice(0, 160) : "") ||
             "Would try this product on their own",
-          personalization_hook:
-            typeof s.trigger_signal === "string" ? s.trigger_signal : undefined,
+          personalization_hook: typeof s.trigger_signal === "string" ? s.trigger_signal : undefined,
         },
       ],
     };
@@ -179,7 +175,9 @@ async function preflight(api: ApiClient): Promise<void> {
     throw new Error("Hermes gateway not configured — start Hermes and set HERMES_* env");
   }
   if (data.supabase === false) {
-    throw new Error("Supabase not configured — set NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY");
+    throw new Error(
+      "Supabase not configured — set NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY",
+    );
   }
 }
 
@@ -518,9 +516,7 @@ async function runFixture(
       environment: opts.environment,
       baseUrl: opts.baseUrl,
       actualRoute:
-        fixture.expected.job_primary === "mixed" && actualRoute === "sales"
-          ? "mixed"
-          : actualRoute,
+        fixture.expected.job_primary === "mixed" && actualRoute === "sales" ? "mixed" : actualRoute,
       steps,
       evidence,
     });
@@ -581,9 +577,7 @@ async function main(): Promise<void> {
   const reportPath = join(RESULTS_DIR, `summary-${stamp}.md`);
   writeAggregateReport(reportPath, cards);
   console.log(`\nAggregate: ${reportPath}`);
-  console.log(
-    `Pass rate: ${cards.filter((c) => c.passed).length}/${cards.length}`,
-  );
+  console.log(`Pass rate: ${cards.filter((c) => c.passed).length}/${cards.length}`);
 
   const anyFail = cards.some((c) => !c.passed);
   process.exit(anyFail ? 1 : 0);

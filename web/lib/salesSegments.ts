@@ -55,7 +55,13 @@ function normalizeCompany(raw: unknown): CandidateCompany | null {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
   const name = typeof o.name === "string" ? o.name.trim() : "";
-  let domain = typeof o.domain === "string" ? o.domain.trim().toLowerCase().replace(/^www\./, "") : "";
+  let domain =
+    typeof o.domain === "string"
+      ? o.domain
+          .trim()
+          .toLowerCase()
+          .replace(/^www\./, "")
+      : "";
   if (!name && !domain) return null;
   if (!domain && name.includes(".")) domain = name.toLowerCase().replace(/^www\./, "");
   if (!domain) return null;
@@ -152,12 +158,14 @@ export function segmentsFromDossier(dossier: Dossier | null, domain: string): Sa
   }
 
   return buckets.slice(0, 5).map((b, i) => {
-    const isPlg =
-      /individual|freelancer|creator|self-serve|consumer|b2c/i.test(`${b.label} ${b.est_size}`);
+    const isPlg = /individual|freelancer|creator|self-serve|consumer|b2c/i.test(
+      `${b.label} ${b.est_size}`,
+    );
     return {
       key: slugKey(b.label, i),
       name: b.label,
-      why_fit: b.angle || `Would buy ${company} when ${b.trigger_signal || "a relevant trigger appears"}`,
+      why_fit:
+        b.angle || `Would buy ${company} when ${b.trigger_signal || "a relevant trigger appears"}`,
       firmographic: b.est_size,
       technographic: b.where_they_live,
       trigger_signal: b.trigger_signal,
@@ -178,11 +186,7 @@ export function segmentsFromDossier(dossier: Dossier | null, domain: string): Sa
   });
 }
 
-function segmentPrompt(
-  domain: string,
-  dossier: Dossier | null,
-  goals: string[] = [],
-): string {
+function segmentPrompt(domain: string, dossier: Dossier | null, goals: string[] = []): string {
   const pack = buildCompanyContextPack({ dossier, domain, salesConfig: null });
   const positioning =
     dossier?.positioning?.trim() ||
@@ -300,4 +304,3 @@ export function icpFromSegments(segments: SalesSegment[]): {
 
 // Re-export for server callers; client UI must import from salesSegmentGates
 export { validateSegmentsForConfirm } from "@/lib/salesSegmentGates";
-

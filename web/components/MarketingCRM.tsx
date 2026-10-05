@@ -16,7 +16,13 @@ interface MarketingCRMProps {
   onRefresh: () => void;
 }
 
-export default function MarketingCRM({ entries, config, sessionDbId, paused, onRefresh }: MarketingCRMProps) {
+export default function MarketingCRM({
+  entries,
+  config,
+  sessionDbId,
+  paused,
+  onRefresh,
+}: MarketingCRMProps) {
   const hasX = config.platforms.includes("x");
   const hasIg = config.platforms.includes("instagram");
   const defaultTab: CrmSubTab = hasX ? "x_outreach" : "creators";
@@ -108,8 +114,15 @@ export default function MarketingCRM({ entries, config, sessionDbId, paused, onR
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--stack-sm)" }}>
-        {(hasX && hasIg) && (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "var(--stack-sm)",
+        }}
+      >
+        {hasX && hasIg && (
           <div style={{ display: "flex", gap: "0" }}>
             <button
               type="button"
@@ -145,7 +158,10 @@ export default function MarketingCRM({ entries, config, sessionDbId, paused, onR
         </button>
       </div>
       {discoverMsg && (
-        <p className="mono" style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: "var(--stack-sm)" }}>
+        <p
+          className="mono"
+          style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: "var(--stack-sm)" }}
+        >
           {discoverMsg}
         </p>
       )}
@@ -155,7 +171,9 @@ export default function MarketingCRM({ entries, config, sessionDbId, paused, onR
         <>
           <BoostManager sessionDbId={sessionDbId} />
           <hr className="crease" />
-          <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>Cold Outreach</p>
+          <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>
+            Cold Outreach
+          </p>
           <LeadTable leads={leads} onApprove={approveLeads} />
         </>
       )}

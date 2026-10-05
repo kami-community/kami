@@ -25,8 +25,12 @@ export function synthesizePlanFromConfig(
   const hasX = channels.includes("x");
 
   const positioning = cleanPositioningLine(config.offer, "Your product");
-  const titles = segs?.map((s) => s.target_persona).join(", ") || config.icp.titles?.join(", ") || "decision-makers";
-  const segmentNames = segs?.map((s) => s.name).join("; ") || config.icp.industries?.join(", ") || "target segments";
+  const titles =
+    segs?.map((s) => s.target_persona).join(", ") ||
+    config.icp.titles?.join(", ") ||
+    "decision-makers";
+  const segmentNames =
+    segs?.map((s) => s.name).join("; ") || config.icp.industries?.join(", ") || "target segments";
   const geo = config.geo || config.icp.geo || "target geos";
 
   const motions: SalesPlanMotion[] = [];
@@ -60,11 +64,14 @@ export function synthesizePlanFromConfig(
 
   // Budgets from segment target_counts when present
   const t1 = segs
-    ? Math.max(1, segs.filter((s) => s.motion === "b2b_sales_assisted").reduce((n, s) => n + s.target_count, 0))
+    ? Math.max(
+        1,
+        segs
+          .filter((s) => s.motion === "b2b_sales_assisted")
+          .reduce((n, s) => n + s.target_count, 0),
+      )
     : Math.ceil(targetQty * 0.3);
-  const t2 = segs
-    ? Math.max(1, Math.ceil(targetQty * 0.35))
-    : Math.ceil(targetQty * 0.4);
+  const t2 = segs ? Math.max(1, Math.ceil(targetQty * 0.35)) : Math.ceil(targetQty * 0.4);
   const t3 = Math.max(1, targetQty - t1 - t2);
 
   const tiers: SalesPlanTier[] = [

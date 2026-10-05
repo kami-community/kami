@@ -10,21 +10,44 @@ interface PlatformRailProps {
   onOpenSettings: () => void;
 }
 
-export default function PlatformRail({ config, entries, activeFilter, onFilter, onOpenSettings }: PlatformRailProps) {
+export default function PlatformRail({
+  config,
+  entries,
+  activeFilter,
+  onFilter,
+  onOpenSettings,
+}: PlatformRailProps) {
   const xLeads = entries.filter((e) => e.type === "x_lead");
   const creators = entries.filter((e) => e.type === "creator");
-  const xActive = xLeads.filter((e) => e.status === "in_conversation" || e.status === "contacted").length;
-  const creatorsNegotiating = creators.filter((e) => e.status === "negotiating" || e.status === "contacted").length;
+  const xActive = xLeads.filter(
+    (e) => e.status === "in_conversation" || e.status === "contacted",
+  ).length;
+  const creatorsNegotiating = creators.filter(
+    (e) => e.status === "negotiating" || e.status === "contacted",
+  ).length;
 
   return (
     <aside>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--stack-sm)" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "var(--stack-sm)",
+        }}
+      >
         <p className="label-caps">Platforms</p>
         <button
           type="button"
           className="mono"
           onClick={onOpenSettings}
-          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-soft)", fontSize: 11 }}
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: "var(--ink-soft)",
+            fontSize: 11,
+          }}
         >
           settings
         </button>
@@ -43,7 +66,10 @@ export default function PlatformRail({ config, entries, activeFilter, onFilter, 
             }}
           >
             <strong style={{ fontFamily: "var(--font-headline)" }}>X (Twitter)</strong>
-            <p className="mono" style={{ color: "var(--ink-soft)", marginTop: "0.4rem", fontSize: 12 }}>
+            <p
+              className="mono"
+              style={{ color: "var(--ink-soft)", marginTop: "0.4rem", fontSize: 12 }}
+            >
               {xLeads.length} leads · {xActive} active
             </p>
             <p className="mono" style={{ color: "var(--ink-soft)", fontSize: 12 }}>
@@ -60,11 +86,15 @@ export default function PlatformRail({ config, entries, activeFilter, onFilter, 
               padding: "1rem",
               cursor: "pointer",
               textAlign: "left",
-              border: activeFilter === "instagram" ? "2px solid var(--hanko)" : "1px solid var(--ink)",
+              border:
+                activeFilter === "instagram" ? "2px solid var(--hanko)" : "1px solid var(--ink)",
             }}
           >
             <strong style={{ fontFamily: "var(--font-headline)" }}>Instagram</strong>
-            <p className="mono" style={{ color: "var(--ink-soft)", marginTop: "0.4rem", fontSize: 12 }}>
+            <p
+              className="mono"
+              style={{ color: "var(--ink-soft)", marginTop: "0.4rem", fontSize: 12 }}
+            >
               {creators.length} creators · {creatorsNegotiating} negotiating
             </p>
             <p className="mono" style={{ color: "var(--ink-soft)", fontSize: 12 }}>

@@ -51,17 +51,27 @@ export async function POST(request: Request): Promise<Response> {
     };
 
     if (!meeting_id || !attendee_email?.includes("@") || !slot) {
-      return Response.json({ error: "meeting_id, attendee_email, and slot required" }, { status: 400 });
+      return Response.json(
+        { error: "meeting_id, attendee_email, and slot required" },
+        { status: 400 },
+      );
     }
 
     if (!calendarConfigured()) {
       return Response.json({ error: "Google Calendar not configured" }, { status: 503 });
     }
 
-    const { data: meeting } = await sb.from("sales_meetings").select("*").eq("id", meeting_id).maybeSingle();
+    const { data: meeting } = await sb
+      .from("sales_meetings")
+      .select("*")
+      .eq("id", meeting_id)
+      .maybeSingle();
     if (!meeting) return Response.json({ error: "meeting not found" }, { status: 404 });
     if (meeting.status !== "proposed") {
-      return Response.json({ error: `meeting status is ${meeting.status}, expected proposed` }, { status: 400 });
+      return Response.json(
+        { error: `meeting status is ${meeting.status}, expected proposed` },
+        { status: 400 },
+      );
     }
 
     const start = new Date(slot);

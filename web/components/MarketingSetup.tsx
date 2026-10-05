@@ -10,8 +10,16 @@ interface MarketingSetupProps {
 }
 
 const PLATFORM_INFO: { key: MarketingPlatform; name: string; blurb: string }[] = [
-  { key: "x", name: "X (Twitter)", blurb: "Boost high-performing posts and cold outreach to potential customers." },
-  { key: "instagram", name: "Instagram", blurb: "Find and negotiate with content creators in your niche." },
+  {
+    key: "x",
+    name: "X (Twitter)",
+    blurb: "Boost high-performing posts and cold outreach to potential customers.",
+  },
+  {
+    key: "instagram",
+    name: "Instagram",
+    blurb: "Find and negotiate with content creators in your niche.",
+  },
 ];
 
 const GOALS: { key: OutreachGoal; label: string }[] = [
@@ -22,7 +30,11 @@ const GOALS: { key: OutreachGoal; label: string }[] = [
 
 const TONES = ["professional", "casual", "witty", "direct"];
 
-export default function MarketingSetup({ sessionDbId, existingTone, onComplete }: MarketingSetupProps) {
+export default function MarketingSetup({
+  sessionDbId,
+  existingTone,
+  onComplete,
+}: MarketingSetupProps) {
   const [platforms, setPlatforms] = useState<MarketingPlatform[]>([]);
   const [xBudget, setXBudget] = useState(200);
   const [xGoal, setXGoal] = useState<OutreachGoal>("drive_signups");
@@ -43,7 +55,11 @@ export default function MarketingSetup({ sessionDbId, existingTone, onComplete }
     fetch(`/api/accounts${qs}`)
       .then((r) => r.json())
       .then((json) => {
-        const accounts = (json.accounts ?? []) as { platform: string; handle: string | null; status: string }[];
+        const accounts = (json.accounts ?? []) as {
+          platform: string;
+          handle: string | null;
+          status: string;
+        }[];
         const x = accounts.find((a) => a.platform === "x" && a.status === "connected");
         const ig = accounts.find((a) => a.platform === "instagram" && a.status === "connected");
         setXConnected(Boolean(x));
@@ -75,7 +91,10 @@ export default function MarketingSetup({ sessionDbId, existingTone, onComplete }
       ig_offer_min: platforms.includes("instagram") ? igOfferMin : undefined,
       ig_offer_max: platforms.includes("instagram") ? igOfferMax : undefined,
       ig_niche_keywords: platforms.includes("instagram")
-        ? igKeywords.split(",").map((s) => s.trim()).filter(Boolean)
+        ? igKeywords
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
         : undefined,
       ig_min_followers: platforms.includes("instagram") ? igMinFollowers : undefined,
       tone: useDossierTone ? existingTone : tone,
@@ -113,17 +132,36 @@ export default function MarketingSetup({ sessionDbId, existingTone, onComplete }
         </p>
       )}
 
-      <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>Connected accounts</p>
-      <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "var(--stack-md)" }}>
-        <span className="mono" style={{ fontSize: 12, color: xConnected ? "var(--moss)" : "var(--hanko)" }}>
+      <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>
+        Connected accounts
+      </p>
+      <div
+        style={{
+          display: "flex",
+          gap: "0.5rem",
+          flexWrap: "wrap",
+          marginBottom: "var(--stack-md)",
+        }}
+      >
+        <span
+          className="mono"
+          style={{ fontSize: 12, color: xConnected ? "var(--moss)" : "var(--hanko)" }}
+        >
           {xConnected ? `✓ X ${xHandle}` : "✗ X not connected — Log in with X on the landing page"}
         </span>
-        <span className="mono" style={{ fontSize: 12, color: igConnected ? "var(--moss)" : "var(--hanko)" }}>
-          {igConnected ? `✓ Instagram ${igHandle}` : "✗ Instagram not connected — Log in with Instagram on the landing page"}
+        <span
+          className="mono"
+          style={{ fontSize: 12, color: igConnected ? "var(--moss)" : "var(--hanko)" }}
+        >
+          {igConnected
+            ? `✓ Instagram ${igHandle}`
+            : "✗ Instagram not connected — Log in with Instagram on the landing page"}
         </span>
       </div>
 
-      <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>Select platforms</p>
+      <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>
+        Select platforms
+      </p>
       <div style={{ display: "flex", gap: "var(--stack-md)", marginBottom: "var(--stack-lg)" }}>
         {PLATFORM_INFO.map((p) => {
           const locked = (p.key === "x" && !xConnected) || (p.key === "instagram" && !igConnected);
@@ -143,9 +181,13 @@ export default function MarketingSetup({ sessionDbId, existingTone, onComplete }
                 textAlign: "left",
               }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+              >
                 <strong style={{ fontFamily: "var(--font-headline)" }}>{p.name}</strong>
-                <span style={{ color: selected ? "var(--hanko)" : "var(--outline)", fontWeight: 700 }}>
+                <span
+                  style={{ color: selected ? "var(--hanko)" : "var(--outline)", fontWeight: 700 }}
+                >
                   {locked ? "🔒" : selected ? "✓" : "·"}
                 </span>
               </div>
@@ -159,14 +201,26 @@ export default function MarketingSetup({ sessionDbId, existingTone, onComplete }
 
       {hasX && (
         <div style={{ marginBottom: "var(--stack-lg)" }}>
-          <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>X — Budget & Goal</p>
+          <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>
+            X — Budget & Goal
+          </p>
           <div style={{ display: "flex", gap: "var(--stack-md)", flexWrap: "wrap" }}>
             <div className="form-line" style={{ flex: 1, minWidth: 180 }}>
-              <label className="mono label-caps" htmlFor="x-budget">Monthly boost budget ($)</label>
-              <input id="x-budget" type="number" min={0} value={xBudget} onChange={(e) => setXBudget(Number(e.target.value))} />
+              <label className="mono label-caps" htmlFor="x-budget">
+                Monthly boost budget ($)
+              </label>
+              <input
+                id="x-budget"
+                type="number"
+                min={0}
+                value={xBudget}
+                onChange={(e) => setXBudget(Number(e.target.value))}
+              />
             </div>
             <div style={{ flex: 1, minWidth: 180 }}>
-              <p className="mono label-caps" style={{ marginBottom: "var(--stack-sm)" }}>Outreach goal</p>
+              <p className="mono label-caps" style={{ marginBottom: "var(--stack-sm)" }}>
+                Outreach goal
+              </p>
               <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
                 {GOALS.map((g) => (
                   <button
@@ -182,7 +236,13 @@ export default function MarketingSetup({ sessionDbId, existingTone, onComplete }
                       color: "var(--ink)",
                     }}
                   >
-                    <span style={{ color: xGoal === g.key ? "var(--hanko)" : "var(--outline)", fontWeight: 700, marginRight: "0.4rem" }}>
+                    <span
+                      style={{
+                        color: xGoal === g.key ? "var(--hanko)" : "var(--outline)",
+                        fontWeight: 700,
+                        marginRight: "0.4rem",
+                      }}
+                    >
                       {xGoal === g.key ? "✓" : "·"}
                     </span>
                     {g.label}
@@ -196,31 +256,73 @@ export default function MarketingSetup({ sessionDbId, existingTone, onComplete }
 
       {hasIg && (
         <div style={{ marginBottom: "var(--stack-lg)" }}>
-          <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>Instagram — Creator Criteria</p>
-          <div style={{ display: "flex", gap: "var(--stack-md)", flexWrap: "wrap", marginBottom: "var(--stack-md)" }}>
+          <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>
+            Instagram — Creator Criteria
+          </p>
+          <div
+            style={{
+              display: "flex",
+              gap: "var(--stack-md)",
+              flexWrap: "wrap",
+              marginBottom: "var(--stack-md)",
+            }}
+          >
             <div className="form-line" style={{ flex: 1, minWidth: 140 }}>
-              <label className="mono label-caps" htmlFor="ig-offer-min">Offer min ($)</label>
-              <input id="ig-offer-min" type="number" min={0} value={igOfferMin} onChange={(e) => setIgOfferMin(Number(e.target.value))} />
+              <label className="mono label-caps" htmlFor="ig-offer-min">
+                Offer min ($)
+              </label>
+              <input
+                id="ig-offer-min"
+                type="number"
+                min={0}
+                value={igOfferMin}
+                onChange={(e) => setIgOfferMin(Number(e.target.value))}
+              />
             </div>
             <div className="form-line" style={{ flex: 1, minWidth: 140 }}>
-              <label className="mono label-caps" htmlFor="ig-offer-max">Offer max ($)</label>
-              <input id="ig-offer-max" type="number" min={0} value={igOfferMax} onChange={(e) => setIgOfferMax(Number(e.target.value))} />
+              <label className="mono label-caps" htmlFor="ig-offer-max">
+                Offer max ($)
+              </label>
+              <input
+                id="ig-offer-max"
+                type="number"
+                min={0}
+                value={igOfferMax}
+                onChange={(e) => setIgOfferMax(Number(e.target.value))}
+              />
             </div>
             <div className="form-line" style={{ flex: 1, minWidth: 140 }}>
-              <label className="mono label-caps" htmlFor="ig-min-followers">Min followers</label>
-              <input id="ig-min-followers" type="number" min={0} value={igMinFollowers} onChange={(e) => setIgMinFollowers(Number(e.target.value))} />
+              <label className="mono label-caps" htmlFor="ig-min-followers">
+                Min followers
+              </label>
+              <input
+                id="ig-min-followers"
+                type="number"
+                min={0}
+                value={igMinFollowers}
+                onChange={(e) => setIgMinFollowers(Number(e.target.value))}
+              />
             </div>
           </div>
           <div className="form-line">
-            <label className="mono label-caps" htmlFor="ig-keywords">Niche keywords (comma-separated)</label>
-            <input id="ig-keywords" value={igKeywords} onChange={(e) => setIgKeywords(e.target.value)} placeholder="dev tools, productivity, SaaS" />
+            <label className="mono label-caps" htmlFor="ig-keywords">
+              Niche keywords (comma-separated)
+            </label>
+            <input
+              id="ig-keywords"
+              value={igKeywords}
+              onChange={(e) => setIgKeywords(e.target.value)}
+              placeholder="dev tools, productivity, SaaS"
+            />
           </div>
         </div>
       )}
 
       {platforms.length > 0 && (
         <div style={{ marginBottom: "var(--stack-lg)" }}>
-          <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>Tone & Voice</p>
+          <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>
+            Tone & Voice
+          </p>
           {existingTone?.length ? (
             <div style={{ marginBottom: "var(--stack-sm)" }}>
               <button
@@ -234,7 +336,13 @@ export default function MarketingSetup({ sessionDbId, existingTone, onComplete }
                   cursor: "pointer",
                 }}
               >
-                <span style={{ color: useDossierTone ? "var(--hanko)" : "var(--outline)", fontWeight: 700, marginRight: "0.4rem" }}>
+                <span
+                  style={{
+                    color: useDossierTone ? "var(--hanko)" : "var(--outline)",
+                    fontWeight: 700,
+                    marginRight: "0.4rem",
+                  }}
+                >
                   {useDossierTone ? "✓" : "·"}
                 </span>
                 Use brand voice from dossier ({existingTone.join(", ")})
@@ -256,7 +364,13 @@ export default function MarketingSetup({ sessionDbId, existingTone, onComplete }
                     cursor: "pointer",
                   }}
                 >
-                  <span style={{ color: tone.includes(t) ? "var(--hanko)" : "var(--outline)", fontWeight: 700, marginRight: "0.4rem" }}>
+                  <span
+                    style={{
+                      color: tone.includes(t) ? "var(--hanko)" : "var(--outline)",
+                      fontWeight: 700,
+                      marginRight: "0.4rem",
+                    }}
+                  >
                     {tone.includes(t) ? "✓" : "·"}
                   </span>
                   {t}
@@ -267,7 +381,11 @@ export default function MarketingSetup({ sessionDbId, existingTone, onComplete }
         </div>
       )}
 
-      <button className="hanko-btn" onClick={submit} disabled={platforms.length === 0 || !sessionDbId || saving}>
+      <button
+        className="hanko-btn"
+        onClick={submit}
+        disabled={platforms.length === 0 || !sessionDbId || saving}
+      >
         {saving ? "Saving…" : "Launch Marketing"}
       </button>
     </div>

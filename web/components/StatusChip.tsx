@@ -15,8 +15,24 @@ const VARIANT_STYLES: Record<ChipVariant, { bg: string; color: string; border: s
 };
 
 export function statusVariant(status: string): ChipVariant {
-  const positives = ["connected", "approved", "agreed", "content_live", "completed", "converted", "concluded", "sent"];
-  const actions = ["identified", "negotiating", "in_conversation", "awaiting_reply", "escalated", "first_msg_drafted"];
+  const positives = [
+    "connected",
+    "approved",
+    "agreed",
+    "content_live",
+    "completed",
+    "converted",
+    "concluded",
+    "sent",
+  ];
+  const actions = [
+    "identified",
+    "negotiating",
+    "in_conversation",
+    "awaiting_reply",
+    "escalated",
+    "first_msg_drafted",
+  ];
   const terminals = ["lost", "stalled", "paid"];
   if (positives.includes(status)) return "positive";
   if (actions.includes(status)) return "action";

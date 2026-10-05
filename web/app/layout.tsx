@@ -32,10 +32,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${domine.variable} ${sourceSans.variable} ${spaceMono.variable}`}
-    >
+    <html lang="en" className={`${domine.variable} ${sourceSans.variable} ${spaceMono.variable}`}>
       <body>
         <Nav />
         {children}

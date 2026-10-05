@@ -1,30 +1,14 @@
 export type DistributionGoal = "launch" | "early_users" | "credibility" | "waitlist";
 
 export type DistributionPlatform =
-  | "x"
-  | "reddit"
-  | "hackernews"
-  | "linkedin"
-  | "producthunt"
-  | "discord";
+  "x" | "reddit" | "hackernews" | "linkedin" | "producthunt" | "discord";
 
 export type DistributionApprovalStatus = "needs_review" | "approved" | "skipped";
 
-export type DistributionActionStatus =
-  | "draft"
-  | "ready"
-  | "posted_manual"
-  | "published"
-  | "failed";
+export type DistributionActionStatus = "draft" | "ready" | "posted_manual" | "published" | "failed";
 
 export type DistributionOutcome =
-  | "none"
-  | "posted"
-  | "got_reply"
-  | "got_interest"
-  | "got_signup"
-  | "not_relevant"
-  | "skipped";
+  "none" | "posted" | "got_reply" | "got_interest" | "got_signup" | "not_relevant" | "skipped";
 
 export interface DistributionCampaignConfig {
   id?: string;

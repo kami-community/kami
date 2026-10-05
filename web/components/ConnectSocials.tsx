@@ -123,7 +123,15 @@ export default function ConnectSocials() {
         alignItems: "center",
       }}
     >
-      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "0.5rem",
+          alignItems: "center",
+          flexWrap: "wrap",
+          justifyContent: "center",
+        }}
+      >
         <span className="label-caps">Connect accounts:</span>
         <ConnectChip
           connected={Boolean(xHandle)}

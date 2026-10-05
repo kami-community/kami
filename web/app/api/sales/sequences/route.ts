@@ -53,7 +53,10 @@ export async function POST(request: Request): Promise<Response> {
 
   if (campErr) return Response.json({ error: campErr.message }, { status: 500 });
   if (!campaign) {
-    return Response.json({ error: "sales campaign not configured — run setup first" }, { status: 400 });
+    return Response.json(
+      { error: "sales campaign not configured — run setup first" },
+      { status: 400 },
+    );
   }
 
   let accountQuery = sb.from("sales_accounts").select("*").eq("session_id", session_id);

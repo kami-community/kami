@@ -1,9 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { SalesChannel } from "./salesTypes";
 
-export type PolicyResult =
-  | { ok: true }
-  | { ok: false; status: number; error: string };
+export type PolicyResult = { ok: true } | { ok: false; status: number; error: string };
 
 function fail(status: number, error: string): PolicyResult {
   return { ok: false, status, error };
@@ -36,22 +34,15 @@ interface AssertSendAllowedParams {
   isFirstSend: boolean;
 }
 
-export async function assertSendAllowed(
-  params: AssertSendAllowedParams,
-): Promise<PolicyResult> {
-  const {
-    sb,
-    campaignId,
-    recipient,
-    channel,
-    draftApproved,
-    reviewerApproved,
-    isFirstSend,
-  } = params;
+export async function assertSendAllowed(params: AssertSendAllowedParams): Promise<PolicyResult> {
+  const { sb, campaignId, recipient, channel, draftApproved, reviewerApproved, isFirstSend } =
+    params;
 
   const { data: campaign, error: campErr } = await sb
     .from("sales_campaigns")
-    .select("autonomous_paused, daily_send_cap, allowed_channels, require_first_send_approval, session_id")
+    .select(
+      "autonomous_paused, daily_send_cap, allowed_channels, require_first_send_approval, session_id",
+    )
     .eq("id", campaignId)
     .maybeSingle();
 

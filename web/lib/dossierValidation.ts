@@ -98,7 +98,9 @@ export function validateDossier(
     company,
     brand_voice,
     positioning,
-    tone: Array.isArray(o.tone) ? (o.tone as string[]).filter((t) => typeof t === "string") : undefined,
+    tone: Array.isArray(o.tone)
+      ? (o.tone as string[]).filter((t) => typeof t === "string")
+      : undefined,
     competitor_analysis: competitors
       .filter((c): c is { name: string; insight: string } => {
         return (

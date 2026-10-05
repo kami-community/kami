@@ -23,20 +23,19 @@ function quadrant(fit: number, intent: number): string {
 }
 
 export default function SalesFunnel({ segments, plan, accounts = [] }: SalesFunnelProps) {
-  const buckets =
-    segments?.length
-      ? segments.map((s) => ({
-          key: s.key,
-          name: s.name,
-          count: s.target_count,
-          motion: s.motion === "plg_self_serve" ? "PLG" : "B2B",
-        }))
-      : plan?.tiers.map((t) => ({
-          key: `tier-${t.tier}`,
-          name: t.label,
-          count: t.target_count,
-          motion: t.criteria,
-        })) ?? [];
+  const buckets = segments?.length
+    ? segments.map((s) => ({
+        key: s.key,
+        name: s.name,
+        count: s.target_count,
+        motion: s.motion === "plg_self_serve" ? "PLG" : "B2B",
+      }))
+    : (plan?.tiers.map((t) => ({
+        key: `tier-${t.tier}`,
+        name: t.label,
+        count: t.target_count,
+        motion: t.criteria,
+      })) ?? []);
 
   const byQuad: Record<string, number> = { "Act now": 0, Nurture: 0, Qualify: 0, Park: 0 };
   for (const a of accounts) {
@@ -55,7 +54,14 @@ export default function SalesFunnel({ segments, plan, accounts = [] }: SalesFunn
           <p className="label-caps" style={{ marginBottom: "0.35rem" }}>
             Funnel budgets
           </p>
-          <div style={{ display: "flex", gap: "var(--stack-sm)", flexWrap: "wrap", marginBottom: "var(--stack-sm)" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: "var(--stack-sm)",
+              flexWrap: "wrap",
+              marginBottom: "var(--stack-sm)",
+            }}
+          >
             {buckets.map((b) => (
               <div
                 key={b.key}
@@ -67,7 +73,10 @@ export default function SalesFunnel({ segments, plan, accounts = [] }: SalesFunn
                 }}
               >
                 <strong>{b.name}</strong>
-                <div className="mono" style={{ fontSize: 11, color: "var(--ink-soft)", marginTop: 2 }}>
+                <div
+                  className="mono"
+                  style={{ fontSize: 11, color: "var(--ink-soft)", marginTop: 2 }}
+                >
                   ~{b.count} · {b.motion}
                 </div>
               </div>
@@ -91,7 +100,10 @@ export default function SalesFunnel({ segments, plan, accounts = [] }: SalesFunn
             }}
           >
             {(["Act now", "Nurture", "Qualify", "Park"] as const).map((q) => (
-              <div key={q} style={{ border: "1px solid var(--outline-variant)", padding: "0.4rem 0.5rem" }}>
+              <div
+                key={q}
+                style={{ border: "1px solid var(--outline-variant)", padding: "0.4rem 0.5rem" }}
+              >
                 <span className="mono" style={{ color: "var(--ink-soft)" }}>
                   {q}
                 </span>

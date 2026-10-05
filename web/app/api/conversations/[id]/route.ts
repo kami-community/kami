@@ -1,6 +1,9 @@
 import { supabaseServer } from "@/lib/supabase";
 
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> },
+): Promise<Response> {
   const { id } = await params;
   const sb = supabaseServer();
   if (!sb) return Response.json({ messages: [] });
@@ -14,7 +17,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   return Response.json({ messages: messages ?? [] });
 }
 
-export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+): Promise<Response> {
   const { id } = await params;
   const sb = supabaseServer();
   if (!sb) return Response.json({ error: "supabase not configured" }, { status: 503 });

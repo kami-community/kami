@@ -64,7 +64,8 @@ async function exchangeCode(code: string): Promise<TokenSet> {
   };
   if (!res.ok || !json.access_token) {
     throw new Error(
-      json.error_message ?? `IG token exchange ${res.status}: ${JSON.stringify(json).slice(0, 300)}`,
+      json.error_message ??
+        `IG token exchange ${res.status}: ${JSON.stringify(json).slice(0, 300)}`,
     );
   }
 
@@ -111,7 +112,9 @@ async function refreshLongLived(token: string): Promise<TokenSet> {
   };
 }
 
-export async function fetchIgProfile(accessToken: string): Promise<{ id: string; username: string }> {
+export async function fetchIgProfile(
+  accessToken: string,
+): Promise<{ id: string; username: string }> {
   const res = await fetch(
     `${GRAPH}/me?${new URLSearchParams({
       fields: "user_id,username",

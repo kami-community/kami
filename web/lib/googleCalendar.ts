@@ -42,7 +42,9 @@ export interface CalendarEventResult {
   html_link: string;
 }
 
-export async function createCalendarEvent(params: CalendarEventParams): Promise<CalendarEventResult> {
+export async function createCalendarEvent(
+  params: CalendarEventParams,
+): Promise<CalendarEventResult> {
   const token = await getAccessToken();
   const res = await fetch(`${CALENDAR_API}/calendars/primary/events?sendUpdates=all`, {
     method: "POST",

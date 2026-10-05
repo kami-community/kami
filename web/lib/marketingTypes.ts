@@ -16,21 +16,10 @@ export interface MarketingConfig {
 }
 
 export type XLeadStatus =
-  | "identified"
-  | "approved"
-  | "contacted"
-  | "in_conversation"
-  | "converted"
-  | "lost";
+  "identified" | "approved" | "contacted" | "in_conversation" | "converted" | "lost";
 
 export type CreatorStatus =
-  | "identified"
-  | "contacted"
-  | "negotiating"
-  | "agreed"
-  | "content_live"
-  | "paid"
-  | "completed";
+  "identified" | "contacted" | "negotiating" | "agreed" | "content_live" | "paid" | "completed";
 
 export type CrmEntryType = "x_lead" | "creator";
 

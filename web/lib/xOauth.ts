@@ -5,8 +5,7 @@ import { supabaseServer } from "@/lib/supabase";
 
 const CLIENT_ID = process.env.X_CLIENT_ID;
 const CLIENT_SECRET = process.env.X_CLIENT_SECRET;
-const REDIRECT_URI =
-  process.env.X_REDIRECT_URI ?? "http://localhost:3000/api/auth/x/callback";
+const REDIRECT_URI = process.env.X_REDIRECT_URI ?? "http://localhost:3000/api/auth/x/callback";
 
 const AUTH_URL = "https://x.com/i/oauth2/authorize";
 const TOKEN_URL = "https://api.x.com/2/oauth2/token";

@@ -93,10 +93,24 @@ export default function LedgerPage() {
           {agentError}
         </p>
       )}
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--stack-sm)", marginBottom: "var(--stack-lg)" }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "var(--stack-sm)",
+          marginBottom: "var(--stack-lg)",
+        }}
+      >
         {agentRuns.map((r) => (
           <div className="kraft-card" key={r.id} style={{ padding: "0.9rem" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: "0.5rem",
+              }}
+            >
               <span className="mono" style={{ fontWeight: 700 }}>
                 {r.kind}
                 {r.agent ? ` · ${r.agent}` : ""} · {r.status}
@@ -106,13 +120,19 @@ export default function LedgerPage() {
                 {r.duration_ms != null ? ` · ${Math.round(r.duration_ms / 1000)}s` : ""}
               </span>
             </div>
-            <p className="mono" style={{ color: "var(--ink-soft)", marginTop: "0.35rem", fontSize: 12 }}>
+            <p
+              className="mono"
+              style={{ color: "var(--ink-soft)", marginTop: "0.35rem", fontSize: 12 }}
+            >
               {r.source}
               {r.model ? ` · ${r.model}` : ""}
               {r.session_id ? ` · session ${r.session_id.slice(0, 8)}` : ""}
             </p>
             {r.error && (
-              <p className="mono" style={{ color: "var(--hanko)", marginTop: "0.35rem", fontSize: 12 }}>
+              <p
+                className="mono"
+                style={{ color: "var(--hanko)", marginTop: "0.35rem", fontSize: 12 }}
+              >
                 {r.error}
               </p>
             )}
@@ -176,7 +196,11 @@ export default function LedgerPage() {
             ["Output tokens", fmt(totals.output_tokens)],
             ["Tool calls", fmt(totals.tool_calls)],
           ].map(([label, value]) => (
-            <div className="kraft-card" key={label} style={{ padding: "1rem", textAlign: "center" }}>
+            <div
+              className="kraft-card"
+              key={label}
+              style={{ padding: "1rem", textAlign: "center" }}
+            >
               <p className="label-caps">{label}</p>
               <p style={{ fontFamily: "var(--font-headline)", fontSize: 28, fontWeight: 700 }}>
                 {value}
@@ -195,7 +219,14 @@ export default function LedgerPage() {
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--stack-sm)" }}>
         {runs.map((r) => (
           <div className="kraft-card" key={r.id} style={{ padding: "0.9rem" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: "0.5rem",
+              }}
+            >
               <span className="mono" style={{ fontWeight: 700 }}>
                 {r.id}
               </span>

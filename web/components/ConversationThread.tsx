@@ -11,7 +11,12 @@ interface ConversationThreadProps {
   onRefresh: () => void;
 }
 
-export default function ConversationThread({ conversation, handle, onBack, onRefresh }: ConversationThreadProps) {
+export default function ConversationThread({
+  conversation,
+  handle,
+  onBack,
+  onRefresh,
+}: ConversationThreadProps) {
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -23,7 +28,9 @@ export default function ConversationThread({ conversation, handle, onBack, onRef
       .catch(() => {});
   }, [conversation.id]);
 
-  useEffect(() => { fetchMessages(); }, [fetchMessages]);
+  useEffect(() => {
+    fetchMessages();
+  }, [fetchMessages]);
 
   async function sendManual() {
     const text = input.trim();
@@ -59,7 +66,13 @@ export default function ConversationThread({ conversation, handle, onBack, onRef
         type="button"
         className="mono"
         onClick={onBack}
-        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-soft)", marginBottom: "var(--stack-sm)" }}
+        style={{
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          color: "var(--ink-soft)",
+          marginBottom: "var(--stack-sm)",
+        }}
       >
         ← back to conversations
       </button>
@@ -76,23 +89,43 @@ export default function ConversationThread({ conversation, handle, onBack, onRef
         />
       )}
 
-      <div className="kraft-card" style={{ maxHeight: 400, overflowY: "auto", marginBottom: "var(--stack-sm)" }}>
+      <div
+        className="kraft-card"
+        style={{ maxHeight: 400, overflowY: "auto", marginBottom: "var(--stack-sm)" }}
+      >
         {messages.length === 0 && (
-          <p className="mono" style={{ color: "var(--ink-soft)" }}>No messages yet.</p>
+          <p className="mono" style={{ color: "var(--ink-soft)" }}>
+            No messages yet.
+          </p>
         )}
         {messages.map((m) => (
           <div key={m.id} style={{ marginBottom: "var(--stack-sm)" }}>
-            <span className="label-caps" style={{ color: m.sender === "kami" ? "var(--moss)" : "var(--ink-soft)" }}>
+            <span
+              className="label-caps"
+              style={{ color: m.sender === "kami" ? "var(--moss)" : "var(--ink-soft)" }}
+            >
               {m.sender === "kami" ? "You (Kami)" : handle}
             </span>
-            <span className="mono" style={{ fontSize: 11, color: "var(--outline)", marginLeft: "0.5rem" }}>
+            <span
+              className="mono"
+              style={{ fontSize: 11, color: "var(--outline)", marginLeft: "0.5rem" }}
+            >
               {new Date(m.sent_at).toLocaleTimeString()}
             </span>
-            <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, whiteSpace: "pre-wrap", marginTop: "0.2rem" }}>
+            <p
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 13,
+                whiteSpace: "pre-wrap",
+                marginTop: "0.2rem",
+              }}
+            >
               {m.content}
             </p>
             {m.status === "failed" && (
-              <span className="mono" style={{ fontSize: 11, color: "var(--hanko)" }}>⚠ failed to send</span>
+              <span className="mono" style={{ fontSize: 11, color: "var(--hanko)" }}>
+                ⚠ failed to send
+              </span>
             )}
           </div>
         ))}
@@ -100,7 +133,9 @@ export default function ConversationThread({ conversation, handle, onBack, onRef
 
       <div style={{ display: "flex", gap: "0.5rem" }}>
         <div className="form-line" style={{ flex: 1 }}>
-          <label className="mono label-caps" htmlFor="manual-msg">Take over</label>
+          <label className="mono label-caps" htmlFor="manual-msg">
+            Take over
+          </label>
           <input
             id="manual-msg"
             value={input}
@@ -110,7 +145,12 @@ export default function ConversationThread({ conversation, handle, onBack, onRef
             disabled={sending}
           />
         </div>
-        <button className="hanko-btn" onClick={sendManual} disabled={sending} style={{ alignSelf: "flex-end" }}>
+        <button
+          className="hanko-btn"
+          onClick={sendManual}
+          disabled={sending}
+          style={{ alignSelf: "flex-end" }}
+        >
           Send
         </button>
       </div>

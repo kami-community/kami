@@ -12,7 +12,8 @@ export async function POST(request: Request): Promise<Response> {
     sessionId,
     claimId: readClaimId(request),
   });
-  if (!access) return Response.json({ error: "No X account connected for this session" }, { status: 503 });
+  if (!access)
+    return Response.json({ error: "No X account connected for this session" }, { status: 503 });
   const sb = supabaseServer();
   if (!sb) return Response.json({ error: "supabase not configured" }, { status: 503 });
 

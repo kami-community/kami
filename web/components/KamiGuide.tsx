@@ -4,10 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Dossier } from "@/lib/hermes";
 import { streamChat } from "@/lib/hermes";
 import { guidePrompt } from "@/lib/prompts";
-import {
-  buildCompanyContextPack,
-  dossierFromBrandPayload,
-} from "@/lib/guideContext";
+import { buildCompanyContextPack, dossierFromBrandPayload } from "@/lib/guideContext";
 import type { SalesCampaignConfig } from "@/lib/salesTypes";
 import type { CampaignTab } from "@/lib/marketingTypes";
 
@@ -158,13 +155,21 @@ export default function KamiGuide({
               type="button"
               className="mono"
               onClick={onToggle}
-              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-soft)" }}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: "var(--ink-soft)",
+              }}
             >
               hide
             </button>
           )}
         </div>
-        <p className="mono" style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: "0.35rem" }}>
+        <p
+          className="mono"
+          style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: "0.35rem" }}
+        >
           Grounded in your dossier + current {activeTab} state. Cannot send or publish for you.
         </p>
       </div>
@@ -188,7 +193,10 @@ export default function KamiGuide({
         {messages.map((m, i) => (
           <div key={i}>
             <span className="label-caps">{m.role === "you" ? "You" : "Kami"}</span>
-            <p className="kami-guide-message" style={{ whiteSpace: "pre-wrap", marginTop: "0.25rem" }}>
+            <p
+              className="kami-guide-message"
+              style={{ whiteSpace: "pre-wrap", marginTop: "0.25rem" }}
+            >
               {m.text || "…"}
             </p>
           </div>

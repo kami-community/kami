@@ -3,7 +3,10 @@ import { assertCampaignNotPaused, assertSendAllowed } from "@/lib/salesPolicy";
 import { draftFromTouchpoint, reviewEmailDraft } from "@/lib/salesReview";
 import { supabaseServer } from "@/lib/supabase";
 
-async function loadTouchpoint(sb: NonNullable<ReturnType<typeof supabaseServer>>, touchpointId: string) {
+async function loadTouchpoint(
+  sb: NonNullable<ReturnType<typeof supabaseServer>>,
+  touchpointId: string,
+) {
   const { data, error } = await sb
     .from("sales_touchpoints")
     .select(
@@ -224,7 +227,13 @@ export async function POST(request: Request): Promise<Response> {
 
       const step = Number(touchpoint.step);
       const enrollmentStatus =
-        step === 1 ? "sent_step_1" : step === 2 ? "sent_step_2" : step >= 3 ? "completed" : "eligible";
+        step === 1
+          ? "sent_step_1"
+          : step === 2
+            ? "sent_step_2"
+            : step >= 3
+              ? "completed"
+              : "eligible";
 
       await sb
         .from("sales_touchpoints")

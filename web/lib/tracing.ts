@@ -1,9 +1,7 @@
 import { startObservation } from "@langfuse/tracing";
 import { langfuseSpanProcessor } from "@/lib/langfuseProcessor";
 
-const ENABLED = Boolean(
-  process.env.LANGFUSE_PUBLIC_KEY && process.env.LANGFUSE_SECRET_KEY,
-);
+const ENABLED = Boolean(process.env.LANGFUSE_PUBLIC_KEY && process.env.LANGFUSE_SECRET_KEY);
 
 type Usage = { [key: string]: number };
 
@@ -27,9 +25,7 @@ export function traceGatewayCall(params: {
 
   const span = startObservation(params.name, {
     input: params.input,
-    ...(params.sessionId
-      ? { metadata: { hermes_session_id: params.sessionId } }
-      : {}),
+    ...(params.sessionId ? { metadata: { hermes_session_id: params.sessionId } } : {}),
   });
   const generation = span.startObservation(
     "hermes-gateway",

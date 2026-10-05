@@ -24,7 +24,11 @@ async function handleUnsubscribe(
 ): Promise<void> {
   let identifier = "";
   if (contactId) {
-    const { data: contact } = await sb.from("sales_contacts").select("email, handle").eq("id", contactId).maybeSingle();
+    const { data: contact } = await sb
+      .from("sales_contacts")
+      .select("email, handle")
+      .eq("id", contactId)
+      .maybeSingle();
     identifier = (contact?.email ?? contact?.handle ?? "").trim().toLowerCase();
   }
 
@@ -49,15 +53,25 @@ async function handleUnsubscribe(
       .eq("id", accountId);
   }
 
-  await sb.from("sales_conversations").update({ status: "suppressed", updated_at: new Date().toISOString() }).eq("id", conversationId);
+  await sb
+    .from("sales_conversations")
+    .update({ status: "suppressed", updated_at: new Date().toISOString() })
+    .eq("id", conversationId);
 }
 
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> },
+): Promise<Response> {
   const { id } = await params;
   const sb = supabaseServer();
   if (!sb) return Response.json({ messages: [], classifications: [] });
 
-  const { data: conversation } = await sb.from("sales_conversations").select("*").eq("id", id).maybeSingle();
+  const { data: conversation } = await sb
+    .from("sales_conversations")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
   if (!conversation) return Response.json({ error: "not found" }, { status: 404 });
 
   const { data: messages } = await sb
@@ -88,12 +102,19 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   });
 }
 
-export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+): Promise<Response> {
   const { id } = await params;
   const sb = supabaseServer();
   if (!sb) return Response.json({ error: "supabase not configured" }, { status: 503 });
 
-  const { data: conversation } = await sb.from("sales_conversations").select("*").eq("id", id).maybeSingle();
+  const { data: conversation } = await sb
+    .from("sales_conversations")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
   if (!conversation) return Response.json({ error: "not found" }, { status: 404 });
 
   const body = await request.json();
@@ -112,7 +133,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     if (error) return Response.json({ error: error.message }, { status: 500 });
 
-    await sb.from("sales_conversations").update({ status: "awaiting_reply", last_message_at: now, updated_at: now }).eq("id", id);
+    await sb
+      .from("sales_conversations")
+      .update({ status: "awaiting_reply", last_message_at: now, updated_at: now })
+      .eq("id", id);
     return Response.json({ sent: true, message: rowToMessage(msg) });
   }
 
@@ -203,7 +227,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       entity_type: "sales_conversation",
       entity_id: id,
     });
-    await sb.from("sales_conversations").update({ status: "escalated", updated_at: new Date().toISOString() }).eq("id", id);
+    await sb
+      .from("sales_conversations")
+      .update({ status: "escalated", updated_at: new Date().toISOString() })
+      .eq("id", id);
     return Response.json({ escalated: true });
   }
 

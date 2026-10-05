@@ -219,9 +219,7 @@ export default function SalesTargetReview({
   async function findEmailsWithHermes() {
     if (!sessionDbId || paused || busy) return;
     const selected = accounts.filter((a) => a.id && isIncluded(a) && !a.contact?.email);
-    const targets = selected.length
-      ? selected
-      : accounts.filter((a) => a.id && !a.contact?.email);
+    const targets = selected.length ? selected : accounts.filter((a) => a.id && !a.contact?.email);
 
     if (!targets.length) {
       setEmailBanner(null);
@@ -418,12 +416,19 @@ export default function SalesTargetReview({
 
   if (!planApproved) {
     return (
-      <div className="kraft-card" style={{ padding: "var(--stack-md)", marginTop: "var(--stack-md)" }}>
+      <div
+        className="kraft-card"
+        style={{ padding: "var(--stack-md)", marginTop: "var(--stack-md)" }}
+      >
         <p className="label-caps" style={{ color: "var(--outline)" }}>
           Find companies
         </p>
-        <p className="mono" style={{ color: "var(--ink-soft)", marginTop: "var(--stack-sm)", fontSize: 13 }}>
-          Approve your plan first, then we&apos;ll research companies that match your confirmed segments.
+        <p
+          className="mono"
+          style={{ color: "var(--ink-soft)", marginTop: "var(--stack-sm)", fontSize: 13 }}
+        >
+          Approve your plan first, then we&apos;ll research companies that match your confirmed
+          segments.
         </p>
       </div>
     );
@@ -454,11 +459,17 @@ export default function SalesTargetReview({
         : undefined;
 
   return (
-    <div className="kraft-card" style={{ padding: "var(--stack-md)", marginTop: "var(--stack-md)", position: "relative" }}>
+    <div
+      className="kraft-card"
+      style={{ padding: "var(--stack-md)", marginTop: "var(--stack-md)", position: "relative" }}
+    >
       {busy && <SalesBusyOverlay title={busyTitle} stages={busyStages} detail={busyDetail} />}
 
       {offer && (
-        <p className="mono" style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: "var(--stack-sm)" }}>
+        <p
+          className="mono"
+          style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: "var(--stack-sm)" }}
+        >
           Selling: {offer.slice(0, 160)}
           {offer.length > 160 ? "…" : ""}
         </p>
@@ -473,14 +484,15 @@ export default function SalesTargetReview({
             does not apply — we will not invent consumer emails.
           </p>
           <p className="mono" style={{ fontSize: 12, color: "var(--ink-soft)" }}>
-            Next step: create a distribution campaign (X, Reddit, etc.) so the right people find you.
-            If you also have B2B seed companies, add them under Confirm ICP and use Find companies.
+            Next step: create a distribution campaign (X, Reddit, etc.) so the right people find
+            you. If you also have B2B seed companies, add them under Confirm ICP and use Find
+            companies.
           </p>
         </div>
       ) : (
         <p className="sales-intro" style={{ marginBottom: "var(--stack-md)" }}>
-          We verify named companies from your segments, look up public emails (site → Linkup → Hermes),
-          and score Fit × Timing. Check Include, then continue.
+          We verify named companies from your segments, look up public emails (site → Linkup →
+          Hermes), and score Fit × Timing. Check Include, then continue.
         </p>
       )}
 
@@ -549,7 +561,10 @@ export default function SalesTargetReview({
         </div>
       </div>
       {!distributionPath && !accounts.length && (
-        <p className="mono" style={{ fontSize: 11, color: "var(--ink-soft)", marginBottom: "var(--stack-sm)" }}>
+        <p
+          className="mono"
+          style={{ fontSize: 11, color: "var(--ink-soft)", marginBottom: "var(--stack-sm)" }}
+        >
           Find emails with Hermes is available after companies are listed.
         </p>
       )}
@@ -567,7 +582,12 @@ export default function SalesTargetReview({
         >
           <p style={{ fontSize: 14, marginBottom: "0.5rem" }}>{emailBanner}</p>
           {readyToDraft && includedCount > 0 && (
-            <button type="button" className="hanko-btn" onClick={continueWithSelected} disabled={busy}>
+            <button
+              type="button"
+              className="hanko-btn"
+              onClick={continueWithSelected}
+              disabled={busy}
+            >
               Draft emails for {includedCount} compan{includedCount === 1 ? "y" : "ies"} →
             </button>
           )}
@@ -585,23 +605,36 @@ export default function SalesTargetReview({
       )}
 
       {error && (
-        <p className="mono" style={{ color: "var(--hanko)", fontSize: 13, marginBottom: "var(--stack-sm)" }}>
+        <p
+          className="mono"
+          style={{ color: "var(--hanko)", fontSize: 13, marginBottom: "var(--stack-sm)" }}
+        >
           {error}
         </p>
       )}
       {discoverMsg && (
-        <p className="mono" style={{ color: "var(--ink-soft)", fontSize: 13, marginBottom: "var(--stack-sm)" }}>
+        <p
+          className="mono"
+          style={{ color: "var(--ink-soft)", fontSize: 13, marginBottom: "var(--stack-sm)" }}
+        >
           {discoverMsg}
         </p>
       )}
       {warnings.map((w, i) => (
-        <p key={i} className="mono" style={{ color: "var(--ink-soft)", fontSize: 12, marginBottom: 4 }}>
+        <p
+          key={i}
+          className="mono"
+          style={{ color: "var(--ink-soft)", fontSize: 12, marginBottom: 4 }}
+        >
           ⚠ {w}
         </p>
       ))}
 
       {!accounts.length ? (
-        <p className="mono" style={{ color: "var(--ink-soft)", fontSize: 13, padding: "var(--stack-sm) 0" }}>
+        <p
+          className="mono"
+          style={{ color: "var(--ink-soft)", fontSize: 13, padding: "var(--stack-sm) 0" }}
+        >
           No companies yet — click Find companies to verify targets from your confirmed segments.
         </p>
       ) : (
@@ -641,7 +674,11 @@ export default function SalesTargetReview({
                             {acc.domain && (
                               <span
                                 className="mono"
-                                style={{ marginLeft: "0.5rem", fontSize: 12, color: "var(--ink-soft)" }}
+                                style={{
+                                  marginLeft: "0.5rem",
+                                  fontSize: 12,
+                                  color: "var(--ink-soft)",
+                                }}
                               >
                                 {acc.domain}
                               </span>
@@ -659,26 +696,38 @@ export default function SalesTargetReview({
                         </div>
 
                         {factors && (
-                          <div className="mono" style={{ fontSize: 11, color: "var(--ink-soft)", marginTop: "0.35rem" }}>
-                            {scoreLabel("fit", factors.fit)} · {scoreLabel("intent", factors.intent)} ·{" "}
+                          <div
+                            className="mono"
+                            style={{ fontSize: 11, color: "var(--ink-soft)", marginTop: "0.35rem" }}
+                          >
+                            {scoreLabel("fit", factors.fit)} ·{" "}
+                            {scoreLabel("intent", factors.intent)} ·{" "}
                             {scoreLabel("contactability", factors.contactability)}
                           </div>
                         )}
                         {acc.score?.explanation && (
-                          <p style={{ fontSize: 13, color: "var(--ink-soft)", margin: "0.25rem 0" }}>
+                          <p
+                            style={{ fontSize: 13, color: "var(--ink-soft)", margin: "0.25rem 0" }}
+                          >
                             {acc.score.explanation}
                           </p>
                         )}
 
                         {acc.signals?.length ? (
-                          <ul style={{ fontSize: 12, paddingLeft: "1.1rem", margin: "0.25rem 0 0" }}>
+                          <ul
+                            style={{ fontSize: 12, paddingLeft: "1.1rem", margin: "0.25rem 0 0" }}
+                          >
                             {acc.signals.map((sig, i) => (
                               <li key={sig.id ?? `${sig.source_url}-${i}`}>
                                 {sig.detail ?? sig.signal_type}
                                 {sig.source_url && (
                                   <>
                                     {" — "}
-                                    <a href={sig.source_url} target="_blank" rel="noopener noreferrer">
+                                    <a
+                                      href={sig.source_url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                    >
                                       source
                                     </a>
                                   </>

@@ -45,7 +45,10 @@ export async function PATCH(request: Request): Promise<Response> {
   const { id, read } = await request.json();
   if (!id) return Response.json({ error: "id required" }, { status: 400 });
 
-  const { error } = await sb.from("sales_notifications").update({ read: read ?? true }).eq("id", id);
+  const { error } = await sb
+    .from("sales_notifications")
+    .update({ read: read ?? true })
+    .eq("id", id);
   if (error) return Response.json({ error: error.message }, { status: 500 });
   return Response.json({ updated: true });
 }

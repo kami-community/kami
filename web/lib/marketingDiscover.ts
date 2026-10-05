@@ -27,7 +27,9 @@ function dossierBits(dossier: unknown): {
       .map((c) => c.name)
       .filter((n): n is string => Boolean(n)),
     icpLabels: (d.icp_buckets ?? []).map((b) => b.label).filter((n): n is string => Boolean(n)),
-    nicheFromOpp: (d.opportunities ?? []).map((o) => o.title).filter((n): n is string => Boolean(n)),
+    nicheFromOpp: (d.opportunities ?? [])
+      .map((o) => o.title)
+      .filter((n): n is string => Boolean(n)),
   };
 }
 
@@ -41,7 +43,7 @@ async function rankWithHermes(
 
   const prompt = [
     "You rank REAL marketing CRM candidates. Do NOT invent new handles.",
-    "Return ONLY a fenced json block: {\"entries\":[...]} with the same handles,",
+    'Return ONLY a fenced json block: {"entries":[...]} with the same handles,',
     "updated niche_match_score (0-1) and relevance_reasoning.",
     `domain: ${context.domain ?? "unknown"}`,
     `platforms: ${JSON.stringify(context.config.platforms)}`,
@@ -93,7 +95,9 @@ async function rankWithHermes(
       ranked.push({
         ...base,
         niche_match_score:
-          typeof row.niche_match_score === "number" ? row.niche_match_score : base.niche_match_score,
+          typeof row.niche_match_score === "number"
+            ? row.niche_match_score
+            : base.niche_match_score,
         relevance_reasoning:
           typeof row.relevance_reasoning === "string"
             ? row.relevance_reasoning

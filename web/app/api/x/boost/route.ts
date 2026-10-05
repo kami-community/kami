@@ -5,7 +5,8 @@ export async function POST(request: Request): Promise<Response> {
   if (!sb) return Response.json({ error: "supabase not configured" }, { status: 503 });
 
   const { post_id, post_text, session_id, budget } = await request.json();
-  if (!post_id || !post_text) return Response.json({ error: "post_id and post_text required" }, { status: 400 });
+  if (!post_id || !post_text)
+    return Response.json({ error: "post_id and post_text required" }, { status: 400 });
 
   // Real X Ads API deferred until X_ADS_ACCESS_TOKEN + X_ADS_ACCOUNT_ID are set.
   const adsReady = Boolean(process.env.X_ADS_ACCESS_TOKEN && process.env.X_ADS_ACCOUNT_ID);

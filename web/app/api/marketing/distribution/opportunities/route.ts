@@ -83,11 +83,17 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     const [session, brand] = await Promise.all([
-      sb.from("agent_sessions").select("domain, canonical_domain, hermes_session_id").eq("id", session_id).maybeSingle(),
+      sb
+        .from("agent_sessions")
+        .select("domain, canonical_domain, hermes_session_id")
+        .eq("id", session_id)
+        .maybeSingle(),
       sb.from("brand_profiles").select("*").eq("session_id", session_id).maybeSingle(),
     ]);
 
-    const domain = (session?.data?.canonical_domain || session?.data?.domain || "unknown") as string;
+    const domain = (session?.data?.canonical_domain ||
+      session?.data?.domain ||
+      "unknown") as string;
     const dossier = dossierFromBrandPayload(brand.data);
     const result = await researchDistributionOpportunities({
       sessionId: session_id,
@@ -133,9 +139,7 @@ export async function POST(request: Request): Promise<Response> {
         count: (data ?? []).length,
         opportunities: (data ?? []).map(rowToOpp),
       },
-      outputText: (data ?? [])
-        .map((r) => `${r.platform}: ${r.why_now}`)
-        .join("\n"),
+      outputText: (data ?? []).map((r) => `${r.platform}: ${r.why_now}`).join("\n"),
     });
 
     return Response.json({

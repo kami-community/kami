@@ -47,7 +47,9 @@ export default function SalesSetup({
   const [geo, setGeo] = useState(initial.geo);
   const [exclusions, setExclusions] = useState("");
   const [dailyCap, setDailyCap] = useState(existingConfig?.daily_send_cap ?? 35);
-  const [autoFollowups, setAutoFollowups] = useState(existingConfig?.autonomy?.auto_followups ?? false);
+  const [autoFollowups, setAutoFollowups] = useState(
+    existingConfig?.autonomy?.auto_followups ?? false,
+  );
   const [requireFirstSendApproval, setRequireFirstSendApproval] = useState(
     existingConfig?.autonomy?.require_first_send_approval ?? true,
   );
@@ -112,7 +114,8 @@ export default function SalesSetup({
     <div className="sales-panel" style={{ paddingTop: "var(--stack-md)" }}>
       <h3 style={{ marginBottom: "var(--stack-sm)" }}>Confirm who and what</h3>
       <p className="sales-intro">
-        We filled this from your company research. Edit anything that looks wrong, then confirm your ICP segments.
+        We filled this from your company research. Edit anything that looks wrong, then confirm your
+        ICP segments.
       </p>
 
       {!sessionDbId && (
@@ -180,18 +183,44 @@ export default function SalesSetup({
       </button>
 
       {showDetails && (
-        <div style={{ display: "flex", gap: "var(--stack-md)", flexWrap: "wrap", marginBottom: "var(--stack-md)" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "var(--stack-md)",
+            flexWrap: "wrap",
+            marginBottom: "var(--stack-md)",
+          }}
+        >
           <div className="form-line" style={{ flex: 1, minWidth: 180 }}>
-            <label className="mono label-caps" htmlFor="icp-titles">Titles</label>
-            <input id="icp-titles" value={icpTitles} onChange={(e) => setIcpTitles(e.target.value)} />
+            <label className="mono label-caps" htmlFor="icp-titles">
+              Titles
+            </label>
+            <input
+              id="icp-titles"
+              value={icpTitles}
+              onChange={(e) => setIcpTitles(e.target.value)}
+            />
           </div>
           <div className="form-line" style={{ flex: 1, minWidth: 180 }}>
-            <label className="mono label-caps" htmlFor="icp-industries">Industries</label>
-            <input id="icp-industries" value={icpIndustries} onChange={(e) => setIcpIndustries(e.target.value)} />
+            <label className="mono label-caps" htmlFor="icp-industries">
+              Industries
+            </label>
+            <input
+              id="icp-industries"
+              value={icpIndustries}
+              onChange={(e) => setIcpIndustries(e.target.value)}
+            />
           </div>
           <div className="form-line" style={{ flex: 1, minWidth: 120 }}>
-            <label className="mono label-caps" htmlFor="geo">Geography</label>
-            <input id="geo" value={geo} onChange={(e) => setGeo(e.target.value)} placeholder="US, UK" />
+            <label className="mono label-caps" htmlFor="geo">
+              Geography
+            </label>
+            <input
+              id="geo"
+              value={geo}
+              onChange={(e) => setGeo(e.target.value)}
+              placeholder="US, UK"
+            />
           </div>
         </div>
       )}
@@ -200,22 +229,44 @@ export default function SalesSetup({
         <summary>Advanced</summary>
         <div style={{ paddingTop: "var(--stack-sm)" }}>
           <div className="form-line" style={{ marginBottom: "var(--stack-sm)" }}>
-            <label className="mono label-caps" htmlFor="exclusions">Exclusions (one per line)</label>
-            <textarea id="exclusions" className="sales-textarea" rows={2} value={exclusions} onChange={(e) => setExclusions(e.target.value)} />
+            <label className="mono label-caps" htmlFor="exclusions">
+              Exclusions (one per line)
+            </label>
+            <textarea
+              id="exclusions"
+              className="sales-textarea"
+              rows={2}
+              value={exclusions}
+              onChange={(e) => setExclusions(e.target.value)}
+            />
             <p className="mono" style={{ fontSize: 11, color: "var(--ink-soft)", marginTop: 4 }}>
               Domains or company names to skip during Find.
             </p>
           </div>
           <div className="form-line" style={{ marginBottom: "var(--stack-sm)", maxWidth: 200 }}>
-            <label className="mono label-caps" htmlFor="daily-cap">Daily send cap</label>
-            <input id="daily-cap" type="number" min={1} value={dailyCap} onChange={(e) => setDailyCap(Number(e.target.value))} />
+            <label className="mono label-caps" htmlFor="daily-cap">
+              Daily send cap
+            </label>
+            <input
+              id="daily-cap"
+              type="number"
+              min={1}
+              value={dailyCap}
+              onChange={(e) => setDailyCap(Number(e.target.value))}
+            />
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
             <button
               type="button"
               className="mono"
               onClick={() => setRequireFirstSendApproval(!requireFirstSendApproval)}
-              style={{ background: requireFirstSendApproval ? "var(--kraft)" : "transparent", border: "1px solid var(--ink)", padding: "0.4rem 0.75rem", cursor: "pointer", textAlign: "left" }}
+              style={{
+                background: requireFirstSendApproval ? "var(--kraft)" : "transparent",
+                border: "1px solid var(--ink)",
+                padding: "0.4rem 0.75rem",
+                cursor: "pointer",
+                textAlign: "left",
+              }}
             >
               {requireFirstSendApproval ? "✓" : "·"} Require approval before first send
             </button>
@@ -223,18 +274,29 @@ export default function SalesSetup({
               type="button"
               className="mono"
               onClick={() => setAutoFollowups(!autoFollowups)}
-              style={{ background: autoFollowups ? "var(--kraft)" : "transparent", border: "1px solid var(--ink)", padding: "0.4rem 0.75rem", cursor: "pointer", textAlign: "left" }}
+              style={{
+                background: autoFollowups ? "var(--kraft)" : "transparent",
+                border: "1px solid var(--ink)",
+                padding: "0.4rem 0.75rem",
+                cursor: "pointer",
+                textAlign: "left",
+              }}
             >
               {autoFollowups ? "✓" : "·"} Plan follow-ups in sequences
             </button>
             <p className="mono" style={{ fontSize: 11, color: "var(--ink-soft)" }}>
-              Follow-ups stay in the sequence plan — approval and send gates still apply. Does not auto-send.
+              Follow-ups stay in the sequence plan — approval and send gates still apply. Does not
+              auto-send.
             </p>
           </div>
         </div>
       </details>
 
-      <button className="hanko-btn" onClick={submit} disabled={!sessionDbId || !whatSentence.trim() || saving}>
+      <button
+        className="hanko-btn"
+        onClick={submit}
+        disabled={!sessionDbId || !whatSentence.trim() || saving}
+      >
         {saving ? "Saving…" : "Looks good — show plan"}
       </button>
     </div>

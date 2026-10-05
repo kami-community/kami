@@ -7,12 +7,7 @@ import { hermesChatOnce, hermesGatewayConfigured, parseLastJsonBlock } from "./h
 import { linkupConfigured, searchLinkup } from "./linkup";
 
 export type EmailVerificationStatus =
-  | "verified_public"
-  | "role_inbox"
-  | "non_buyer_inbox"
-  | "unverified"
-  | "valid"
-  | "hermes_evidence";
+  "verified_public" | "role_inbox" | "non_buyer_inbox" | "unverified" | "valid" | "hermes_evidence";
 
 export interface FoundContact {
   email: string;
@@ -33,7 +28,9 @@ const ROLE_LOCAL =
 const NON_BUYER_LOCAL = /^(e|h|last|first|first\.last|name|user|test|asdf|[0-9a-f]{8,})$/i;
 
 /** Exported for evals — whether a found contact may enter sequences/send. */
-export function isBuyerReachableContact(contact: Pick<FoundContact, "email" | "verification_status">): boolean {
+export function isBuyerReachableContact(
+  contact: Pick<FoundContact, "email" | "verification_status">,
+): boolean {
   const local = (contact.email.split("@")[0] ?? "").toLowerCase();
   if (ROLE_LOCAL.test(local) || NON_BUYER_LOCAL.test(local)) return false;
   if (
@@ -54,8 +51,10 @@ const EMAIL_RE = /\b([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})\b/g;
 
 function isPlausibleEmail(email: string, companyDomain: string): boolean {
   const lower = email.toLowerCase();
-  if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.includes("example.com")) return false;
-  if (lower.includes("sentry") || lower.includes("wixpress") || lower.includes("cloudflare")) return false;
+  if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.includes("example.com"))
+    return false;
+  if (lower.includes("sentry") || lower.includes("wixpress") || lower.includes("cloudflare"))
+    return false;
   if (lower.includes("noreply") || lower.includes("no-reply")) return false;
   const host = lower.split("@")[1] ?? "";
   const base = companyDomain.replace(/^www\./, "").toLowerCase();

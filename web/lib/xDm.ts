@@ -40,23 +40,22 @@ export async function sendXDirectMessage(params: {
     throw new Error(msg);
   }
 
-  const res = await fetch("https://api.x.com/2/dm_conversations/with/" + userJson.data.id + "/messages", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${params.accessToken}`,
-      "Content-Type": "application/json",
+  const res = await fetch(
+    "https://api.x.com/2/dm_conversations/with/" + userJson.data.id + "/messages",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${params.accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ text }),
     },
-    body: JSON.stringify({ text }),
-  });
+  );
 
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
     const err = json as { title?: string; detail?: string; errors?: { message?: string }[] };
-    const msg =
-      err.detail ??
-      err.title ??
-      err.errors?.[0]?.message ??
-      `X DM API ${res.status}`;
+    const msg = err.detail ?? err.title ?? err.errors?.[0]?.message ?? `X DM API ${res.status}`;
     if (res.status === 403) {
       throw new Error(
         `${msg} — X DM access may require a paid API tier and dm.read/dm.write scopes. Reconnect X after enabling DMs.`,

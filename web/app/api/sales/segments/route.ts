@@ -55,7 +55,11 @@ export async function GET(request: Request): Promise<Response> {
     return Response.json({ error: "no sales campaign — run setup first" }, { status: 404 });
   }
 
-  if (campaign.segments_confirmed_at && Array.isArray(campaign.segments) && campaign.segments.length) {
+  if (
+    campaign.segments_confirmed_at &&
+    Array.isArray(campaign.segments) &&
+    campaign.segments.length
+  ) {
     return Response.json({
       segments: campaign.segments as SalesSegment[],
       confirmed_at: campaign.segments_confirmed_at,
@@ -104,7 +108,11 @@ export async function POST(request: Request): Promise<Response> {
   if (!sb) return Response.json({ error: "supabase not configured" }, { status: 503 });
 
   const body = await request.json();
-  const { session_id, action, segments: rawSegments } = body as {
+  const {
+    session_id,
+    action,
+    segments: rawSegments,
+  } = body as {
     session_id?: string;
     action?: "confirm" | "derive";
     segments?: unknown;

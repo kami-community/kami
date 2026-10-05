@@ -132,7 +132,9 @@ export async function POST(request: Request): Promise<Response> {
 
   const { data: session, error } = await sb
     .from("agent_sessions")
-    .select("domain, canonical_domain, hermes_session_id, research_snapshot, domain_check, goals_list")
+    .select(
+      "domain, canonical_domain, hermes_session_id, research_snapshot, domain_check, goals_list",
+    )
     .eq("id", session_id)
     .maybeSingle();
 
@@ -148,7 +150,9 @@ export async function POST(request: Request): Promise<Response> {
   const identity = identityFromRow(domain, domainCheck);
   if (!identity) {
     return Response.json(
-      { error: "session missing domain_check — run /api/domain/validate and persist identity first" },
+      {
+        error: "session missing domain_check — run /api/domain/validate and persist identity first",
+      },
       { status: 400 },
     );
   }

@@ -7,7 +7,12 @@ interface EscalationBannerProps {
   onDecline: () => void;
 }
 
-export default function EscalationBanner({ reason, onApprove, onCounter, onDecline }: EscalationBannerProps) {
+export default function EscalationBanner({
+  reason,
+  onApprove,
+  onCounter,
+  onDecline,
+}: EscalationBannerProps) {
   return (
     <div
       style={{
@@ -30,7 +35,14 @@ export default function EscalationBanner({ reason, onApprove, onCounter, onDecli
           type="button"
           className="mono"
           onClick={onApprove}
-          style={{ background: "var(--paper)", color: "var(--ink)", border: "none", padding: "0.3rem 0.7rem", cursor: "pointer", fontWeight: 700 }}
+          style={{
+            background: "var(--paper)",
+            color: "var(--ink)",
+            border: "none",
+            padding: "0.3rem 0.7rem",
+            cursor: "pointer",
+            fontWeight: 700,
+          }}
         >
           Approve
         </button>
@@ -38,7 +50,13 @@ export default function EscalationBanner({ reason, onApprove, onCounter, onDecli
           type="button"
           className="mono"
           onClick={onCounter}
-          style={{ background: "transparent", color: "var(--paper)", border: "1px solid var(--paper)", padding: "0.3rem 0.7rem", cursor: "pointer" }}
+          style={{
+            background: "transparent",
+            color: "var(--paper)",
+            border: "1px solid var(--paper)",
+            padding: "0.3rem 0.7rem",
+            cursor: "pointer",
+          }}
         >
           Counter
         </button>
@@ -46,7 +64,13 @@ export default function EscalationBanner({ reason, onApprove, onCounter, onDecli
           type="button"
           className="mono"
           onClick={onDecline}
-          style={{ background: "transparent", color: "var(--paper)", border: "1px solid var(--paper)", padding: "0.3rem 0.7rem", cursor: "pointer" }}
+          style={{
+            background: "transparent",
+            color: "var(--paper)",
+            border: "1px solid var(--paper)",
+            padding: "0.3rem 0.7rem",
+            cursor: "pointer",
+          }}
         >
           Decline
         </button>

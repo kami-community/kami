@@ -44,7 +44,11 @@ async function postDiscover(request: Request): Promise<Response> {
     );
   }
 
-  if (!campaign.segments_confirmed_at || !Array.isArray(campaign.segments) || !campaign.segments.length) {
+  if (
+    !campaign.segments_confirmed_at ||
+    !Array.isArray(campaign.segments) ||
+    !campaign.segments.length
+  ) {
     return Response.json(
       {
         error:
@@ -129,9 +133,7 @@ async function postDiscover(request: Request): Promise<Response> {
       })),
     },
     outputText:
-      researched.accounts
-        .map((a) => `${a.name} (${a.domain})`)
-        .join("\n") ||
+      researched.accounts.map((a) => `${a.name} (${a.domain})`).join("\n") ||
       researched.warnings.join("\n") ||
       "No verifiable companies found",
   });

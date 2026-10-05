@@ -13,11 +13,16 @@ interface ConversationsPanelProps {
   onRefresh: () => void;
 }
 
-export default function ConversationsPanel({ conversations, entries, onRefresh }: ConversationsPanelProps) {
+export default function ConversationsPanel({
+  conversations,
+  entries,
+  onRefresh,
+}: ConversationsPanelProps) {
   const [filter, setFilter] = useState<PlatformFilter>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const filtered = filter === "all" ? conversations : conversations.filter((c) => c.platform === filter);
+  const filtered =
+    filter === "all" ? conversations : conversations.filter((c) => c.platform === filter);
   const actionFirst = [...filtered].sort((a, b) => {
     if (a.status === "escalated" && b.status !== "escalated") return -1;
     if (b.status === "escalated" && a.status !== "escalated") return 1;
@@ -42,7 +47,9 @@ export default function ConversationsPanel({ conversations, entries, onRefresh }
 
   return (
     <aside>
-      <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>Conversations</p>
+      <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>
+        Conversations
+      </p>
       <div style={{ display: "flex", gap: "0.4rem", marginBottom: "var(--stack-sm)" }}>
         {(["all", "x", "instagram"] as PlatformFilter[]).map((f) => (
           <button
@@ -64,7 +71,9 @@ export default function ConversationsPanel({ conversations, entries, onRefresh }
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--stack-sm)" }}>
         {actionFirst.length === 0 && (
-          <p className="mono" style={{ color: "var(--ink-soft)" }}>No active conversations.</p>
+          <p className="mono" style={{ color: "var(--ink-soft)" }}>
+            No active conversations.
+          </p>
         )}
         {actionFirst.map((conv) => {
           const entry = entries.find((e) => e.id === conv.crm_entry_id);
@@ -76,18 +85,26 @@ export default function ConversationsPanel({ conversations, entries, onRefresh }
               onClick={() => setSelectedId(conv.id)}
               style={{ padding: "0.75rem 1rem", cursor: "pointer", textAlign: "left" }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+              >
                 <strong style={{ fontFamily: "var(--font-headline)", fontSize: 14 }}>
                   @{entry?.handle ?? "unknown"}
                 </strong>
                 <StatusChip label={conv.status} />
               </div>
               {conv.escalation_reason && (
-                <p className="mono" style={{ fontSize: 11, color: "var(--hanko)", marginTop: "0.3rem" }}>
+                <p
+                  className="mono"
+                  style={{ fontSize: 11, color: "var(--hanko)", marginTop: "0.3rem" }}
+                >
                   ⚠ {conv.escalation_reason}
                 </p>
               )}
-              <p className="mono" style={{ fontSize: 11, color: "var(--outline)", marginTop: "0.2rem" }}>
+              <p
+                className="mono"
+                style={{ fontSize: 11, color: "var(--outline)", marginTop: "0.2rem" }}
+              >
                 {conv.platform} · updated {new Date(conv.updated_at).toLocaleDateString()}
               </p>
             </button>

@@ -135,10 +135,7 @@ export async function PATCH(
           .eq("title", payload.title);
         break;
       case "research_snapshot":
-        await sb
-          .from("agent_sessions")
-          .update({ research_snapshot: payload })
-          .eq("id", id);
+        await sb.from("agent_sessions").update({ research_snapshot: payload }).eq("id", id);
         break;
       case "domain_check":
         await sb

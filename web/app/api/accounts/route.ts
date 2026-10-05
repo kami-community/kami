@@ -50,7 +50,10 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "connect X via /api/auth/x/login" }, { status: 400 });
   }
   if (platform === "instagram") {
-    return Response.json({ error: "connect Instagram via /api/auth/instagram/login" }, { status: 400 });
+    return Response.json(
+      { error: "connect Instagram via /api/auth/instagram/login" },
+      { status: 400 },
+    );
   }
   if (!sb) return Response.json({ persisted: false, status: "pending" });
 

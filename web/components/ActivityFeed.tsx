@@ -76,11 +76,19 @@ export default function ActivityFeed({ events, running }: ActivityFeedProps) {
               paddingLeft: "0.75rem",
               // handoffs are the org-structure evidence — make them pop
               ...(e.phase === "handoff" || e.phase === "result"
-                ? { background: "var(--kraft-light)", padding: "0.4rem 0.75rem", border: "1px solid var(--crease)", borderLeft: `3px solid ${PHASE_COLOR[e.phase]}` }
+                ? {
+                    background: "var(--kraft-light)",
+                    padding: "0.4rem 0.75rem",
+                    border: "1px solid var(--crease)",
+                    borderLeft: `3px solid ${PHASE_COLOR[e.phase]}`,
+                  }
                 : {}),
             }}
           >
-            <span className="mono" style={{ color: PHASE_COLOR[e.phase] ?? "var(--outline)", minWidth: 92 }}>
+            <span
+              className="mono"
+              style={{ color: PHASE_COLOR[e.phase] ?? "var(--outline)", minWidth: 92 }}
+            >
               [{e.phase}]
             </span>
             <span style={{ fontSize: 14 }}>{e.message}</span>

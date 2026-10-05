@@ -1,5 +1,9 @@
 import { supabaseServer } from "@/lib/supabase";
-import type { DistributionCampaignConfig, DistributionGoal, DistributionPlatform } from "@/lib/distributionTypes";
+import type {
+  DistributionCampaignConfig,
+  DistributionGoal,
+  DistributionPlatform,
+} from "@/lib/distributionTypes";
 
 const GOALS: DistributionGoal[] = ["launch", "early_users", "credibility", "waitlist"];
 
@@ -52,9 +56,7 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const angle =
-    typeof body.angle === "string" && body.angle.trim()
-      ? body.angle.trim()
-      : defaultAngle(goal);
+    typeof body.angle === "string" && body.angle.trim() ? body.angle.trim() : defaultAngle(goal);
   const surfaces: DistributionPlatform[] = Array.isArray(body.surfaces)
     ? body.surfaces
     : ["x", "reddit", "linkedin"];

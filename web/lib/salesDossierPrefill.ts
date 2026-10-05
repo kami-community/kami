@@ -15,7 +15,10 @@ export interface SalesNlPrefill {
 }
 
 /** First complete sentence, whole words, ~140 chars. Exported for evals. */
-export function cleanPositioningLine(raw: string | null | undefined, fallbackCompany: string): string {
+export function cleanPositioningLine(
+  raw: string | null | undefined,
+  fallbackCompany: string,
+): string {
   const text = (raw ?? "").replace(/\s+/g, " ").trim();
   if (!text) return `${fallbackCompany} — confirm positioning from Overview research.`;
 
@@ -29,10 +32,7 @@ export function cleanPositioningLine(raw: string | null | undefined, fallbackCom
   return line.replace(/[,:;–—-]$/, "").trim();
 }
 
-function inferTitles(
-  segments: SalesSegment[] | null | undefined,
-  dossier: Dossier | null,
-): string {
+function inferTitles(segments: SalesSegment[] | null | undefined, dossier: Dossier | null): string {
   if (segments?.length) {
     const t = icpFromSegments(segments).titles;
     if (t.length) return t.join(", ");
@@ -107,8 +107,14 @@ export function nlPrefillToConfig(
   const geo = prefill.geo?.trim() || undefined;
   const offer = (prefill.positioningLine || prefill.offer || prefill.whatSentence).slice(0, 280);
   const icp: SalesIcp = {
-    titles: prefill.icpTitles.split(",").map((s) => s.trim()).filter(Boolean),
-    industries: prefill.icpIndustries.split(",").map((s) => s.trim()).filter(Boolean),
+    titles: prefill.icpTitles
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+    industries: prefill.icpIndustries
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
     size: undefined,
     geo,
   };
@@ -118,7 +124,10 @@ export function nlPrefillToConfig(
     offer,
     icp,
     geo,
-    exclusions: advanced.exclusions.split("\n").map((s) => s.trim()).filter(Boolean),
+    exclusions: advanced.exclusions
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean),
     deal_range: {
       min: advanced.dealMin ? Number(advanced.dealMin) : undefined,
       max: advanced.dealMax ? Number(advanced.dealMax) : undefined,
@@ -163,7 +172,9 @@ export function salesWhoLabel(goals?: string[] | null): string {
   const g = (goals ?? []).map((x) => x.toLowerCase());
   if (g.some((x) => x.includes("signup"))) return "Who should we invite to try the product?";
   if (g.some((x) => x.includes("awareness"))) return "Who should hear about this?";
-  if (g.some((x) => x.includes("fund") || x.includes("raise"))) return "Who should we reach for this round?";
-  if (g.some((x) => x.includes("meeting") || x.includes("book"))) return "Who should we try to book time with?";
+  if (g.some((x) => x.includes("fund") || x.includes("raise")))
+    return "Who should we reach for this round?";
+  if (g.some((x) => x.includes("meeting") || x.includes("book")))
+    return "Who should we try to book time with?";
   return "Who should we reach out to?";
 }

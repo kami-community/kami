@@ -53,16 +53,28 @@ export default function SalesPipeline({ sessionDbId }: SalesPipelineProps) {
       .catch(() => {});
   }, [sessionDbId]);
 
-  useEffect(() => { fetchPipeline(); }, [fetchPipeline]);
+  useEffect(() => {
+    fetchPipeline();
+  }, [fetchPipeline]);
 
   return (
     <div>
-      <div style={{ display: "flex", gap: "0.5rem", overflowX: "auto", paddingBottom: "var(--stack-sm)" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "0.5rem",
+          overflowX: "auto",
+          paddingBottom: "var(--stack-sm)",
+        }}
+      >
         {VISIBLE_STAGES.map((stage) => {
           const cards = pipeline[stage] ?? [];
           return (
             <div key={stage} style={{ minWidth: 140, flex: "0 0 140px" }}>
-              <p className="label-caps" style={{ fontSize: 10, marginBottom: "0.35rem", color: "var(--outline)" }}>
+              <p
+                className="label-caps"
+                style={{ fontSize: 10, marginBottom: "0.35rem", color: "var(--outline)" }}
+              >
                 {STAGE_LABELS[stage]} ({cards.length})
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
@@ -81,7 +93,10 @@ export default function SalesPipeline({ sessionDbId }: SalesPipelineProps) {
                     }}
                   >
                     <p style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>{acc.name}</p>
-                    <p className="mono" style={{ fontSize: 11, color: "var(--ink-soft)", margin: "0.2rem 0 0" }}>
+                    <p
+                      className="mono"
+                      style={{ fontSize: 11, color: "var(--ink-soft)", margin: "0.2rem 0 0" }}
+                    >
                       {acc.tier ? `T${acc.tier}` : "—"}
                       {acc.score != null ? ` · ${Math.round(acc.score)}` : ""}
                     </p>

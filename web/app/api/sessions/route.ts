@@ -68,8 +68,7 @@ export async function POST(request: Request): Promise<Response> {
       status: "ok",
       outputJson: {
         source: snap.source ?? null,
-        facts_len:
-          typeof snap.facts_markdown === "string" ? snap.facts_markdown.length : 0,
+        facts_len: typeof snap.facts_markdown === "string" ? snap.facts_markdown.length : 0,
       },
       outputText:
         typeof snap.facts_markdown === "string"

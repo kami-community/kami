@@ -7,11 +7,14 @@ import { supabaseServer } from "@/lib/supabase";
 export async function GET(request: Request): Promise<Response> {
   const sb = supabaseServer();
   if (!sb) {
-    return Response.json({
-      error: "database not configured",
-      runs: [],
-      hint: "Set NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY",
-    }, { status: 503 });
+    return Response.json(
+      {
+        error: "database not configured",
+        runs: [],
+        hint: "Set NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY",
+      },
+      { status: 503 },
+    );
   }
 
   const url = new URL(request.url);

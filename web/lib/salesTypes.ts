@@ -55,12 +55,7 @@ export type ReplyClassificationLabel =
   | "negative"
   | "spam_risk";
 
-export type BuyingGroupRole =
-  | "champion"
-  | "economic_buyer"
-  | "evaluator"
-  | "blocker"
-  | "sponsor";
+export type BuyingGroupRole = "champion" | "economic_buyer" | "evaluator" | "blocker" | "sponsor";
 
 export type ApprovalScope =
   | "first_send"
@@ -77,12 +72,7 @@ export type SalesTaskStatus = "open" | "in_progress" | "done" | "cancelled";
 export type SalesTaskPriority = "low" | "medium" | "high" | "urgent";
 
 export type NotificationKind =
-  | "reply"
-  | "escalation"
-  | "meeting"
-  | "approval_required"
-  | "cap_warning"
-  | "policy_block";
+  "reply" | "escalation" | "meeting" | "approval_required" | "cap_warning" | "policy_block";
 
 export interface SalesAutonomyPolicy {
   paused: boolean;

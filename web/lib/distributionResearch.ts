@@ -25,20 +25,21 @@ function scaffoldOpportunities(
   domain: string,
 ): OpportunityDraft[] {
   const company = dossier?.company || domain;
-  const problem =
-    dossier?.positioning?.slice(0, 160) ||
-    `what ${company} helps people do`;
+  const problem = dossier?.positioning?.slice(0, 160) || `what ${company} helps people do`;
 
   return [
     {
       campaign_id: null,
       platform: "x",
       source_url: "https://x.com/search?q=" + encodeURIComponent(problem.slice(0, 40)),
-      evidence: "[source=scaffold] Refine with live X search or browser research — not a researched opportunity",
+      evidence:
+        "[source=scaffold] Refine with live X search or browser research — not a researched opportunity",
       why_now: `[FALLBACK] People discussing ${problem} are active; a founder-native take can create early attention.`,
-      suggested_action: "Post a short insight or reply in a relevant thread; product mention only if natural.",
+      suggested_action:
+        "Post a short insight or reply in a relevant thread; product mention only if natural.",
       draft: `Working on ${company}: ${angle}\n\nIf you're dealing with ${problem}, I'd love to hear what you've tried.`,
-      risks: "Avoid hard sells. Prefer usefulness and specificity. This row is a manual scaffold, not Hermes research.",
+      risks:
+        "Avoid hard sells. Prefer usefulness and specificity. This row is a manual scaffold, not Hermes research.",
       approval_status: "needs_review",
       action_status: "draft",
       outcome: "none",
@@ -50,9 +51,11 @@ function scaffoldOpportunities(
       source_url: "manual://paste-thread-url",
       evidence: "[source=scaffold] Manual mode — paste a real thread URL after you find one",
       why_now: `[FALLBACK] Reddit discussions about ${problem} reward value-first comments.`,
-      suggested_action: "Answer the question helpfully; mention the product only if rules allow and it fits.",
+      suggested_action:
+        "Answer the question helpfully; mention the product only if rules allow and it fits.",
       draft: `I've been deep in this problem while building ${company}. Here's what worked for us…`,
-      risks: "Read subreddit rules. Never spam. Prefer communities the founder already participates in.",
+      risks:
+        "Read subreddit rules. Never spam. Prefer communities the founder already participates in.",
       approval_status: "needs_review",
       action_status: "draft",
       outcome: "none",
@@ -137,11 +140,17 @@ export async function researchDistributionOpportunities(input: {
       };
     }
     const parsed = parseLastJsonBlock(text);
-    const arr = Array.isArray(parsed) ? parsed : Array.isArray((parsed as { opportunities?: unknown })?.opportunities)
-      ? ((parsed as { opportunities: unknown[] }).opportunities)
-      : null;
+    const arr = Array.isArray(parsed)
+      ? parsed
+      : Array.isArray((parsed as { opportunities?: unknown })?.opportunities)
+        ? (parsed as { opportunities: unknown[] }).opportunities
+        : null;
     if (!arr?.length) {
-      return { opportunities: scaffold, source: "scaffold", note: "Hermes returned no parseable opportunities." };
+      return {
+        opportunities: scaffold,
+        source: "scaffold",
+        note: "Hermes returned no parseable opportunities.",
+      };
     }
 
     const platforms: DistributionPlatform[] = [
@@ -184,7 +193,11 @@ export async function researchDistributionOpportunities(input: {
       });
     }
     if (!opportunities.length) {
-      return { opportunities: scaffold, source: "scaffold", note: "Hermes output invalid — using starter queue." };
+      return {
+        opportunities: scaffold,
+        source: "scaffold",
+        note: "Hermes output invalid — using starter queue.",
+      };
     }
     return { opportunities, source: "hermes" };
   } catch (e) {

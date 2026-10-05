@@ -33,7 +33,11 @@ interface SalesConversationThreadProps {
   onRefresh: () => void;
 }
 
-export default function SalesConversationThread({ conversation, onBack, onRefresh }: SalesConversationThreadProps) {
+export default function SalesConversationThread({
+  conversation,
+  onBack,
+  onRefresh,
+}: SalesConversationThreadProps) {
   const [messages, setMessages] = useState<MessageWithClassification[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -46,7 +50,9 @@ export default function SalesConversationThread({ conversation, onBack, onRefres
       .catch(() => {});
   }, [conversation.id]);
 
-  useEffect(() => { fetchMessages(); }, [fetchMessages]);
+  useEffect(() => {
+    fetchMessages();
+  }, [fetchMessages]);
 
   async function sendMessage() {
     const text = input.trim();
@@ -95,7 +101,13 @@ export default function SalesConversationThread({ conversation, onBack, onRefres
         type="button"
         className="mono"
         onClick={onBack}
-        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-soft)", marginBottom: "var(--stack-sm)" }}
+        style={{
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          color: "var(--ink-soft)",
+          marginBottom: "var(--stack-sm)",
+        }}
       >
         ← back to inbox
       </button>
@@ -104,24 +116,54 @@ export default function SalesConversationThread({ conversation, onBack, onRefres
       </p>
 
       {conversation.status === "escalated" && (
-        <div className="kraft-card" style={{ padding: "0.5rem", marginBottom: "var(--stack-sm)", borderLeft: "3px solid var(--hanko)" }}>
-          <p className="mono" style={{ fontSize: 12, color: "var(--hanko)" }}>Escalated — review before auto-reply</p>
+        <div
+          className="kraft-card"
+          style={{
+            padding: "0.5rem",
+            marginBottom: "var(--stack-sm)",
+            borderLeft: "3px solid var(--hanko)",
+          }}
+        >
+          <p className="mono" style={{ fontSize: 12, color: "var(--hanko)" }}>
+            Escalated — review before auto-reply
+          </p>
         </div>
       )}
 
-      <div className="kraft-card" style={{ maxHeight: 360, overflowY: "auto", marginBottom: "var(--stack-sm)" }}>
+      <div
+        className="kraft-card"
+        style={{ maxHeight: 360, overflowY: "auto", marginBottom: "var(--stack-sm)" }}
+      >
         {messages.length === 0 && (
-          <p className="mono" style={{ color: "var(--ink-soft)" }}>No messages yet.</p>
+          <p className="mono" style={{ color: "var(--ink-soft)" }}>
+            No messages yet.
+          </p>
         )}
         {messages.map((m) => (
           <div key={m.id} style={{ marginBottom: "var(--stack-sm)" }}>
-            <span className="label-caps" style={{ color: m.direction === "outbound" ? "var(--moss)" : "var(--ink-soft)", fontSize: 10 }}>
+            <span
+              className="label-caps"
+              style={{
+                color: m.direction === "outbound" ? "var(--moss)" : "var(--ink-soft)",
+                fontSize: 10,
+              }}
+            >
               {m.direction === "outbound" ? "You" : "Prospect"}
             </span>
-            <span className="mono" style={{ fontSize: 10, color: "var(--outline)", marginLeft: "0.5rem" }}>
+            <span
+              className="mono"
+              style={{ fontSize: 10, color: "var(--outline)", marginLeft: "0.5rem" }}
+            >
               {m.sent_at ? new Date(m.sent_at).toLocaleTimeString() : ""}
             </span>
-            <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, whiteSpace: "pre-wrap", marginTop: "0.2rem" }}>
+            <p
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 13,
+                whiteSpace: "pre-wrap",
+                marginTop: "0.2rem",
+              }}
+            >
               {m.content}
             </p>
             {m.classification && (
@@ -131,7 +173,9 @@ export default function SalesConversationThread({ conversation, onBack, onRefres
               </p>
             )}
             {m.direction === "inbound" && !m.classification && (
-              <div style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap", marginTop: "0.25rem" }}>
+              <div
+                style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap", marginTop: "0.25rem" }}
+              >
                 <button
                   type="button"
                   className="hanko-btn"
@@ -148,7 +192,13 @@ export default function SalesConversationThread({ conversation, onBack, onRefres
                     className="mono"
                     disabled={classifying === m.id}
                     onClick={() => classifyMessage(m.id, l)}
-                    style={{ border: "1px solid var(--ink)", background: "transparent", padding: "0.15rem 0.4rem", fontSize: 10, cursor: "pointer" }}
+                    style={{
+                      border: "1px solid var(--ink)",
+                      background: "transparent",
+                      padding: "0.15rem 0.4rem",
+                      fontSize: 10,
+                      cursor: "pointer",
+                    }}
                   >
                     {l.replace(/_/g, " ")}
                   </button>
@@ -161,7 +211,9 @@ export default function SalesConversationThread({ conversation, onBack, onRefres
 
       <div style={{ display: "flex", gap: "0.5rem", marginBottom: "var(--stack-sm)" }}>
         <div className="form-line" style={{ flex: 1 }}>
-          <label className="mono label-caps" htmlFor="sales-reply">Reply</label>
+          <label className="mono label-caps" htmlFor="sales-reply">
+            Reply
+          </label>
           <input
             id="sales-reply"
             value={input}
@@ -171,7 +223,12 @@ export default function SalesConversationThread({ conversation, onBack, onRefres
             disabled={sending}
           />
         </div>
-        <button className="hanko-btn" onClick={sendMessage} disabled={sending} style={{ alignSelf: "flex-end" }}>
+        <button
+          className="hanko-btn"
+          onClick={sendMessage}
+          disabled={sending}
+          style={{ alignSelf: "flex-end" }}
+        >
           Send
         </button>
       </div>
@@ -180,7 +237,14 @@ export default function SalesConversationThread({ conversation, onBack, onRefres
         type="button"
         className="mono"
         onClick={escalate}
-        style={{ border: "1px solid var(--hanko)", color: "var(--hanko)", background: "transparent", padding: "0.3rem 0.6rem", fontSize: 12, cursor: "pointer" }}
+        style={{
+          border: "1px solid var(--hanko)",
+          color: "var(--hanko)",
+          background: "transparent",
+          padding: "0.3rem 0.6rem",
+          fontSize: 12,
+          cursor: "pointer",
+        }}
       >
         Escalate
       </button>

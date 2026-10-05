@@ -75,9 +75,7 @@ export async function POST(request: Request): Promise<Response> {
 
   const domain = (session.canonical_domain || session.domain || "") as string;
   const current =
-    (body.dossier as Dossier | undefined) ||
-    (brandRes.data?.raw_dossier as Dossier | null) ||
-    null;
+    (body.dossier as Dossier | undefined) || (brandRes.data?.raw_dossier as Dossier | null) || null;
   if (!current) {
     return Response.json({ error: "no dossier to revise" }, { status: 400 });
   }
@@ -92,7 +90,7 @@ export async function POST(request: Request): Promise<Response> {
     session.research_snapshot &&
     typeof session.research_snapshot === "object" &&
     typeof (session.research_snapshot as { facts_markdown?: unknown }).facts_markdown === "string"
-      ? ((session.research_snapshot as { facts_markdown: string }).facts_markdown).slice(0, 6000)
+      ? (session.research_snapshot as { facts_markdown: string }).facts_markdown.slice(0, 6000)
       : undefined;
 
   const prompt = dossierRevisePrompt({

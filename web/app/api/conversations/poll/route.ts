@@ -8,7 +8,9 @@ export async function POST(): Promise<Response> {
 
   const { data: active } = await sb
     .from("marketing_conversations")
-    .select("id, crm_entry_id, platform, goal, persona_config, budget_min, budget_max, status, marketing_crm!inner(session_id)")
+    .select(
+      "id, crm_entry_id, platform, goal, persona_config, budget_min, budget_max, status, marketing_crm!inner(session_id)",
+    )
     .in("status", ["awaiting_reply", "first_msg_sent"]);
 
   if (!active?.length) return Response.json({ checked: 0, replies: 0, skipped_paused: 0 });

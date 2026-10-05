@@ -48,7 +48,8 @@ export async function POST(request: Request): Promise<Response> {
     .maybeSingle();
 
   if (entryErr) return Response.json({ error: entryErr.message }, { status: 500 });
-  if (!entry) return Response.json({ error: "CRM entry not found for this session" }, { status: 404 });
+  if (!entry)
+    return Response.json({ error: "CRM entry not found for this session" }, { status: 404 });
 
   const text =
     (messageBody && messageBody.trim()) ||
@@ -61,7 +62,11 @@ export async function POST(request: Request): Promise<Response> {
 
   const convGoal =
     goal ??
-    (entry.type === "creator" ? "negotiate_collab" : config?.x_outreach_goal === "book_demo" ? "book_demo" : "drive_signup");
+    (entry.type === "creator"
+      ? "negotiate_collab"
+      : config?.x_outreach_goal === "book_demo"
+        ? "book_demo"
+        : "drive_signup");
 
   // Upsert conversation row
   let conversationId: string;
@@ -87,7 +92,10 @@ export async function POST(request: Request): Promise<Response> {
       .select("id")
       .single();
     if (convErr || !created) {
-      return Response.json({ error: convErr?.message ?? "could not create conversation" }, { status: 500 });
+      return Response.json(
+        { error: convErr?.message ?? "could not create conversation" },
+        { status: 500 },
+      );
     }
     conversationId = created.id;
   }
@@ -100,7 +108,10 @@ export async function POST(request: Request): Promise<Response> {
       const access = await resolveXAccess({ sessionId: session_id });
       if (!access) {
         return Response.json(
-          { error: "No X account connected for this session — Log in with X, then re-launch the campaign" },
+          {
+            error:
+              "No X account connected for this session — Log in with X, then re-launch the campaign",
+          },
           { status: 503 },
         );
       }

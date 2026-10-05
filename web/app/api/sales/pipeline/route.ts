@@ -52,7 +52,10 @@ export async function GET(request: Request): Promise<Response> {
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
   const accountIds = (accounts ?? []).map((a) => a.id);
-  const scoresByAccount: Record<string, { factors?: Record<string, number>; explanation?: string }> = {};
+  const scoresByAccount: Record<
+    string,
+    { factors?: Record<string, number>; explanation?: string }
+  > = {};
 
   if (accountIds.length > 0) {
     const { data: scores } = await sb
@@ -64,12 +67,18 @@ export async function GET(request: Request): Promise<Response> {
     for (const s of scores ?? []) {
       const aid = s.account_id as string;
       if (!scoresByAccount[aid]) {
-        scoresByAccount[aid] = { factors: s.factors as Record<string, number>, explanation: s.explanation as string };
+        scoresByAccount[aid] = {
+          factors: s.factors as Record<string, number>,
+          explanation: s.explanation as string,
+        };
       }
     }
   }
 
-  const pipeline: Record<string, (SalesAccount & { score?: number; score_explanation?: string })[]> = {};
+  const pipeline: Record<
+    string,
+    (SalesAccount & { score?: number; score_explanation?: string })[]
+  > = {};
   for (const stage of STAGES) pipeline[stage] = [];
 
   for (const row of accounts ?? []) {

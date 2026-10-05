@@ -145,8 +145,12 @@ export function normalizeCompanyDomain(raw: string): string | null {
     if (host.split(".").length < 2) return null;
     return host;
   } catch {
-    const cleaned = raw.trim().toLowerCase().replace(/^www\./, "");
-    if (cleaned.includes(".") && !cleaned.includes(" ") && !isDomainBlocked(cleaned)) return cleaned;
+    const cleaned = raw
+      .trim()
+      .toLowerCase()
+      .replace(/^www\./, "");
+    if (cleaned.includes(".") && !cleaned.includes(" ") && !isDomainBlocked(cleaned))
+      return cleaned;
     return null;
   }
 }
@@ -169,7 +173,9 @@ export function extractCompanyDomainsFromContent(
     if (isDomainBlocked(host)) continue;
     found.add(host);
   }
-  const bareMatches = content.matchAll(/\b([a-z0-9][a-z0-9-]{1,40}\.(?:com|io|co|ai|dev|app|so|gg))\b/gi);
+  const bareMatches = content.matchAll(
+    /\b([a-z0-9][a-z0-9-]{1,40}\.(?:com|io|co|ai|dev|app|so|gg))\b/gi,
+  );
   for (const m of bareMatches) {
     const host = m[1].toLowerCase();
     if (host === publisherHost) continue;
@@ -241,7 +247,11 @@ export function scoreAccountAxes(params: {
   return { fit, intent, contactability, priority, explanation };
 }
 
-export function assignTierFromAxes(fit: number, intent: number, hasBuyerContact: boolean): 1 | 2 | 3 {
+export function assignTierFromAxes(
+  fit: number,
+  intent: number,
+  hasBuyerContact: boolean,
+): 1 | 2 | 3 {
   // Tier 1 requires trigger-aligned intent AND a buyer-reachable contact — not any mailbox.
   if (fit >= 0.65 && intent >= 0.55 && hasBuyerContact) return 1;
   if (fit >= 0.5 && intent >= 0.35) return 2;
@@ -387,9 +397,7 @@ export async function researchFromSegments(
             kamiSessionId,
           );
           const hasAnyEmail = Boolean(contact?.email);
-          const hasBuyerContact = Boolean(
-            contact?.email && isBuyerReachableContact(contact),
-          );
+          const hasBuyerContact = Boolean(contact?.email && isBuyerReachableContact(contact));
 
           const linkupSignals = await fetchSignalsForCandidate({
             domain,
@@ -429,7 +437,7 @@ export async function researchFromSegments(
             fit,
             intentRaw,
             hasVerifiedContact: hasBuyerContact,
-            signalAgeDays: hasTriggerAlignedSignal ? ageDays ?? 7 : null,
+            signalAgeDays: hasTriggerAlignedSignal ? (ageDays ?? 7) : null,
           });
           if (score.priority <= 0 && fit < FIT_FLOOR) return;
 
