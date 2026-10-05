@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { api, errorMessage } from "@/lib/client/api";
 import type { SalesPlan } from "@/lib/salesTypes";
 import type { SalesSegment } from "@/lib/domain/segments";
 import { channelLabel, motionLabel } from "@/lib/salesMotionLabels";
@@ -32,6 +33,7 @@ export default function SalesPlanView({
 }: SalesPlanViewProps) {
   const [reviseNote, setReviseNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!plan) {
     return (
@@ -51,21 +53,25 @@ export default function SalesPlanView({
     motionCount ? `${motionCount} motion${motionCount === 1 ? "" : "s"}` : null,
   ].filter(Boolean);
 
+  type PlanResponse = {
+    plan: SalesPlan;
+    source?: "hermes" | "offline_fallback" | "client";
+    note?: string | null;
+  };
+
   async function approve() {
     if (!sessionDbId || !currentPlan.id) return;
     setBusy(true);
+    setError(null);
     try {
-      const res = await fetch("/api/sales/plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          session_id: sessionDbId,
-          action: "approve",
-          plan_id: currentPlan.id,
-        }),
+      const { plan: approved } = await api.post<PlanResponse>("/api/sales/plan", {
+        session_id: sessionDbId,
+        action: "approve",
+        plan_id: currentPlan.id,
       });
-      const json = await res.json();
-      if (res.ok && json.plan) onApproved(json.plan as SalesPlan);
+      onApproved(approved);
+    } catch (err) {
+      setError(errorMessage(err, "Could not approve the plan"));
     } finally {
       setBusy(false);
     }
@@ -74,20 +80,17 @@ export default function SalesPlanView({
   async function revise() {
     if (!sessionDbId) return;
     setBusy(true);
+    setError(null);
     try {
-      const res = await fetch("/api/sales/plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionDbId, revise_note: reviseNote }),
+      const json = await api.post<PlanResponse>("/api/sales/plan", {
+        session_id: sessionDbId,
+        action: "generate",
+        revise_note: reviseNote.trim() || undefined,
       });
-      const json = await res.json();
-      if (res.ok && json.plan) {
-        setReviseNote("");
-        onRevised(json.plan as SalesPlan, {
-          source: json.source,
-          note: json.note ?? null,
-        });
-      }
+      setReviseNote("");
+      onRevised(json.plan, { source: json.source, note: json.note ?? null });
+    } catch (err) {
+      setError(errorMessage(err, "Could not regenerate the plan"));
     } finally {
       setBusy(false);
     }
@@ -222,22 +225,17 @@ export default function SalesPlanView({
             <button className="hanko-btn" onClick={approve} disabled={busy || !plan.id}>
               {busy ? "…" : "Approve plan"}
             </button>
-            <button
-              type="button"
-              className="mono"
-              onClick={revise}
-              disabled={busy}
-              style={{
-                border: "1px solid var(--ink)",
-                background: "transparent",
-                padding: "0.4rem 0.75rem",
-                cursor: "pointer",
-              }}
-            >
+            <button type="button" className="btn-secondary" onClick={revise} disabled={busy}>
               Regenerate with note
             </button>
           </div>
         </div>
+      )}
+
+      {error && (
+        <p className="form-error" role="alert">
+          {error}
+        </p>
       )}
 
       {plan.status === "approved" && (

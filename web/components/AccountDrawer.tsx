@@ -1,6 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
+import { useCampaign } from "@/components/campaign/CampaignProvider";
+import { api, errorMessage, withQuery } from "@/lib/client/api";
+import { useApi } from "@/lib/client/useApi";
 import type {
   AccountSignal,
   LeadScore,
@@ -9,7 +12,6 @@ import type {
   SalesContact,
   SalesTask,
 } from "@/lib/salesTypes";
-import { api, errorMessage, withQuery } from "@/lib/client/api";
 
 interface AccountDrawerProps {
   accountId: string;
@@ -17,81 +19,66 @@ interface AccountDrawerProps {
   onUpdated?: () => void;
 }
 
+interface AccountDetail {
+  account: SalesAccount;
+  signals: AccountSignal[];
+  contacts: SalesContact[];
+  lead_score: LeadScore | null;
+}
+
+const STAGE_ACTIONS: PipelineStage[] = ["engaged", "qualified", "closed_lost", "suppressed"];
+
 export default function AccountDrawer({ accountId, onClose, onUpdated }: AccountDrawerProps) {
-  const [account, setAccount] = useState<SalesAccount | null>(null);
-  const [signals, setSignals] = useState<AccountSignal[]>([]);
-  const [contacts, setContacts] = useState<SalesContact[]>([]);
-  const [leadScore, setLeadScore] = useState<LeadScore | null>(null);
-  const [tasks, setTasks] = useState<SalesTask[]>([]);
-  const [tasksError, setTasksError] = useState<string | null>(null);
-
-  const fetchDetail = useCallback(() => {
-    fetch(`/api/sales/accounts/${accountId}`)
-      .then((r) => r.json())
-      .then((j) => {
-        setAccount(j.account ?? null);
-        setSignals(j.signals ?? []);
-        setContacts(j.contacts ?? []);
-        setLeadScore(j.lead_score ?? null);
-        const sessionId = j.account?.session_id;
-        if (sessionId) {
-          api
-            .get<{ tasks: SalesTask[] }>(
-              withQuery("/api/sales/tasks", { session_id: sessionId, account_id: accountId }),
-            )
-            .then((t) => {
-              setTasks(t.tasks);
-              setTasksError(null);
-            })
-            .catch((err) => setTasksError(errorMessage(err, "Could not load tasks")));
-        }
-      })
-      .catch(() => {});
-  }, [accountId]);
-
-  useEffect(() => {
-    fetchDetail();
-  }, [fetchDetail]);
+  const { sessionId } = useCampaign();
+  const detail = useApi<AccountDetail>(
+    withQuery(`/api/sales/accounts/${accountId}`, { session_id: sessionId }),
+  );
+  const tasksQuery = useApi<{ tasks: SalesTask[] }>(
+    withQuery("/api/sales/tasks", { session_id: sessionId, account_id: accountId }),
+  );
+  const [stageError, setStageError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   async function updateStage(stage: PipelineStage) {
-    const res = await fetch(`/api/sales/accounts/${accountId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pipeline_stage: stage }),
-    });
-    if (res.ok) {
-      fetchDetail();
+    setSaving(true);
+    setStageError(null);
+    try {
+      await api.patch(`/api/sales/accounts/${accountId}`, {
+        session_id: sessionId,
+        pipeline_stage: stage,
+      });
+      detail.reload();
       onUpdated?.();
+    } catch (err) {
+      setStageError(errorMessage(err, "Could not move the account"));
+    } finally {
+      setSaving(false);
     }
   }
 
-  if (!account) {
+  if (!detail.data) {
     return (
-      <div
-        className="kraft-card"
-        style={{ marginTop: "var(--stack-sm)", padding: "var(--stack-sm)" }}
-      >
-        <p className="mono" style={{ color: "var(--ink-soft)" }}>
-          Loading account…
-        </p>
+      <div className="kraft-card account-drawer">
+        {detail.error ? (
+          <p className="form-error" role="alert">
+            {detail.error}
+          </p>
+        ) : (
+          <p className="mono muted">Loading account…</p>
+        )}
       </div>
     );
   }
 
+  const { account, signals, contacts, lead_score: leadScore } = detail.data;
+  const tasks = (tasksQuery.data?.tasks ?? []).filter((t) => t.account_id === accountId);
+
   return (
-    <div
-      className="kraft-card"
-      style={{ marginTop: "var(--stack-sm)", padding: "var(--stack-sm)" }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+    <div className="kraft-card account-drawer">
+      <div className="account-drawer__head">
         <div>
-          <p style={{ fontFamily: "var(--font-display)", fontSize: 18, margin: 0 }}>
-            {account.name}
-          </p>
-          <p
-            className="mono"
-            style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: "0.25rem" }}
-          >
+          <p className="account-drawer__name">{account.name}</p>
+          <p className="mono muted account-drawer__meta">
             {account.domain ?? account.industry ?? "—"} ·{" "}
             {account.pipeline_stage.replace(/_/g, " ")}
             {account.tier ? ` · Tier ${account.tier}` : ""}
@@ -99,91 +86,74 @@ export default function AccountDrawer({ accountId, onClose, onUpdated }: Account
         </div>
         <button
           type="button"
-          className="mono"
+          className="btn-outline"
           onClick={onClose}
-          style={{ background: "none", border: "none", cursor: "pointer" }}
+          aria-label="Close account details"
         >
           ✕
         </button>
       </div>
 
-      <hr className="crease" style={{ margin: "var(--stack-sm) 0" }} />
+      <hr className="crease" />
 
       {leadScore && (
-        <div style={{ marginBottom: "var(--stack-sm)" }}>
-          <p className="label-caps" style={{ marginBottom: "0.25rem" }}>
-            Score
-          </p>
-          <p className="mono" style={{ fontSize: 12 }}>
+        <section className="account-drawer__section">
+          <p className="label-caps">Score</p>
+          <p className="mono">
             fit {leadScore.factors.fit} · intent {leadScore.factors.intent} · priority{" "}
             {leadScore.factors.priority}
           </p>
-          <p style={{ fontSize: 13, marginTop: "0.25rem" }}>{leadScore.explanation}</p>
-        </div>
+          <p>{leadScore.explanation}</p>
+        </section>
       )}
 
       {signals.length > 0 && (
-        <div style={{ marginBottom: "var(--stack-sm)" }}>
-          <p className="label-caps" style={{ marginBottom: "0.25rem" }}>
-            Signals
-          </p>
+        <section className="account-drawer__section">
+          <p className="label-caps">Signals</p>
           {signals.slice(0, 5).map((s) => (
-            <div key={s.id} style={{ marginBottom: "0.35rem" }}>
-              <span className="mono" style={{ fontSize: 11, color: "var(--moss)" }}>
-                {s.signal_type}
-              </span>
-              <p style={{ fontSize: 13, margin: "0.1rem 0 0" }}>{s.detail}</p>
+            <div key={s.id}>
+              <span className="mono account-drawer__signal-type">{s.signal_type}</span>
+              <p>{s.detail}</p>
             </div>
           ))}
-        </div>
+        </section>
       )}
 
       {contacts.length > 0 && (
-        <div style={{ marginBottom: "var(--stack-sm)" }}>
-          <p className="label-caps" style={{ marginBottom: "0.25rem" }}>
-            Contacts
-          </p>
+        <section className="account-drawer__section">
+          <p className="label-caps">Contacts</p>
           {contacts.map((c) => (
-            <p key={c.id} className="mono" style={{ fontSize: 12, margin: "0.15rem 0" }}>
+            <p key={c.id} className="mono">
               {c.name ?? c.email ?? c.handle} {c.title ? `· ${c.title}` : ""}
             </p>
           ))}
-        </div>
-      )}
-
-      {tasksError && (
-        <p role="alert" className="form-error">
-          {tasksError}
-        </p>
+        </section>
       )}
 
       {tasks.length > 0 && (
-        <div style={{ marginBottom: "var(--stack-sm)" }}>
-          <p className="label-caps" style={{ marginBottom: "0.25rem" }}>
-            Tasks
-          </p>
+        <section className="account-drawer__section">
+          <p className="label-caps">Tasks</p>
           {tasks.slice(0, 3).map((t) => (
-            <p key={t.id} className="mono" style={{ fontSize: 12, margin: "0.15rem 0" }}>
+            <p key={t.id} className="mono">
               {t.status === "done" ? "✓" : "○"} {t.title}
             </p>
           ))}
-        </div>
+        </section>
       )}
 
-      <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
-        {(["engaged", "qualified", "closed_lost", "suppressed"] as PipelineStage[]).map((stage) => (
+      {stageError && (
+        <p className="form-error" role="alert">
+          {stageError}
+        </p>
+      )}
+      <div className="account-drawer__actions">
+        {STAGE_ACTIONS.map((stage) => (
           <button
             key={stage}
             type="button"
-            className="mono"
+            className="btn-outline"
+            disabled={saving}
             onClick={() => updateStage(stage)}
-            style={{
-              border: "1px solid var(--ink)",
-              background: "transparent",
-              padding: "0.2rem 0.5rem",
-              fontSize: 11,
-              cursor: "pointer",
-            }}
           >
             → {stage.replace(/_/g, " ")}
           </button>

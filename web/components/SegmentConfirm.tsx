@@ -1,6 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { useState } from "react";
+import { api, errorMessage, withQuery } from "@/lib/client/api";
+import { useApi } from "@/lib/client/useApi";
 import type { CandidateCompany, SalesSegment } from "@/lib/domain/segments";
 import { validateSegmentsForConfirm } from "@/lib/salesSegmentGates";
 import SalesBusyOverlay from "@/components/SalesBusyOverlay";
@@ -29,45 +31,64 @@ function seedPlgPersonas(segments: SalesSegment[]): SalesSegment[] {
   });
 }
 
-const ghostBtn: CSSProperties = {
-  border: "1px solid var(--ink)",
-  background: "transparent",
-  padding: "0.4rem 0.75rem",
-  cursor: "pointer",
-  fontSize: 12,
-};
+interface SegmentsResponse {
+  segments: SalesSegment[];
+  source: string;
+  confirmed_at: string | null;
+}
 
+/** Loads the stored (or freshly drafted) segments, then hands them to the editor. */
 export default function SegmentConfirm({ sessionDbId, onConfirmed }: SegmentConfirmProps) {
-  const [segments, setSegments] = useState<SalesSegment[]>([]);
-  const [source, setSource] = useState<string>("");
+  const { data, error, loading, reload } = useApi<SegmentsResponse>(
+    withQuery("/api/sales/segments", { session_id: sessionDbId }),
+  );
+
+  if (loading && !data) {
+    return (
+      <div className="sales-panel segment-confirm">
+        <SalesBusyOverlay
+          title="Loading saved ICP"
+          stages={["Loading campaign…", "Using saved draft ICP if available…"]}
+          detail="Loading saved ICP — Hermes only runs if no draft exists yet."
+        />
+      </div>
+    );
+  }
+  if (error || !data) {
+    return (
+      <div className="sales-panel segment-confirm">
+        <p className="form-error" role="alert">
+          {error ?? "Could not load segments"}
+        </p>
+        <button type="button" className="btn-outline" onClick={reload}>
+          Try again
+        </button>
+      </div>
+    );
+  }
+  return (
+    <SegmentEditor
+      key={`${data.source}-${data.confirmed_at ?? "draft"}`}
+      sessionDbId={sessionDbId}
+      initial={data}
+      onConfirmed={onConfirmed}
+    />
+  );
+}
+
+function SegmentEditor({
+  sessionDbId,
+  initial,
+  onConfirmed,
+}: SegmentConfirmProps & { initial: SegmentsResponse }) {
+  const [segments, setSegments] = useState<SalesSegment[]>(() =>
+    seedPlgPersonas(initial.segments ?? []),
+  );
+  const [source, setSource] = useState<string>(initial.source ?? "");
   const [busy, setBusy] = useState(false);
-  const [busyMode, setBusyMode] = useState<"load" | "refresh" | "confirm" | null>(null);
+  const [busyMode, setBusyMode] = useState<"refresh" | "confirm" | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [confirmedAt, setConfirmedAt] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    setBusy(true);
-    setBusyMode("load");
-    setError(null);
-    try {
-      const res = await fetch(`/api/sales/segments?session_id=${sessionDbId}`);
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json.error ?? "Could not load segments");
-        return;
-      }
-      setSegments(seedPlgPersonas(json.segments ?? []));
-      setSource(json.source ?? "");
-      setConfirmedAt(json.confirmed_at ?? null);
-    } finally {
-      setBusy(false);
-      setBusyMode(null);
-    }
-  }, [sessionDbId]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const [confirmedAt, setConfirmedAt] = useState<string | null>(initial.confirmed_at ?? null);
 
   function updateSegment(index: number, patch: Partial<SalesSegment>) {
     setSegments((prev) => prev.map((s, i) => (i === index ? { ...s, ...patch } : s)));
@@ -224,18 +245,15 @@ export default function SegmentConfirm({ sessionDbId, onConfirmed }: SegmentConf
     setBusyMode("confirm");
     setError(null);
     try {
-      const res = await fetch("/api/sales/segments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionDbId, action: "confirm", segments: seeded }),
+      const json = await api.post<SegmentsResponse>("/api/sales/segments", {
+        session_id: sessionDbId,
+        action: "confirm",
+        segments: seeded,
       });
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json.error ?? "Could not confirm segments");
-        return;
-      }
       setConfirmedAt(json.confirmed_at);
       onConfirmed(json.segments ?? seeded);
+    } catch (err) {
+      setError(errorMessage(err, "Could not confirm segments"));
     } finally {
       setBusy(false);
       setBusyMode(null);
@@ -247,19 +265,15 @@ export default function SegmentConfirm({ sessionDbId, onConfirmed }: SegmentConf
     setBusyMode("refresh");
     setError(null);
     try {
-      const res = await fetch("/api/sales/segments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionDbId, action: "derive" }),
+      const json = await api.post<SegmentsResponse>("/api/sales/segments", {
+        session_id: sessionDbId,
+        action: "derive",
       });
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json.error ?? "Could not re-derive segments");
-        return;
-      }
       setSegments(seedPlgPersonas(json.segments ?? []));
       setSource(json.source ?? "");
       setConfirmedAt(null);
+    } catch (err) {
+      setError(errorMessage(err, "Could not re-derive segments"));
     } finally {
       setBusy(false);
       setBusyMode(null);
@@ -271,9 +285,7 @@ export default function SegmentConfirm({ sessionDbId, onConfirmed }: SegmentConf
       ? "Asking Hermes for segments"
       : busyMode === "confirm"
         ? "Saving ICP confirmation"
-        : busyMode === "load"
-          ? "Loading saved ICP"
-          : "Working…";
+        : "Working…";
 
   const busyStages =
     busyMode === "refresh"
@@ -282,18 +294,14 @@ export default function SegmentConfirm({ sessionDbId, onConfirmed }: SegmentConf
           "Hermes drafting buyer segments…",
           "Checking PLG vs B2B motions…",
         ]
-      : busyMode === "load"
-        ? ["Loading campaign…", "Using saved draft ICP if available…"]
-        : ["Validating…", "Persisting confirmed ICP…"];
+      : ["Validating…", "Persisting confirmed ICP…"];
 
   const busyDetail =
-    busyMode === "load"
-      ? "Loading saved ICP — Hermes only runs if no draft exists yet."
-      : busyMode === "refresh"
-        ? "Deriving ICP segments with Hermes…"
-        : busyMode === "confirm"
-          ? "Saving your confirmed ICP…"
-          : null;
+    busyMode === "refresh"
+      ? "Deriving ICP segments with Hermes…"
+      : busyMode === "confirm"
+        ? "Saving your confirmed ICP…"
+        : null;
 
   return (
     <div className="sales-panel" style={{ position: "relative", paddingTop: "var(--stack-md)" }}>
@@ -318,10 +326,7 @@ export default function SegmentConfirm({ sessionDbId, onConfirmed }: SegmentConf
       )}
 
       {error && (
-        <p
-          className="mono"
-          style={{ color: "var(--hanko)", fontSize: 13, marginBottom: "var(--stack-md)" }}
-        >
+        <p className="form-error" role="alert">
           {error}
         </p>
       )}
@@ -365,9 +370,8 @@ export default function SegmentConfirm({ sessionDbId, onConfirmed }: SegmentConf
               </div>
               <button
                 type="button"
-                className="mono"
+                className="btn-outline segment-remove"
                 onClick={() => removeSegment(i)}
-                style={{ ...ghostBtn, alignSelf: "flex-end" }}
               >
                 Remove
               </button>
@@ -457,9 +461,8 @@ export default function SegmentConfirm({ sessionDbId, onConfirmed }: SegmentConf
                     />
                     <button
                       type="button"
-                      className="mono"
+                      className="btn-outline"
                       onClick={() => removeCandidate(i, ci)}
-                      style={ghostBtn}
                     >
                       Remove
                     </button>
@@ -467,9 +470,8 @@ export default function SegmentConfirm({ sessionDbId, onConfirmed }: SegmentConf
                 ))}
                 <button
                   type="button"
-                  className="mono"
+                  className="btn-outline segment-add"
                   onClick={() => addCandidate(i)}
-                  style={{ ...ghostBtn, marginTop: "0.5rem" }}
                 >
                   + Add company
                 </button>
@@ -509,9 +511,8 @@ export default function SegmentConfirm({ sessionDbId, onConfirmed }: SegmentConf
                     />
                     <button
                       type="button"
-                      className="mono"
+                      className="btn-outline"
                       onClick={() => removePersona(i, pi)}
-                      style={ghostBtn}
                     >
                       Remove
                     </button>
@@ -519,9 +520,8 @@ export default function SegmentConfirm({ sessionDbId, onConfirmed }: SegmentConf
                 ))}
                 <button
                   type="button"
-                  className="mono"
+                  className="btn-outline segment-add"
                   onClick={() => addPersona(i)}
-                  style={{ ...ghostBtn, marginTop: "0.5rem" }}
                 >
                   + Add example user
                 </button>
@@ -540,16 +540,10 @@ export default function SegmentConfirm({ sessionDbId, onConfirmed }: SegmentConf
           alignItems: "center",
         }}
       >
-        <button
-          type="button"
-          className="mono"
-          onClick={addSegment}
-          disabled={busy}
-          style={ghostBtn}
-        >
+        <button type="button" className="btn-outline" onClick={addSegment} disabled={busy}>
           + Add segment
         </button>
-        <button type="button" className="mono" onClick={rederive} disabled={busy} style={ghostBtn}>
+        <button type="button" className="btn-outline" onClick={rederive} disabled={busy}>
           Refresh from dossier
         </button>
         <button

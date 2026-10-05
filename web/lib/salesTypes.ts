@@ -1,3 +1,5 @@
+import type { StoredEmailVerification } from "@/lib/domain/contacts";
+
 export type SalesMotion = "outbound_email" | "signal_outreach" | "x_dm" | "multi_channel";
 
 export type SalesChannel = "email" | "x";
@@ -219,14 +221,7 @@ export interface SalesContact {
   email?: string;
   handle?: string;
   channel?: SalesChannel;
-  email_verification?:
-    | "valid"
-    | "safe_to_send"
-    | "role_inbox"
-    | "non_buyer_inbox"
-    | "catch_all"
-    | "unknown"
-    | "invalid";
+  email_verification?: StoredEmailVerification;
   do_not_contact?: boolean;
   created_at?: string;
   updated_at?: string;

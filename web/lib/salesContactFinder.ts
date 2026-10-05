@@ -6,9 +6,10 @@
 import { completeOrNull, hermesConfigured } from "@/lib/hermes/client";
 import { parseLastJsonBlock } from "@/lib/hermes/json";
 import { searchProvider } from "@/lib/providers";
+import type { FinderVerificationStatus } from "@/lib/domain/contacts";
 
-export type EmailVerificationStatus =
-  "verified_public" | "role_inbox" | "non_buyer_inbox" | "unverified" | "valid" | "hermes_evidence";
+/** Includes `founder_provided`: an address the founder typed in themselves (never agent-invented). */
+export type EmailVerificationStatus = FinderVerificationStatus;
 
 export interface FoundContact {
   email: string;
@@ -32,6 +33,8 @@ const NON_BUYER_LOCAL = /^(e|h|last|first|first\.last|name|user|test|asdf|[0-9a-
 export function isBuyerReachableContact(
   contact: Pick<FoundContact, "email" | "verification_status">,
 ): boolean {
+  // The founder chose this address explicitly — trust it, even a shared inbox.
+  if (contact.verification_status === "founder_provided") return true;
   const local = (contact.email.split("@")[0] ?? "").toLowerCase();
   if (ROLE_LOCAL.test(local) || NON_BUYER_LOCAL.test(local)) return false;
   if (

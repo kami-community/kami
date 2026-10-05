@@ -1,13 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useState } from "react";
+import { api, errorMessage, withQuery } from "@/lib/client/api";
+import { useApi } from "@/lib/client/useApi";
 import type { Dossier } from "@/lib/domain/dossier";
 import type { SalesCampaignConfig, SalesPlan } from "@/lib/salesTypes";
 import type { SalesSegment } from "@/lib/domain/segments";
 import SalesSetup from "@/components/SalesSetup";
 import SalesPlanView from "@/components/SalesPlanView";
 import SalesDraftQueue from "@/components/SalesDraftQueue";
-import SalesTargetReview from "@/components/SalesTargetReview";
+import SalesTargetReview from "@/components/sales/target-review/SalesTargetReview";
 import SalesNeedsYou from "@/components/SalesNeedsYou";
 import SalesPipeline from "@/components/SalesPipeline";
 import SalesInbox from "@/components/SalesInbox";
@@ -20,6 +22,7 @@ import SegmentConfirm from "@/components/SegmentConfirm";
 export type SalesGuidedStep = "confirm" | "segments" | "plan" | "find" | "emails" | "needs";
 
 type OpsStep = "segments" | "plan" | "find" | "emails" | "needs";
+type PlanSource = "hermes" | "offline_fallback" | "client";
 
 const OPS_STEPS: { key: OpsStep; label: string }[] = [
   { key: "segments", label: "Confirm ICP" },
@@ -41,16 +44,31 @@ interface SalesPanelProps {
   onCreateDistribution?: () => void;
 }
 
+interface Progress {
+  sequencesCreated: boolean;
+  hasSent: boolean;
+}
+
 function defaultOpsStep(
   config: SalesCampaignConfig | null,
   plan: SalesPlan | null,
-  progress: { sequencesCreated: boolean; hasSent: boolean },
+  progress: Progress,
 ): OpsStep {
   if (!config?.segments_confirmed_at) return "segments";
   if (!plan || plan.status !== "approved") return "plan";
   if (progress.hasSent) return "needs";
   if (progress.sequencesCreated) return "emails";
   return "find";
+}
+
+function asOpsStep(focus: SalesGuidedStep | null | undefined): OpsStep | null {
+  return focus && focus !== "confirm" ? focus : null;
+}
+
+interface GeneratedPlan {
+  plan: SalesPlan;
+  source: PlanSource | null;
+  note: string | null;
 }
 
 export default function SalesPanel({
@@ -63,150 +81,95 @@ export default function SalesPanel({
   onSetup,
   onCreateDistribution,
 }: SalesPanelProps) {
-  const [plan, setPlan] = useState<SalesPlan | null>(null);
-  const [planSource, setPlanSource] = useState<"hermes" | "offline_fallback" | "client" | null>(
-    null,
+  const planQuery = useApi<{ plan: SalesPlan | null }>(
+    config && sessionDbId ? withQuery("/api/sales/plan", { session_id: sessionDbId }) : null,
   );
-  const [planNote, setPlanNote] = useState<string | null>(null);
-  const [segments, setSegments] = useState<SalesSegment[] | null>(
-    (config?.segments as SalesSegment[] | null) ?? null,
-  );
+  const [generated, setGenerated] = useState<GeneratedPlan | null>(null);
+  const [planError, setPlanError] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
-  const [paused, setPaused] = useState(config?.autonomous_paused ?? false);
-  const [pauseSaving, setPauseSaving] = useState(false);
-  const [step, setStep] = useState<OpsStep>("segments");
+  const [pendingPaused, setPendingPaused] = useState<boolean | null>(null);
+  const [pauseError, setPauseError] = useState<string | null>(null);
+  const [chosen, setChosen] = useState<OpsStep | null>(asOpsStep(focusStep));
+  const [lastFocus, setLastFocus] = useState(focusStep);
   const [showMore, setShowMore] = useState(false);
-  const [hasSent, setHasSent] = useState(false);
-  const [sequencesCreated, setSequencesCreated] = useState(false);
+  const [progress, setProgress] = useState<Progress>({ sequencesCreated: false, hasSent: false });
 
+  // A new guided focus from the shell (Kami Guide / overview) moves the founder there.
+  if (focusStep !== lastFocus) {
+    setLastFocus(focusStep);
+    const next = asOpsStep(focusStep);
+    if (next) setChosen(next);
+  }
+
+  const plan = generated?.plan ?? planQuery.data?.plan ?? null;
+  const segments = (config?.segments as SalesSegment[] | null | undefined) ?? null;
+  const paused = pendingPaused ?? config?.autonomous_paused ?? false;
   const segmentsConfirmed = Boolean(config?.segments_confirmed_at);
-
-  const fetchPlan = useCallback(() => {
-    if (!sessionDbId) return;
-    fetch(`/api/sales/plan?session_id=${sessionDbId}`)
-      .then((r) => r.json())
-      .then((j) => {
-        const p = j.plan ?? null;
-        setPlan(p);
-      })
-      .catch(() => {});
-  }, [sessionDbId]);
-
-  useEffect(() => {
-    setPaused(config?.autonomous_paused ?? false);
-    if (config?.segments) setSegments(config.segments as SalesSegment[]);
-  }, [config?.autonomous_paused, config?.segments]);
-
-  // Always land on Confirm ICP until segments_confirmed_at is set in the DB.
-  // Do not yank the founder backward once they have advanced past plan/find.
-  useEffect(() => {
-    if (!config) return;
-    fetchPlan();
-    if (!config.segments_confirmed_at) {
-      setStep("segments");
-    }
-  }, [config?.session_id, config?.segments_confirmed_at, fetchPlan]);
-
-  useEffect(() => {
-    if (!config?.segments_confirmed_at || !plan) return;
-    if (focusStep === "find" || focusStep === "emails" || focusStep === "needs") return;
-    setStep((prev) => {
-      const next = defaultOpsStep(config, plan, { sequencesCreated, hasSent });
-      const order: OpsStep[] = ["segments", "plan", "find", "emails", "needs"];
-      // Never move the founder backward on a config/plan refresh.
-      if (order.indexOf(prev) > order.indexOf(next)) return prev;
-      return next;
-    });
-  }, [plan?.status, plan?.id, config?.segments_confirmed_at, focusStep, sequencesCreated, hasSent]);
-
-  useEffect(() => {
-    if (!focusStep || focusStep === "confirm") return;
-    if (!config?.segments_confirmed_at) {
-      setStep("segments");
-      return;
-    }
-    if (focusStep === "segments") setStep("segments");
-    else if (
-      focusStep === "plan" ||
-      focusStep === "find" ||
-      focusStep === "emails" ||
-      focusStep === "needs"
-    ) {
-      setStep(focusStep);
-    }
-  }, [focusStep, config?.segments_confirmed_at]);
-
   const planApproved = plan?.status === "approved";
 
-  const stepDone = useMemo(
-    () => ({
-      segments: segmentsConfirmed,
-      plan: planApproved,
-      find: sequencesCreated,
-      emails: hasSent,
-      needs: hasSent,
-    }),
-    [segmentsConfirmed, planApproved, sequencesCreated, hasSent],
-  );
+  const stepDone: Record<OpsStep, boolean> = {
+    segments: segmentsConfirmed,
+    plan: planApproved,
+    find: progress.sequencesCreated,
+    emails: progress.hasSent,
+    needs: progress.hasSent,
+  };
 
   function canVisit(key: OpsStep): boolean {
     if (key === "segments") return true;
-    if (key === "plan") return segmentsConfirmed;
-    if (key === "find") return segmentsConfirmed && planApproved;
-    if (key === "emails") return segmentsConfirmed && planApproved && sequencesCreated;
-    if (key === "needs") return segmentsConfirmed && planApproved && (sequencesCreated || hasSent);
-    return false;
+    if (!segmentsConfirmed) return false;
+    if (key === "plan") return true;
+    if (!planApproved) return false;
+    if (key === "find") return true;
+    if (key === "emails") return progress.sequencesCreated;
+    return progress.sequencesCreated || progress.hasSent;
   }
 
+  const step: OpsStep = !segmentsConfirmed
+    ? "segments"
+    : chosen && canVisit(chosen)
+      ? chosen
+      : defaultOpsStep(config, plan, progress);
+
   async function handleSegmentsConfirmed(next: SalesSegment[]) {
-    setSegments(next);
     if (config) {
-      onSetup({
-        ...config,
-        segments: next,
-        segments_confirmed_at: new Date().toISOString(),
-      });
+      onSetup({ ...config, segments: next, segments_confirmed_at: new Date().toISOString() });
     }
-    if (sessionDbId) {
-      const res = await fetch("/api/sales/plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionDbId }),
-      });
-      const json = await res.json();
-      if (res.ok && json.plan) {
-        setPlan(json.plan);
-        setPlanSource(json.source ?? null);
-        setPlanNote(json.note ?? null);
-      } else fetchPlan();
+    setChosen("plan");
+    if (!sessionDbId) return;
+    setPlanError(null);
+    try {
+      const json = await api.post<{ plan: SalesPlan; source?: PlanSource; note?: string | null }>(
+        "/api/sales/plan",
+        { session_id: sessionDbId, action: "generate" },
+      );
+      setGenerated({ plan: json.plan, source: json.source ?? null, note: json.note ?? null });
+    } catch (err) {
+      setPlanError(errorMessage(err, "Could not build the plan"));
     }
-    setStep("plan");
   }
 
   async function handlePauseChange(nextPaused: boolean) {
-    if (!sessionDbId) return;
-    setPaused(nextPaused);
-    setPauseSaving(true);
+    if (!sessionDbId || !config) return;
+    setPendingPaused(nextPaused);
+    setPauseError(null);
     try {
-      const res = await fetch("/api/sales/setup", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionDbId, autonomous_paused: nextPaused }),
+      const json = await api.patch<{ config: SalesCampaignConfig }>("/api/sales/setup", {
+        session_id: sessionDbId,
+        autonomous_paused: nextPaused,
       });
-      const json = await res.json();
-      if (res.ok && json.config && config) {
-        onSetup({ ...config, autonomous_paused: json.config.autonomous_paused });
-      }
-    } catch {
-      setPaused(!nextPaused);
+      onSetup({ ...config, autonomous_paused: json.config.autonomous_paused });
+    } catch (err) {
+      setPauseError(errorMessage(err, "Could not change the pause"));
     } finally {
-      setPauseSaving(false);
+      setPendingPaused(null);
     }
   }
 
   if (!config || showSettings) {
     return (
       <SalesSetup
+        key={showSettings ? `edit-${config?.updated_at ?? ""}` : "new"}
         sessionDbId={sessionDbId}
         dossier={dossier}
         domain={domain}
@@ -215,7 +178,9 @@ export default function SalesPanel({
         onComplete={(c) => {
           onSetup(c);
           setShowSettings(false);
-          setStep("segments");
+          setGenerated(null);
+          setChosen("segments");
+          planQuery.reload();
         }}
       />
     );
@@ -223,107 +188,38 @@ export default function SalesPanel({
 
   if (!sessionDbId) {
     return (
-      <p className="mono" style={{ color: "var(--hanko)", padding: "var(--stack-md)" }}>
+      <p className="form-error" role="alert">
         Session not ready — wait for Overview research to finish before outbound.
       </p>
     );
   }
 
-  // Hard gate: until DB has segments_confirmed_at, only show Confirm ICP (no Find UI).
-  if (!segmentsConfirmed) {
-    return (
-      <div className="sales-panel">
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "var(--stack-sm)",
-          }}
-        >
-          <p className="label-caps">Outbound sales</p>
-          <div style={{ display: "flex", gap: "var(--stack-sm)", alignItems: "center" }}>
-            <button
-              type="button"
-              className="mono"
-              onClick={() => setShowSettings(true)}
-              style={{
-                border: "1px solid var(--ink)",
-                background: "transparent",
-                padding: "0.3rem 0.6rem",
-                cursor: "pointer",
-                fontSize: 12,
-              }}
-              title="Edit who and what"
-            >
-              ⚙
-            </button>
-            <KillSwitch
-              paused={paused}
-              onChange={handlePauseChange}
-              disabled={pauseSaving || !sessionDbId}
-            />
-          </div>
-        </div>
-        <hr className="crease" />
-        <nav className="sales-stepper" aria-label="Sales progress">
-          {OPS_STEPS.map((s) => {
-            const unlocked = canVisit(s.key);
-            const active = s.key === "segments";
-            return (
-              <button
-                key={s.key}
-                type="button"
-                className="sales-step"
-                data-active={active}
-                data-blocked={s.key === "segments"}
-                onClick={() => unlocked && setStep(s.key)}
-                disabled={!unlocked}
-              >
-                {s.label}
-              </button>
-            );
-          })}
-        </nav>
-        <SegmentConfirm sessionDbId={sessionDbId} onConfirmed={handleSegmentsConfirmed} />
-      </div>
-    );
-  }
-
   return (
     <div className="sales-panel">
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "var(--stack-sm)",
-        }}
-      >
+      <div className="sales-panel-head">
         <p className="label-caps">Outbound sales</p>
-        <div style={{ display: "flex", gap: "var(--stack-sm)", alignItems: "center" }}>
+        <div className="sales-panel-actions">
           <button
             type="button"
-            className="mono"
+            className="btn-outline"
             onClick={() => setShowSettings(true)}
-            style={{
-              border: "1px solid var(--ink)",
-              background: "transparent",
-              padding: "0.3rem 0.6rem",
-              cursor: "pointer",
-              fontSize: 12,
-            }}
             title="Edit who and what"
+            aria-label="Edit who and what"
           >
             ⚙
           </button>
           <KillSwitch
             paused={paused}
             onChange={handlePauseChange}
-            disabled={pauseSaving || !sessionDbId}
+            disabled={pendingPaused !== null}
           />
         </div>
       </div>
+      {pauseError && (
+        <p className="form-error" role="alert">
+          {pauseError}
+        </p>
+      )}
       <hr className="crease" />
 
       <nav className="sales-stepper" aria-label="Sales progress">
@@ -338,7 +234,9 @@ export default function SalesPanel({
               className="sales-step"
               data-active={active}
               data-done={done && !active}
-              onClick={() => unlocked && setStep(s.key)}
+              data-blocked={!segmentsConfirmed && s.key === "segments"}
+              aria-current={active ? "step" : undefined}
+              onClick={() => unlocked && setChosen(s.key)}
               disabled={!unlocked}
             >
               {done && !active ? "✓ " : ""}
@@ -353,23 +251,28 @@ export default function SalesPanel({
       )}
 
       {step === "plan" && (
-        <SalesPlanView
-          sessionDbId={sessionDbId}
-          plan={plan}
-          offer={config.offer}
-          segments={segments}
-          planSource={planSource}
-          planNote={planNote}
-          onApproved={(p) => {
-            setPlan(p);
-            setStep("find");
-          }}
-          onRevised={(p, meta) => {
-            setPlan(p);
-            if (meta?.source) setPlanSource(meta.source);
-            if (meta?.note !== undefined) setPlanNote(meta.note ?? null);
-          }}
-        />
+        <>
+          {(planError || planQuery.error) && (
+            <p className="form-error" role="alert">
+              {planError ?? planQuery.error}
+            </p>
+          )}
+          <SalesPlanView
+            sessionDbId={sessionDbId}
+            plan={plan}
+            offer={config.offer}
+            segments={segments}
+            planSource={generated?.source ?? null}
+            planNote={generated?.note ?? null}
+            onApproved={(p) => {
+              setGenerated((g) => ({ plan: p, source: g?.source ?? null, note: g?.note ?? null }));
+              setChosen("find");
+            }}
+            onRevised={(p, meta) =>
+              setGenerated({ plan: p, source: meta?.source ?? null, note: meta?.note ?? null })
+            }
+          />
+        </>
       )}
 
       {step === "find" && planApproved && (
@@ -380,8 +283,8 @@ export default function SalesPanel({
           segments={segments}
           paused={paused}
           onContinue={() => {
-            setSequencesCreated(true);
-            setStep("emails");
+            setProgress((p) => ({ ...p, sequencesCreated: true }));
+            setChosen("emails");
           }}
           onCreateDistribution={onCreateDistribution}
         />
@@ -392,28 +295,21 @@ export default function SalesPanel({
           sessionDbId={sessionDbId}
           paused={paused}
           onSent={() => {
-            setHasSent(true);
-            setStep("needs");
+            setProgress((p) => ({ ...p, hasSent: true }));
+            setChosen("needs");
           }}
         />
       )}
 
       {step === "needs" && planApproved && <SalesNeedsYou sessionDbId={sessionDbId} />}
 
-      {planApproved && (hasSent || showMore) && (
-        <div style={{ marginTop: "var(--stack-lg)" }}>
+      {planApproved && (progress.hasSent || showMore) && (
+        <div className="sales-more">
           <button
             type="button"
-            className="mono"
+            className="btn-outline"
             onClick={() => setShowMore(!showMore)}
-            style={{
-              border: "1px solid var(--outline)",
-              background: "transparent",
-              padding: "0.35rem 0.65rem",
-              cursor: "pointer",
-              fontSize: 11,
-              marginBottom: "var(--stack-sm)",
-            }}
+            aria-expanded={showMore}
           >
             {showMore ? "Hide More" : "More — Pipeline, Inbox, Meetings, Tasks"}
           </button>
