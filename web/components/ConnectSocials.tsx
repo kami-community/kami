@@ -1,6 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
+import { api, errorMessage, withQuery } from "@/lib/client/api";
+import { useApi } from "@/lib/client/useApi";
 
 type Platform = "x" | "instagram";
 
@@ -19,31 +21,16 @@ const LABEL: Record<Platform, string> = { x: "X", instagram: "Instagram" };
 
 /** Connected social accounts for a campaign session. */
 export function useConnections(sessionId: string | null) {
-  const [state, setState] = useState<ConnectionsState | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const reload = useCallback(async () => {
-    if (!sessionId) return;
-    try {
-      const res = await fetch(`/api/connections?session_id=${encodeURIComponent(sessionId)}`);
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Could not load connections");
-      setState(json as ConnectionsState);
-      setError(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not load connections");
-    }
-  }, [sessionId]);
-
-  useEffect(() => {
-    void reload();
-  }, [reload]);
+  const query = useApi<ConnectionsState>(
+    sessionId ? withQuery("/api/connections", { session_id: sessionId }) : null,
+  );
+  const state = query.data;
 
   const handleOf = (platform: Platform) =>
     state?.accounts.find((a) => a.platform === platform && a.status === "connected")?.handle ??
     null;
 
-  return { state, error, reload, handleOf };
+  return { state, error: query.error, reload: query.reload, handleOf };
 }
 
 interface ConnectSocialsProps {
@@ -58,15 +45,16 @@ export default function ConnectSocials({
 }: ConnectSocialsProps) {
   const { state, error, reload, handleOf } = useConnections(sessionId);
   const [busy, setBusy] = useState<Platform | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   async function disconnect(platform: Platform) {
     setBusy(platform);
+    setActionError(null);
     try {
-      await fetch(
-        `/api/connections?session_id=${encodeURIComponent(sessionId)}&platform=${platform}`,
-        { method: "DELETE" },
-      );
-      await reload();
+      await api.del(withQuery("/api/connections", { session_id: sessionId, platform }));
+      reload();
+    } catch (err) {
+      setActionError(errorMessage(err, `Could not disconnect ${LABEL[platform]}`));
     } finally {
       setBusy(null);
     }
@@ -117,9 +105,9 @@ export default function ConnectSocials({
           </a>
         );
       })}
-      {error && (
+      {(actionError ?? error) && (
         <span role="alert" className="mono form-error">
-          {error}
+          {actionError ?? error}
         </span>
       )}
     </div>

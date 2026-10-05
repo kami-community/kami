@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useCampaign } from "@/components/campaign/CampaignProvider";
+import RichText from "@/components/ui/RichText";
 import { postStream } from "@/lib/client/stream";
 import type { CampaignTab } from "@/lib/marketingTypes";
 
@@ -101,12 +102,12 @@ export default function KamiGuide({ activeTab, collapsed, onToggle }: KamiGuideP
         {messages.map((m) => (
           <div key={m.id}>
             <span className="label-caps">{m.role === "you" ? "You" : "Kami"}</span>
-            <p
+            <div
               className={`kami-guide-message${m.error ? " form-error" : ""}`}
               role={m.error ? "alert" : undefined}
             >
-              {m.text || "…"}
-            </p>
+              {m.role === "guide" && !m.error ? <RichText text={m.text || "…"} /> : m.text || "…"}
+            </div>
           </div>
         ))}
       </div>

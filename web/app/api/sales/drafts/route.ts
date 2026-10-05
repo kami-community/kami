@@ -3,7 +3,12 @@ import { db } from "@/lib/db/client";
 import { ids, parseBody, parseQuery, route } from "@/lib/http/route";
 import { sendSalesTouchpoint } from "@/lib/outbound/salesEmail";
 import { emailProvider } from "@/lib/providers";
-import { approveTouchpoint, editTouchpoint, listDrafts, reviewTouchpoint } from "@/lib/sales/drafts";
+import {
+  approveTouchpoint,
+  editTouchpoint,
+  listDrafts,
+  reviewTouchpoint,
+} from "@/lib/sales/drafts";
 
 const Query = z.object({ session_id: ids.sessionId, status: z.string().optional() });
 
@@ -32,7 +37,10 @@ export const POST = route(async (request) => {
   const { session_id, touchpoint_id } = body;
   if (body.action === "edit") {
     return Response.json(
-      await editTouchpoint(db(), session_id, touchpoint_id, { subject: body.subject, body: body.body }),
+      await editTouchpoint(db(), session_id, touchpoint_id, {
+        subject: body.subject,
+        body: body.body,
+      }),
     );
   }
   switch (body.action) {

@@ -11,7 +11,6 @@ import MarketingCRM from "@/components/MarketingCRM";
 import MarketingSetup from "@/components/MarketingSetup";
 import ConversationsPanel from "@/components/ConversationsPanel";
 import PlatformRail from "@/components/PlatformRail";
-import CapabilityBanner from "@/components/CapabilityBanner";
 
 interface MarketingPanelProps {
   sessionDbId: string | null;
@@ -73,7 +72,6 @@ export default function MarketingPanel({
   if (!activeConfig || activeConfig.status !== "approved") {
     return (
       <div>
-        <CapabilityBanner />
         <DistributionSetup
           sessionDbId={sessionDbId}
           initialConfig={activeConfig}
@@ -166,7 +164,6 @@ function DistributionView({
 
   return (
     <div>
-      <CapabilityBanner />
       <div className="section-head">
         <div>
           <p className="label-caps">Distribution</p>

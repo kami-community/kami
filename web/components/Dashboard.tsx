@@ -96,7 +96,8 @@ export default function Dashboard({ onNewCampaign }: { onNewCampaign: () => void
               <hr className="crease" />
               <p className="mono meta-line">
                 Identity: {identity.company_name ?? session.canonical_domain} · confidence{" "}
-                {(identity.confidence * 100).toFixed(0)}% · {sourceCount} sources
+                {(identity.confidence * 100).toFixed(0)}% · {sourceCount} source
+                {sourceCount === 1 ? "" : "s"}
               </p>
 
               {!dossier && (
@@ -110,7 +111,10 @@ export default function Dashboard({ onNewCampaign }: { onNewCampaign: () => void
                     label="Dossier progress"
                     steps={[
                       { label: `Checked ${session.canonical_domain}`, state: "done" },
-                      { label: `Read ${sourceCount} sources`, state: "done" },
+                      {
+                        label: `Read ${sourceCount} source${sourceCount === 1 ? "" : "s"}`,
+                        state: "done",
+                      },
                       {
                         label: "Compiling your dossier",
                         state: dossierJob.error ? "todo" : "active",

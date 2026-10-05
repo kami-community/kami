@@ -29,7 +29,14 @@ export interface SequenceDrafts {
 }
 
 /** Rubric problems the agent can fix itself (a missing signal is flagged at review instead). */
-const AGENT_FIXABLE = new Set(["subject_missing", "subject_too_long", "length_exceeded", "cta_count", "opt_out_missing", "claims_safety"]);
+const AGENT_FIXABLE = new Set([
+  "subject_missing",
+  "subject_too_long",
+  "length_exceeded",
+  "cta_count",
+  "opt_out_missing",
+  "claims_safety",
+]);
 
 function draftSchema(approvedClaims: string[]) {
   const Draft = z.object({
@@ -44,12 +51,17 @@ function draftSchema(approvedClaims: string[]) {
     .object({ drafts: z.array(Draft).length(3), notes: z.string().max(500).optional() })
     .superRefine((value, ctx) => {
       const steps = value.drafts.map((d) => d.sequence_step).sort();
-      if (steps.join() !== "1,2,3") ctx.addIssue({ code: "custom", message: "return exactly steps 1, 2 and 3" });
+      if (steps.join() !== "1,2,3")
+        ctx.addIssue({ code: "custom", message: "return exactly steps 1, 2 and 3" });
       value.drafts.forEach((d, i) => {
         const verdict = reviewEmailDraft({ ...d, approved_claims: approvedClaims });
         verdict.failed_criteria.forEach((criterion, j) => {
           if (AGENT_FIXABLE.has(criterion)) {
-            ctx.addIssue({ code: "custom", path: ["drafts", i], message: verdict.required_fixes[j] ?? criterion });
+            ctx.addIssue({
+              code: "custom",
+              path: ["drafts", i],
+              message: verdict.required_fixes[j] ?? criterion,
+            });
           }
         });
       });
@@ -112,6 +124,9 @@ export async function draftSequence(input: SequenceDraftInput): Promise<Sequence
     const drafts = [...data.drafts].sort((a, b) => a.sequence_step - b.sequence_step);
     return { source: "agent", notes: data.notes, drafts };
   } catch (err) {
-    return template(input, `Template draft — the outreach agent failed (${err instanceof Error ? err.message : "error"}).`);
+    return template(
+      input,
+      `Template draft — the outreach agent failed (${err instanceof Error ? err.message : "error"}).`,
+    );
   }
 }

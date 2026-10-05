@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { calendarProvider } from "@/lib/providers";
-import { env } from "@/lib/config/env";
 import type { Db } from "@/lib/db/client";
 import {
   AppError,

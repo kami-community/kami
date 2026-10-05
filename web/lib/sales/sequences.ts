@@ -111,14 +111,12 @@ async function enrollAccount(
     .single();
   if (enrollError) return { skipped: enrollError.message };
 
-  const { error: draftError } = await db
-    .from("sales_touchpoints")
-    .insert(
-      touchpointRows(ctx.sessionId, enrollment.id as string, sequence.drafts, {
-        source: sequence.source,
-        notes: sequence.notes,
-      }),
-    );
+  const { error: draftError } = await db.from("sales_touchpoints").insert(
+    touchpointRows(ctx.sessionId, enrollment.id as string, sequence.drafts, {
+      source: sequence.source,
+      notes: sequence.notes,
+    }),
+  );
   if (draftError) {
     // Do not leave an enrollment without drafts behind.
     const { error: cleanupError } = await db
@@ -168,7 +166,11 @@ export async function createSequence(
     sequenceId: sequence.id as string,
     campaign,
     goal: session.goals[0] ?? "",
-    contextPack: buildCompanyContextPack({ dossier, domain: session.canonical_domain, goals: session.goals }),
+    contextPack: buildCompanyContextPack({
+      dossier,
+      domain: session.canonical_domain,
+      goals: session.goals,
+    }),
   };
   const enrolled: string[] = [];
   const skipped: SkippedAccount[] = [];

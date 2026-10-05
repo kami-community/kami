@@ -15,7 +15,6 @@ import SalesPipeline from "@/components/SalesPipeline";
 import SalesInbox from "@/components/SalesInbox";
 import MeetingQueue from "@/components/MeetingQueue";
 import SalesTaskBoard from "@/components/SalesTaskBoard";
-import KillSwitch from "@/components/KillSwitch";
 import SegmentConfirm from "@/components/SegmentConfirm";
 
 /** Steps shown after setup is complete (Confirm who/what is full-screen SalesSetup only). */
@@ -199,20 +198,18 @@ export default function SalesPanel({
       <div className="sales-panel-head">
         <p className="label-caps">Outbound sales</p>
         <div className="sales-panel-actions">
+          <button type="button" className="btn-outline" onClick={() => setShowSettings(true)}>
+            Edit setup
+          </button>
           <button
             type="button"
-            className="btn-outline"
-            onClick={() => setShowSettings(true)}
-            title="Edit who and what"
-            aria-label="Edit who and what"
-          >
-            ⚙
-          </button>
-          <KillSwitch
-            paused={paused}
-            onChange={handlePauseChange}
+            className="btn-outline mono"
+            aria-pressed={paused}
+            onClick={() => handlePauseChange(!paused)}
             disabled={pendingPaused !== null}
-          />
+          >
+            {pendingPaused !== null ? "Saving…" : paused ? "Resume Sales" : "Pause Sales"}
+          </button>
         </div>
       </div>
       {pauseError && (

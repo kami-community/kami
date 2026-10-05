@@ -46,13 +46,20 @@ function planSurfaces(plan: DistributionPlan): DistributionPlatform[] {
   return surfaces.length ? surfaces : ["x", "reddit", "linkedin"];
 }
 
+/** First sentence of the positioning, cut at a word boundary, without trailing punctuation. */
+function topicOf(positioning: string | undefined): string {
+  const sentence = (positioning ?? "").trim().split(/(?<=[.!?])\s/)[0] ?? "";
+  const clipped = sentence.length > 120 ? sentence.slice(0, 120).replace(/\s+\S*$/, "") : sentence;
+  return clipped.replace(/[\s.;,:!?]+$/, "");
+}
+
 function fallbackPlan(
   domain: string,
   dossier: Dossier | null,
   reviseNote?: string,
 ): RecommendPlanResult["plan"] {
   const company = dossier?.company || domain;
-  const positioning = dossier?.positioning?.slice(0, 120) || `what ${company} helps people do`;
+  const positioning = topicOf(dossier?.positioning) || `what ${company} helps people do`;
   return {
     goal: "early_users",
     goal_label: "Find conversations where people need this product",
@@ -60,8 +67,7 @@ function fallbackPlan(
       ? `Revised direction: ${reviseNote.trim().slice(0, 200)}. Lead with a useful take on ${positioning}.`
       : `Join conversations about ${positioning}; answer usefully before any product mention.`,
     surfaces: ["x", "reddit", "linkedin"],
-    rationale:
-      "[Offline fallback] Hermes unavailable — starter plan only. Confirm or edit before researching.",
+    rationale: "Starter plan from your dossier — confirm or edit it before researching.",
     why_these_surfaces:
       "X and Reddit for live conversations; LinkedIn for a founder-native credibility post.",
     status: "proposed",
@@ -440,10 +446,7 @@ export async function recommendDistributionPlan(input: {
   }
 
   return {
-    plan: {
-      ...offline,
-      rationale: `[Offline fallback — Hermes parse failed] ${offline.rationale}`,
-    },
+    plan: offline,
     source: "fallback",
     note: "Hermes returned no parseable plan — showing starter plan.",
   };

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { api, errorMessage } from "@/lib/client/api";
 import {
   DISTRIBUTION_PLATFORMS,
   type DistributionCampaignConfig,
@@ -23,6 +24,11 @@ const PLATFORM_LABELS: Record<DistributionPlatform, string> = {
   discord: "Discord",
 };
 
+/** No usable plan yet: neither a proposed nor an approved one with an angle. */
+function needsRecommendation(c: DistributionCampaignConfig | null | undefined): boolean {
+  return !(c?.angle && (c.status === "proposed" || c.status === "approved"));
+}
+
 export default function DistributionSetup({
   sessionDbId,
   initialConfig,
@@ -31,11 +37,15 @@ export default function DistributionSetup({
   const [config, setConfig] = useState<DistributionCampaignConfig | null>(initialConfig ?? null);
   const [source, setSource] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(
+    () => Boolean(sessionDbId) && needsRecommendation(initialConfig),
+  );
   const [error, setError] = useState<string | null>(null);
   const [reviseNote, setReviseNote] = useState("");
 
-  const [goalLabel, setGoalLabel] = useState(initialConfig?.goal_label ?? "");
+  const [goalLabel, setGoalLabel] = useState(
+    initialConfig ? initialConfig.goal_label || initialConfig.goal.replace(/_/g, " ") : "",
+  );
   const [angle, setAngle] = useState(initialConfig?.angle ?? "");
   const [surfaces, setSurfaces] = useState<DistributionPlatform[]>(
     initialConfig?.surfaces?.length ? initialConfig.surfaces : [],
@@ -57,48 +67,44 @@ export default function DistributionSetup({
     if (meta?.note !== undefined) setNote(meta.note);
   }
 
-  async function recommend(withRevise?: string) {
+  /** Ask the strategist for a plan; state is updated only from the promise callbacks. */
+  function requestRecommendation(sessionId: string, withRevise?: string) {
+    return api
+      .post<{
+        config: DistributionCampaignConfig;
+        source?: string;
+        note?: string | null;
+      }>("/api/marketing/distribution/setup", {
+        session_id: sessionId,
+        action: "recommend",
+        ...(withRevise?.trim() ? { revise_note: withRevise.trim() } : {}),
+      })
+      .then((json) => {
+        applyConfig(json.config, { source: json.source, note: json.note });
+        setReviseNote("");
+      })
+      .catch((err) => setError(errorMessage(err, "Could not get a recommendation")))
+      .finally(() => setBusy(false));
+  }
+
+  function recommend(withRevise?: string) {
     if (!sessionDbId) return;
     setBusy(true);
     setError(null);
-    try {
-      const res = await fetch("/api/marketing/distribution/setup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          session_id: sessionDbId,
-          action: "recommend",
-          ...(withRevise?.trim() ? { revise_note: withRevise.trim() } : {}),
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok || !json.config) {
-        setError(json.error ?? "Could not get a recommendation");
-        return;
-      }
-      applyConfig(json.config as DistributionCampaignConfig, {
-        source: json.source,
-        note: json.note,
-      });
-      setReviseNote("");
-    } catch {
-      setError("Network error");
-    } finally {
-      setBusy(false);
-    }
+    void requestRecommendation(sessionDbId, withRevise);
   }
 
+  // Recommend at most once per session, even when effects run twice (Strict Mode).
+  // `busy` already starts true when this first recommendation is due.
+  const requestedFor = useRef<string | null>(null);
   useEffect(() => {
-    if (!sessionDbId) return;
-    if (initialConfig?.angle && initialConfig.status === "proposed") {
-      applyConfig(initialConfig);
-      return;
-    }
+    if (!sessionDbId || requestedFor.current === sessionDbId) return;
+    requestedFor.current = sessionDbId;
     if (initialConfig?.status === "approved" && initialConfig.angle) {
       onComplete(initialConfig);
       return;
     }
-    void recommend();
+    if (needsRecommendation(initialConfig)) void requestRecommendation(sessionDbId);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once when session ready
   }, [sessionDbId]);
 
@@ -119,10 +125,9 @@ export default function DistributionSetup({
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/marketing/distribution/setup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const json = await api.post<{ config: DistributionCampaignConfig }>(
+        "/api/marketing/distribution/setup",
+        {
           session_id: sessionDbId,
           action: "approve",
           goal: config.goal,
@@ -131,16 +136,11 @@ export default function DistributionSetup({
           surfaces,
           rationale: rationale.trim(),
           why_these_surfaces: whySurfaces.trim(),
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok || !json.config) {
-        setError(json.error ?? "Could not approve plan");
-        return;
-      }
-      onComplete(json.config as DistributionCampaignConfig);
-    } catch {
-      setError("Network error");
+        },
+      );
+      onComplete(json.config);
+    } catch (err) {
+      setError(errorMessage(err, "Could not approve plan"));
     } finally {
       setBusy(false);
     }

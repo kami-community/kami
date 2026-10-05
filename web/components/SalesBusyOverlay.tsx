@@ -34,11 +34,17 @@ export default function SalesBusyOverlay({
     return () => window.clearInterval(id);
   }, [stages]);
 
-  useEffect(() => {
+  // A new title is a new job: restart the clock (state adjusted during render, not in an effect).
+  const [timedTitle, setTimedTitle] = useState(title);
+  if (timedTitle !== title) {
+    setTimedTitle(title);
     setElapsedSec(0);
+  }
+
+  useEffect(() => {
     const id = window.setInterval(() => setElapsedSec((s) => s + 1), 1000);
     return () => window.clearInterval(id);
-  }, [title]);
+  }, []);
 
   const stage = stages[index] ?? stages[0];
   const timeHint =

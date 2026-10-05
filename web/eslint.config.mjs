@@ -34,13 +34,6 @@ export default defineConfig([
   ...nextVitals,
   ...nextTs,
   {
-    rules: {
-      // Components still fetch inside effects; the shared data layer removes these,
-      // after which this goes back to "error".
-      "react-hooks/set-state-in-effect": "warn",
-    },
-  },
-  {
     files: [
       "components/**/*.{ts,tsx}",
       "lib/client/**/*.ts",

@@ -2,7 +2,6 @@ import { z } from "zod";
 import { getMe, getPost } from "@/lib/adapters/x/api";
 import { X_ADS_NOT_CONFIGURED } from "@/lib/adapters/xAds";
 import { boostProvider } from "@/lib/providers";
-import { env } from "@/lib/config/env";
 import { requireConnection } from "@/lib/connections/service";
 import type { Db } from "@/lib/db/client";
 import { AppError, conflict, forbidden, notConfigured } from "@/lib/http/errors";

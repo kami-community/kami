@@ -83,14 +83,11 @@ export default function Landing({
         </p>
 
         {resumeDomain && (
-          <div
-            className="kraft-card landing-fade"
-            style={{ maxWidth: 420, textAlign: "left", padding: "var(--stack-md)" }}
-          >
-            <p style={{ marginBottom: "var(--stack-sm)" }}>
+          <div className="kraft-card landing-fade landing-resume">
+            <p>
               Continue previous campaign for <strong>{resumeDomain}</strong>?
             </p>
-            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+            <div className="landing-resume__actions">
               <button type="button" className="hanko-btn" onClick={onResume} disabled={busy}>
                 Continue
               </button>
@@ -120,7 +117,11 @@ export default function Landing({
               autoFocus
             />
           </div>
-          <button className="hanko-btn landing-cta" type="submit" disabled={busy}>
+          <button
+            className={resumeDomain ? "btn-secondary landing-cta" : "hanko-btn landing-cta"}
+            type="submit"
+            disabled={busy}
+          >
             {busy ? "Researching your site…" : "Build my first customer plan"}
           </button>
         </form>
