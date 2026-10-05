@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { ReviewerVerdict } from "@/lib/salesTypes";
+import { api, errorMessage } from "@/lib/client/api";
 
 interface DraftRow {
   id: string;
@@ -35,6 +36,7 @@ export default function SalesDraftQueue({ sessionDbId, paused, onSent }: SalesDr
   const [batchBusy, setBatchBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [needsFirstSendApproval, setNeedsFirstSendApproval] = useState(false);
+  const [approving, setApproving] = useState(false);
   const [individualSendCount, setIndividualSendCount] = useState(0);
 
   const fetchDrafts = useCallback(() => {
@@ -57,14 +59,15 @@ export default function SalesDraftQueue({ sessionDbId, paused, onSent }: SalesDr
 
   async function approveFirstSend() {
     if (!sessionDbId) return;
-    const res = await fetch("/api/sales/approvals", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ session_id: sessionDbId, scope: "first_send" }),
-    });
-    if (res.ok) {
+    setApproving(true);
+    try {
+      await api.post("/api/sales/approvals", { session_id: sessionDbId, scope: "first_send" });
       setNeedsFirstSendApproval(false);
       setError(null);
+    } catch (err) {
+      setError(errorMessage(err, "Could not record your approval"));
+    } finally {
+      setApproving(false);
     }
   }
 
@@ -182,8 +185,13 @@ export default function SalesDraftQueue({ sessionDbId, paused, onSent }: SalesDr
           style={{ padding: "var(--stack-sm)", marginBottom: "var(--stack-sm)" }}
         >
           <p style={{ fontSize: 14, marginBottom: "0.5rem" }}>First send needs your explicit OK.</p>
-          <button type="button" className="hanko-btn" onClick={approveFirstSend}>
-            Approve first send
+          <button
+            type="button"
+            className="hanko-btn"
+            onClick={approveFirstSend}
+            disabled={approving}
+          >
+            {approving ? "Saving…" : "Approve first send"}
           </button>
         </div>
       )}

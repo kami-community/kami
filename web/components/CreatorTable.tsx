@@ -6,126 +6,94 @@ import StatusChip from "@/components/StatusChip";
 
 interface CreatorTableProps {
   creators: MarketingCrmEntry[];
+  busy?: boolean;
+  disabled?: boolean;
   onApproveOutreach: (ids: string[]) => void;
 }
 
-export default function CreatorTable({ creators, onApproveOutreach }: CreatorTableProps) {
+export default function CreatorTable({
+  creators,
+  busy,
+  disabled,
+  onApproveOutreach,
+}: CreatorTableProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const identified = creators.filter((c) => c.status === "identified");
 
   return (
     <div>
       {identified.length > 0 && (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "var(--stack-sm)",
-          }}
-        >
-          <p className="mono" style={{ color: "var(--ink-soft)", fontSize: 12 }}>
-            {identified.length} creators ready for outreach
-          </p>
+        <div className="section-head">
+          <p className="fine-print">{identified.length} creators ready for outreach</p>
           <button
+            type="button"
             className="hanko-btn"
-            style={{ fontSize: 13, padding: "0.5rem 1rem" }}
+            disabled={busy || disabled}
             onClick={() => onApproveOutreach(identified.map((c) => c.id))}
           >
-            Approve outreach ({identified.length})
+            {busy ? "Sending…" : `Approve outreach (${identified.length})`}
           </button>
         </div>
       )}
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--stack-sm)" }}>
+      <div className="card-list">
         {creators.length === 0 && (
-          <p className="mono" style={{ color: "var(--ink-soft)" }}>
-            No creators yet. Run discovery to find matches.
-          </p>
+          <p className="fine-print">No creators yet. Run discovery to find matches.</p>
         )}
-        {creators.map((creator) => (
-          <div className="kraft-card" key={creator.id} style={{ padding: "0.75rem 1rem" }}>
-            <button
-              type="button"
-              onClick={() => setExpandedId(expandedId === creator.id ? null : creator.id)}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                width: "100%",
-                textAlign: "left",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: "1rem",
-                  flexWrap: "wrap",
-                }}
+        {creators.map((creator) => {
+          const expanded = expandedId === creator.id;
+          return (
+            <div className="kraft-card entity-card" key={creator.id}>
+              <button
+                type="button"
+                className="expand-toggle"
+                aria-expanded={expanded}
+                onClick={() => setExpandedId(expanded ? null : creator.id)}
               >
-                <div style={{ flex: 1, minWidth: 160 }}>
-                  <strong style={{ fontFamily: "var(--font-headline)", fontSize: 14 }}>
-                    {creator.name ?? creator.handle}
-                  </strong>
-                  <p className="mono" style={{ color: "var(--ink-soft)", fontSize: 12 }}>
-                    @{creator.handle}
-                  </p>
-                </div>
-                <div
-                  className="mono"
-                  style={{ fontSize: 12, color: "var(--ink-soft)", display: "flex", gap: "1rem" }}
-                >
-                  {creator.followers != null && (
-                    <span>{(creator.followers / 1000).toFixed(1)}k followers</span>
-                  )}
-                  {creator.engagement_rate != null && (
-                    <span>{(creator.engagement_rate * 100).toFixed(1)}% eng</span>
-                  )}
-                </div>
-                <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                  {creator.offer_amount != null && (
-                    <span className="mono" style={{ fontSize: 12 }}>
-                      ${creator.offer_amount}
-                    </span>
-                  )}
-                  <StatusChip label={creator.status} />
-                </div>
-                <span style={{ color: "var(--hanko)", fontSize: 12 }}>
-                  {expandedId === creator.id ? "−" : "+"}
+                <span className="entity-card__row">
+                  <span className="entity-card__main">
+                    <strong className="entity-card__name">{creator.name ?? creator.handle}</strong>
+                    <span className="fine-print notice-card__body">@{creator.handle}</span>
+                  </span>
+                  <span className="fine-print entity-card__stats">
+                    {creator.followers != null && (
+                      <span>{(creator.followers / 1000).toFixed(1)}k followers</span>
+                    )}
+                    {creator.engagement_rate != null && (
+                      <span>{(creator.engagement_rate * 100).toFixed(1)}% eng</span>
+                    )}
+                  </span>
+                  <span className="entity-card__stats">
+                    {creator.offer_amount != null && (
+                      <span className="fine-print">${creator.offer_amount}</span>
+                    )}
+                    <StatusChip label={creator.status} />
+                  </span>
+                  <span className="fine-print fine-print--alert" aria-hidden>
+                    {expanded ? "−" : "+"}
+                  </span>
                 </span>
-              </div>
-            </button>
-            {expandedId === creator.id && (
-              <div
-                style={{
-                  marginTop: "var(--stack-sm)",
-                  paddingTop: "var(--stack-sm)",
-                  borderTop: "1px solid var(--crease)",
-                }}
-              >
-                {creator.relevance_reasoning && (
-                  <p style={{ fontSize: 13, marginBottom: "0.4rem" }}>
-                    <span className="label-caps" style={{ marginRight: "0.5rem" }}>
-                      Why
-                    </span>
-                    {creator.relevance_reasoning}
-                  </p>
-                )}
-                {creator.niche_match_score != null && (
-                  <p className="mono" style={{ fontSize: 12, color: "var(--ink-soft)" }}>
-                    Niche match: {Math.round(creator.niche_match_score * 100)}%
-                  </p>
-                )}
-                {creator.calendar_event_id && (
-                  <p className="mono" style={{ fontSize: 12, color: "var(--moss)" }}>
-                    ✓ Calendar event scheduled
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
+              </button>
+              {expanded && (
+                <div className="entity-card__detail">
+                  {creator.relevance_reasoning && (
+                    <p className="entity-card__reason">
+                      <span className="label-caps">Why </span>
+                      {creator.relevance_reasoning}
+                    </p>
+                  )}
+                  {creator.niche_match_score != null && (
+                    <p className="fine-print">
+                      Niche match: {Math.round(creator.niche_match_score * 100)}%
+                    </p>
+                  )}
+                  {creator.calendar_event_id && (
+                    <p className="fine-print fine-print--ok">✓ Calendar event scheduled</p>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

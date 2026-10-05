@@ -7,6 +7,8 @@ import ConversationThread from "@/components/ConversationThread";
 
 type PlatformFilter = "all" | "x" | "instagram";
 
+const FILTER_LABEL: Record<PlatformFilter, string> = { all: "All", x: "X", instagram: "IG" };
+
 interface ConversationsPanelProps {
   conversations: Conversation[];
   entries: MarketingCrmEntry[];
@@ -47,67 +49,46 @@ export default function ConversationsPanel({
   }
 
   return (
-    <aside>
-      <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>
+    <aside aria-labelledby="conversations-title">
+      <p id="conversations-title" className="label-caps">
         Conversations
       </p>
-      <div style={{ display: "flex", gap: "0.4rem", marginBottom: "var(--stack-sm)" }}>
-        {(["all", "x", "instagram"] as PlatformFilter[]).map((f) => (
+      <div className="chip-row" role="group" aria-label="Filter by platform">
+        {(Object.keys(FILTER_LABEL) as PlatformFilter[]).map((f) => (
           <button
             key={f}
             type="button"
-            className="mono"
+            className="chip-toggle chip-toggle--small"
+            aria-pressed={filter === f}
             onClick={() => setFilter(f)}
-            style={{
-              background: filter === f ? "var(--kraft)" : "transparent",
-              border: "1px solid var(--ink)",
-              padding: "0.2rem 0.5rem",
-              cursor: "pointer",
-              fontSize: 11,
-            }}
           >
-            {f === "all" ? "All" : f === "x" ? "X" : "IG"}
+            {FILTER_LABEL[f]}
           </button>
         ))}
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--stack-sm)" }}>
-        {actionFirst.length === 0 && (
-          <p className="mono" style={{ color: "var(--ink-soft)" }}>
-            No active conversations.
-          </p>
-        )}
+      <div className="card-list panel-section">
+        {actionFirst.length === 0 && <p className="fine-print">No active conversations.</p>}
         {actionFirst.map((conv) => {
           const entry = entries.find((e) => e.id === conv.crm_entry_id);
           return (
             <button
               key={conv.id}
               type="button"
-              className="kraft-card"
+              className="kraft-card entity-card"
               onClick={() => setSelectedId(conv.id)}
-              style={{ padding: "0.75rem 1rem", cursor: "pointer", textAlign: "left" }}
             >
-              <div
-                style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
-              >
-                <strong style={{ fontFamily: "var(--font-headline)", fontSize: 14 }}>
-                  @{entry?.handle ?? "unknown"}
-                </strong>
+              <span className="entity-card__row">
+                <strong className="entity-card__name">@{entry?.handle ?? "unknown"}</strong>
                 <StatusChip label={conv.status} />
-              </div>
+              </span>
               {conv.escalation_reason && (
-                <p
-                  className="mono"
-                  style={{ fontSize: 11, color: "var(--hanko)", marginTop: "0.3rem" }}
-                >
+                <span className="fine-print fine-print--alert notice-card__body">
                   ⚠ {conv.escalation_reason}
-                </p>
+                </span>
               )}
-              <p
-                className="mono"
-                style={{ fontSize: 11, color: "var(--outline)", marginTop: "0.2rem" }}
-              >
+              <span className="fine-print notice-card__body">
                 {conv.platform} · updated {new Date(conv.updated_at).toLocaleDateString()}
-              </p>
+              </span>
             </button>
           );
         })}

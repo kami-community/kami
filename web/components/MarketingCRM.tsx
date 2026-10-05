@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { MarketingConfig, MarketingCrmEntry } from "@/lib/marketingTypes";
+import { api, errorMessage } from "@/lib/client/api";
 import BoostManager from "@/components/BoostManager";
 import LeadTable from "@/components/LeadTable";
 import CreatorTable from "@/components/CreatorTable";
@@ -16,6 +17,11 @@ interface MarketingCRMProps {
   onRefresh: () => void;
 }
 
+interface DiscoverResponse {
+  message: string;
+  warnings: string[];
+}
+
 export default function MarketingCRM({
   entries,
   config,
@@ -25,108 +31,68 @@ export default function MarketingCRM({
 }: MarketingCRMProps) {
   const hasX = config.platforms.includes("x");
   const hasIg = config.platforms.includes("instagram");
-  const defaultTab: CrmSubTab = hasX ? "x_outreach" : "creators";
-  const [subTab, setSubTab] = useState<CrmSubTab>(defaultTab);
-  const [discovering, setDiscovering] = useState(false);
-  const [discoverMsg, setDiscoverMsg] = useState<string | null>(null);
+  const [subTab, setSubTab] = useState<CrmSubTab>(hasX ? "x_outreach" : "creators");
+  const [busy, setBusy] = useState<"discover" | "outreach" | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const leads = entries.filter((e) => e.type === "x_lead");
   const creators = entries.filter((e) => e.type === "creator");
 
-  async function approveLeads(ids: string[]) {
-    if (!sessionDbId) return;
-    const errors: string[] = [];
-    for (const id of ids) {
-      await fetch("/api/marketing/crm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, status: "approved" }),
-      });
-      const dm = await fetch("/api/marketing/dm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionDbId, crm_entry_id: id }),
-      });
-      if (!dm.ok) {
-        const j = await dm.json().catch(() => ({}));
-        errors.push((j as { error?: string }).error ?? `DM failed for ${id}`);
+  /** Approve each entry (X leads only) and send its first DM; stops at the first failure. */
+  async function sendOutreach(ids: string[], platformLabel: string, approveFirst: boolean) {
+    if (!sessionDbId || busy) return;
+    setBusy("outreach");
+    setMessage(null);
+    setError(null);
+    let sent = 0;
+    try {
+      for (const id of ids) {
+        if (approveFirst) {
+          await api.post("/api/marketing/crm", { session_id: sessionDbId, id, status: "approved" });
+        }
+        await api.post("/api/marketing/dm", { session_id: sessionDbId, crm_entry_id: id });
+        sent++;
       }
+      setMessage(`Sent ${sent} ${platformLabel} outreach DM(s) from your connected account.`);
+    } catch (err) {
+      setError(
+        `${errorMessage(err, "DM failed")}${sent ? ` (${sent} sent before the failure)` : ""}`,
+      );
+    } finally {
+      setBusy(null);
+      onRefresh();
     }
-    if (errors.length) setDiscoverMsg(errors[0]);
-    else setDiscoverMsg(`Sent ${ids.length} X outreach DM(s) from your connected account.`);
-    onRefresh();
-  }
-
-  async function approveCreatorOutreach(ids: string[]) {
-    if (!sessionDbId) return;
-    const errors: string[] = [];
-    for (const id of ids) {
-      const dm = await fetch("/api/marketing/dm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionDbId, crm_entry_id: id }),
-      });
-      if (!dm.ok) {
-        const j = await dm.json().catch(() => ({}));
-        errors.push((j as { error?: string }).error ?? `DM failed for ${id}`);
-      }
-    }
-    if (errors.length) setDiscoverMsg(errors[0]);
-    else setDiscoverMsg(`Sent ${ids.length} Instagram outreach DM(s) from your connected account.`);
-    onRefresh();
   }
 
   async function triggerDiscovery() {
-    if (paused || discovering || !sessionDbId) return;
-    setDiscovering(true);
-    setDiscoverMsg(null);
+    if (paused || busy || !sessionDbId) return;
+    setBusy("discover");
+    setMessage(null);
+    setError(null);
     try {
-      const res = await fetch("/api/marketing/discover", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionDbId }),
+      const res = await api.post<DiscoverResponse>("/api/marketing/discover", {
+        session_id: sessionDbId,
       });
-      const json = (await res.json().catch(() => ({}))) as {
-        error?: string;
-        message?: string;
-        paused?: boolean;
-        created?: number;
-        updated?: number;
-        warnings?: string[];
-      };
-      if (res.status === 423) {
-        setDiscoverMsg("Marketing is paused — resume to run discovery.");
-        return;
-      }
-      if (!res.ok) {
-        setDiscoverMsg(json.error ?? json.message ?? `Discovery failed (${res.status})`);
-        return;
-      }
-      const warn = json.warnings?.length ? ` (${json.warnings[0]})` : "";
-      setDiscoverMsg((json.message ?? "Discovery complete.") + warn);
+      setMessage(res.message + (res.warnings.length ? ` (${res.warnings[0]})` : ""));
       onRefresh();
-    } catch (e) {
-      setDiscoverMsg(e instanceof Error ? e.message : "Discovery failed");
+    } catch (err) {
+      setError(errorMessage(err, "Discovery failed"));
     } finally {
-      setDiscovering(false);
+      setBusy(null);
     }
   }
 
   return (
     <div>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "var(--stack-sm)",
-        }}
-      >
+      <div className="section-head">
         {hasX && hasIg && (
-          <div style={{ display: "flex", gap: "0" }}>
+          <div className="tab-row" role="tablist">
             <button
               type="button"
+              role="tab"
               className="campaign-tab"
+              aria-selected={subTab === "x_outreach"}
               data-active={subTab === "x_outreach"}
               onClick={() => setSubTab("x_outreach")}
             >
@@ -134,7 +100,9 @@ export default function MarketingCRM({
             </button>
             <button
               type="button"
+              role="tab"
               className="campaign-tab"
+              aria-selected={subTab === "creators"}
               data-active={subTab === "creators"}
               onClick={() => setSubTab("creators")}
             >
@@ -143,26 +111,23 @@ export default function MarketingCRM({
           </div>
         )}
         <button
-          className="mono"
+          type="button"
+          className="btn-outline"
           onClick={triggerDiscovery}
-          disabled={paused || discovering || !sessionDbId}
-          style={{
-            border: "1px solid var(--ink)",
-            background: "transparent",
-            padding: "0.3rem 0.7rem",
-            cursor: paused || discovering || !sessionDbId ? "not-allowed" : "pointer",
-            opacity: paused || discovering || !sessionDbId ? 0.5 : 1,
-          }}
+          disabled={paused || busy !== null || !sessionDbId}
         >
-          {discovering ? "Discovering…" : "Run discovery"}
+          {busy === "discover" ? "Discovering…" : "Run discovery"}
         </button>
       </div>
-      {discoverMsg && (
-        <p
-          className="mono"
-          style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: "var(--stack-sm)" }}
-        >
-          {discoverMsg}
+      {paused && <p className="paused-banner">Marketing is paused — resume to run discovery.</p>}
+      {error && (
+        <p role="alert" className="form-error">
+          {error}
+        </p>
+      )}
+      {message && (
+        <p className="fine-print" aria-live="polite">
+          {message}
         </p>
       )}
       <hr className="crease" />
@@ -171,15 +136,23 @@ export default function MarketingCRM({
         <>
           <BoostManager sessionDbId={sessionDbId} />
           <hr className="crease" />
-          <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>
-            Cold Outreach
-          </p>
-          <LeadTable leads={leads} onApprove={approveLeads} />
+          <p className="label-caps">Cold Outreach</p>
+          <LeadTable
+            leads={leads}
+            busy={busy === "outreach"}
+            disabled={paused}
+            onApprove={(ids) => void sendOutreach(ids, "X", true)}
+          />
         </>
       )}
 
       {subTab === "creators" && hasIg && (
-        <CreatorTable creators={creators} onApproveOutreach={approveCreatorOutreach} />
+        <CreatorTable
+          creators={creators}
+          busy={busy === "outreach"}
+          disabled={paused}
+          onApproveOutreach={(ids) => void sendOutreach(ids, "Instagram", false)}
+        />
       )}
     </div>
   );

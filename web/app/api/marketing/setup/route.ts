@@ -1,90 +1,66 @@
-import { supabaseServer } from "@/lib/supabase";
+import { z } from "zod";
+import { db } from "@/lib/db/client";
+import { ids, parseBody, parseQuery, route } from "@/lib/http/route";
+import {
+  MARKETING_PLATFORMS,
+  OUTREACH_GOALS,
+  getMarketingConfig,
+  saveMarketingConfig,
+  setMarketingPaused,
+} from "@/lib/marketing/setup";
 
-export async function GET(request: Request): Promise<Response> {
-  const sb = supabaseServer();
-  if (!sb) return Response.json({ config: null });
+const Query = z.object({ session_id: ids.sessionId });
 
-  const sessionId = new URL(request.url).searchParams.get("session_id");
-  if (!sessionId) return Response.json({ config: null });
+/** `{ config }` — null until Marketing is set up. */
+export const GET = route(async (request) => {
+  const { session_id } = parseQuery(request, Query);
+  return Response.json({ config: await getMarketingConfig(db(), session_id) });
+});
 
-  const { data } = await sb
-    .from("marketing_config")
-    .select("*")
-    .eq("session_id", sessionId)
-    .maybeSingle();
+const money = z.number().finite().min(0).max(1_000_000);
 
-  return Response.json({ config: data });
-}
+const SetupBody = z
+  .object({
+    session_id: ids.sessionId,
+    platforms: z.array(z.enum(MARKETING_PLATFORMS)).min(1, "pick at least one platform"),
+    x_boost_budget: money.optional(),
+    x_outreach_goal: z.enum(OUTREACH_GOALS).optional(),
+    ig_offer_min: money.optional(),
+    ig_offer_max: money.optional(),
+    ig_niche_keywords: z.array(z.string().trim().min(1).max(80)).max(20).optional(),
+    ig_min_followers: z.number().int().min(0).optional(),
+    tone: z.array(z.string().trim().min(1).max(40)).max(10).optional(),
+  })
+  .refine(
+    (b) => b.ig_offer_min == null || b.ig_offer_max == null || b.ig_offer_min <= b.ig_offer_max,
+    { message: "ig_offer_min must not exceed ig_offer_max", path: ["ig_offer_min"] },
+  );
 
-export async function POST(request: Request): Promise<Response> {
-  const sb = supabaseServer();
-  if (!sb) return Response.json({ persisted: false });
+/** Create or replace the Marketing config (requires the confirmed dossier). */
+export const POST = route(async (request) => {
+  const body = await parseBody(request, SetupBody);
+  const config = await saveMarketingConfig(db(), {
+    sessionId: body.session_id,
+    platforms: [...new Set(body.platforms)],
+    xBoostBudget: body.x_boost_budget,
+    xOutreachGoal: body.x_outreach_goal,
+    igOfferMin: body.ig_offer_min,
+    igOfferMax: body.ig_offer_max,
+    igNicheKeywords: body.ig_niche_keywords,
+    igMinFollowers: body.ig_min_followers,
+    tone: body.tone,
+  });
+  return Response.json({ persisted: true, id: config.id, config });
+});
 
-  const body = await request.json();
-  const {
-    session_id,
-    platforms,
-    x_boost_budget,
-    x_outreach_goal,
-    ig_offer_min,
-    ig_offer_max,
-    ig_niche_keywords,
-    ig_min_followers,
-    tone,
-    autonomous_paused,
-  } = body;
+const PauseBody = z.object({ session_id: ids.sessionId, autonomous_paused: z.boolean() });
 
-  if (!session_id || !platforms?.length) {
-    return Response.json({ error: "session_id and platforms required" }, { status: 400 });
-  }
-
-  const row: Record<string, unknown> = {
-    session_id,
-    platforms,
-    x_boost_budget: x_boost_budget ?? null,
-    x_outreach_goal: x_outreach_goal ?? null,
-    ig_offer_min: ig_offer_min ?? null,
-    ig_offer_max: ig_offer_max ?? null,
-    ig_niche_keywords: ig_niche_keywords ?? null,
-    ig_min_followers: ig_min_followers ?? 5000,
-    tone: tone ?? null,
-    updated_at: new Date().toISOString(),
-  };
-  if (typeof autonomous_paused === "boolean") {
-    row.autonomous_paused = autonomous_paused;
-  }
-
-  const { data, error } = await sb
-    .from("marketing_config")
-    .upsert(row, { onConflict: "session_id" })
-    .select("*")
-    .single();
-
-  if (error) return Response.json({ error: error.message }, { status: 500 });
-  return Response.json({ persisted: true, id: data.id, config: data });
-}
-
-export async function PATCH(request: Request): Promise<Response> {
-  const sb = supabaseServer();
-  if (!sb) return Response.json({ persisted: false });
-
-  const { session_id, autonomous_paused } = await request.json();
-  if (!session_id || typeof autonomous_paused !== "boolean") {
-    return Response.json({ error: "session_id and autonomous_paused required" }, { status: 400 });
-  }
-
-  const { data, error } = await sb
-    .from("marketing_config")
-    .update({
-      autonomous_paused,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("session_id", session_id)
-    .select("*")
-    .maybeSingle();
-
-  if (error) return Response.json({ error: error.message }, { status: 500 });
-  if (!data) return Response.json({ error: "no marketing config found" }, { status: 404 });
-
-  return Response.json({ persisted: true, config: data });
-}
+/** Pause or resume Marketing outreach for the campaign. */
+export const PATCH = route(async (request) => {
+  const { session_id, autonomous_paused } = await parseBody(request, PauseBody);
+  const config = await setMarketingPaused(db(), {
+    sessionId: session_id,
+    paused: autonomous_paused,
+  });
+  return Response.json({ persisted: true, config });
+});
