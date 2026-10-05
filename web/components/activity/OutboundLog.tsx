@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { api, errorMessage, withQuery } from "@/lib/client/api";
 import { useApi } from "@/lib/client/useApi";
+import EmptyState from "@/components/ui/EmptyState";
+import Skeleton from "@/components/ui/Skeleton";
 import type { OutboundReceipt } from "@/lib/outbound/receipts";
 
 const CHANNEL_LABEL: Record<OutboundReceipt["channel"], string> = {
@@ -47,18 +49,18 @@ export default function OutboundLog({ sessionId }: { sessionId: string }) {
         </button>
       </div>
       {refreshNote && <p className="mono meta-line">{refreshNote}</p>}
-      {loading && <p className="muted">Loading…</p>}
+      {loading && <Skeleton lines={4} />}
       {error && (
         <p role="alert" className="mono form-error">
           {error}
         </p>
       )}
       {!loading && !error && receipts.length === 0 && (
-        <p className="muted">
-          Nothing has been sent yet. Approved sends and posts appear here with proof.
-        </p>
+        <EmptyState title="Nothing sent yet">
+          Approved sends, posts and DMs appear here with proof: the provider id or the live link.
+        </EmptyState>
       )}
-      <ul className="row-list">
+      <ul className="row-list fade-in">
         {receipts.map((r) => (
           <li key={r.id} className="row">
             <button

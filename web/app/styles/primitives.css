@@ -1,0 +1,224 @@
+/*
+ * Shared primitives. One hanko (primary) action per screen; secondary and
+ * outline actions recede. All buttons press like paper under a finger.
+ */
+
+/* --- Buttons ------------------------------------------------------------- */
+
+.hanko-btn,
+.btn-secondary,
+.btn-outline,
+.link-button {
+  transition:
+    background-color var(--dur-quick) var(--ease-settle),
+    color var(--dur-quick) var(--ease-settle),
+    border-color var(--dur-quick) var(--ease-settle),
+    transform var(--dur-quick) var(--ease-press),
+    box-shadow var(--dur-quick) var(--ease-settle);
+}
+
+/* The seal presses down. */
+.hanko-btn:active:not(:disabled) {
+  transform: translateY(1px) scale(0.98);
+}
+.hanko-btn:disabled {
+  opacity: 0.7;
+}
+
+.btn-secondary:hover:not(:disabled),
+.btn-outline:hover:not(:disabled) {
+  box-shadow: var(--lift);
+  transform: translate(-1px, -1px);
+}
+.btn-secondary:active:not(:disabled),
+.btn-outline:active:not(:disabled) {
+  box-shadow: none;
+  transform: none;
+}
+
+.link-button:hover {
+  color: var(--ink);
+}
+
+/* --- Cards ---------------------------------------------------------------- */
+
+.kraft-card {
+  transition:
+    transform var(--dur-base) var(--ease-settle),
+    box-shadow var(--dur-base) var(--ease-settle);
+}
+.kraft-card.is-interactive:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--lift);
+}
+
+/* --- Inputs: a line on a form ---------------------------------------------- */
+
+.form-line input,
+.form-line textarea,
+.form-line select {
+  transition:
+    border-color var(--dur-quick) var(--ease-settle),
+    background-color var(--dur-quick) var(--ease-settle);
+}
+.form-line input:focus,
+.form-line textarea:focus,
+.form-line select:focus {
+  background-color: var(--paper-sunk);
+}
+
+/* --- The seal: a stamped confirmation mark -------------------------------- */
+
+.seal {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--hanko);
+  border: 1.5px solid var(--hanko);
+  padding: 0.2rem 0.55rem;
+  transform: rotate(-8deg);
+  animation: kami-stamp 420ms var(--ease-settle) both;
+}
+.seal--moss {
+  color: var(--moss-deep);
+  border-color: var(--moss-deep);
+}
+
+/* --- Loading: kraft fibre shimmer ------------------------------------------ */
+
+.skeleton {
+  display: block;
+  height: 0.9em;
+  background: linear-gradient(
+    100deg,
+    var(--kraft-light) 30%,
+    var(--paper-raised) 50%,
+    var(--kraft-light) 70%
+  );
+  background-size: 220% 100%;
+  animation: kami-fibre 1.6s linear infinite;
+}
+.skeleton + .skeleton {
+  margin-top: var(--space-2);
+}
+.skeleton--title {
+  height: 1.4em;
+  width: 45%;
+}
+.skeleton--short {
+  width: 60%;
+}
+.skeleton-block {
+  padding: var(--space-4) 0;
+}
+
+/* --- Empty and inline states ---------------------------------------------- */
+
+.empty-state {
+  border: 1px dashed var(--crease-strong);
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: flex-start;
+  color: var(--ink-soft);
+}
+.empty-state__title {
+  font-family: var(--font-headline);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.callout {
+  border-left: 3px solid var(--ink);
+  background: var(--paper-sunk);
+  padding: var(--space-3) var(--space-4);
+}
+.callout--error {
+  border-left-color: var(--error);
+  background: var(--error-wash);
+}
+.callout--success {
+  border-left-color: var(--moss-deep);
+  background: var(--moss-wash);
+}
+.callout--warn {
+  border-left-color: var(--ochre);
+}
+
+/* --- Progress: steps folded along a crease --------------------------------- */
+
+.fold-steps {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+.fold-steps li[data-state="done"] {
+  color: var(--moss-deep);
+}
+.fold-steps li[data-state="active"] {
+  color: var(--ink);
+  font-weight: 700;
+}
+.fold-steps li[data-state="done"]::before {
+  content: "✓ ";
+}
+.fold-steps li[data-state="active"]::before {
+  content: "● ";
+  color: var(--hanko);
+}
+
+/* --- Overview -------------------------------------------------------------- */
+
+.overview-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.dossier-placeholder {
+  max-width: 640px;
+}
+
+.callout__action {
+  margin-top: var(--space-3);
+}
+
+/* --- Tabs: the active fold slides under the label ------------------------- */
+
+.campaign-tab {
+  transition: color var(--dur-quick) var(--ease-settle);
+}
+.campaign-tab[data-active="true"]::after {
+  animation: kami-tab-crease var(--dur-base) var(--ease-settle) both;
+  transform-origin: left center;
+}
+@keyframes kami-tab-crease {
+  from {
+    transform: scaleX(0.2);
+    opacity: 0;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+/* --- Landing progress ------------------------------------------------------ */
+
+.landing-progress {
+  max-width: 420px;
+  width: 100%;
+  text-align: left;
+  color: var(--ink-soft);
+}

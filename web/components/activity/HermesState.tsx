@@ -2,6 +2,7 @@
 
 import { withQuery } from "@/lib/client/api";
 import { useApi } from "@/lib/client/useApi";
+import Skeleton from "@/components/ui/Skeleton";
 
 interface HermesRun {
   id: string;
@@ -37,7 +38,7 @@ export default function HermesState({ sessionId }: { sessionId: string }) {
     withQuery("/api/activity/hermes", { session_id: sessionId }),
   );
 
-  if (loading) return <p className="muted">Loading…</p>;
+  if (loading) return <Skeleton lines={4} />;
   if (error)
     return (
       <p role="alert" className="mono form-error">

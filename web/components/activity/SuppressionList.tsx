@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { api, errorMessage, withQuery } from "@/lib/client/api";
 import { useApi } from "@/lib/client/useApi";
+import Skeleton from "@/components/ui/Skeleton";
 import type { Suppression } from "@/lib/outbound/suppressions";
 
 /** Do-not-contact list: checked before every send, post and DM. */
@@ -87,7 +88,7 @@ export default function SuppressionList({ sessionId }: { sessionId: string }) {
         </p>
       )}
 
-      {loading && <p className="muted">Loading…</p>}
+      {loading && <Skeleton lines={3} />}
       {error && (
         <p role="alert" className="mono form-error">
           {error}

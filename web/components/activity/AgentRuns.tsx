@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { withQuery } from "@/lib/client/api";
 import { useApi } from "@/lib/client/useApi";
+import EmptyState from "@/components/ui/EmptyState";
+import Skeleton from "@/components/ui/Skeleton";
 
 interface AgentRun {
   id: string;
@@ -34,14 +36,18 @@ export default function AgentRuns({ sessionId }: { sessionId: string }) {
           ↻ Refresh
         </button>
       </div>
-      {loading && <p className="muted">Loading…</p>}
+      {loading && <Skeleton lines={4} />}
       {error && (
         <p role="alert" className="mono form-error">
           {error}
         </p>
       )}
-      {!loading && !error && runs.length === 0 && <p className="muted">No agent runs yet.</p>}
-      <ul className="row-list">
+      {!loading && !error && runs.length === 0 && (
+        <EmptyState title="No agent runs yet">
+          Every agent step Kami runs for this campaign is logged here with its input and output.
+        </EmptyState>
+      )}
+      <ul className="row-list fade-in">
         {runs.map((run) => (
           <li key={run.id} className="row">
             <button

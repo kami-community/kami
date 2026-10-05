@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import GoalChips from "@/components/GoalChips";
+import Skeleton from "@/components/ui/Skeleton";
 
 export interface LaunchParams {
   domain: string;
@@ -95,15 +96,9 @@ export default function Landing({
               </button>
               <button
                 type="button"
-                className="mono"
+                className="mono btn-outline"
                 onClick={onDismissResume}
                 disabled={busy}
-                style={{
-                  border: "1px solid var(--ink)",
-                  background: "transparent",
-                  padding: "0.4rem 0.75rem",
-                  cursor: "pointer",
-                }}
               >
                 Start new
               </button>
@@ -130,8 +125,18 @@ export default function Landing({
           </button>
         </form>
 
+        {busy && (
+          <div className="landing-progress unfold" role="status" aria-live="polite">
+            <p className="mono">
+              Reading {domain.trim() || "your site"} and gathering first-party evidence — usually
+              20–60 seconds.
+            </p>
+            <Skeleton lines={2} />
+          </div>
+        )}
+
         {error && (
-          <p className="mono" style={{ color: "var(--hanko)", maxWidth: 420, fontSize: 13 }}>
+          <p role="alert" className="mono form-error">
             {error}
           </p>
         )}

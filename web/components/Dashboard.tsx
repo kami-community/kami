@@ -12,6 +12,10 @@ import KillSwitch from "@/components/KillSwitch";
 import MarketingPanel from "@/components/MarketingPanel";
 import SalesPanel, { type SalesGuidedStep } from "@/components/SalesPanel";
 import { useCampaign } from "@/components/campaign/CampaignProvider";
+import Callout from "@/components/ui/Callout";
+import FoldSteps from "@/components/ui/FoldSteps";
+import Seal from "@/components/ui/Seal";
+import Skeleton from "@/components/ui/Skeleton";
 import { errorMessage } from "@/lib/client/api";
 import type { CampaignTab } from "@/lib/marketingTypes";
 
@@ -79,9 +83,10 @@ export default function Dashboard({ onNewCampaign }: { onNewCampaign: () => void
 
       <div className="dashboard__body">
         <div
-          className="dashboard__main"
+          className="dashboard__main fade-in"
           data-guide-open={!guideCollapsed}
           role="tabpanel"
+          key={tab}
           id={`panel-${tab}`}
           aria-labelledby={`tab-${tab}`}
         >
@@ -94,26 +99,43 @@ export default function Dashboard({ onNewCampaign }: { onNewCampaign: () => void
               </p>
 
               {!dossier && (
-                <section className="overview-section" aria-live="polite">
+                <section
+                  className="overview-section unfold"
+                  aria-live="polite"
+                  aria-busy={dossierJob.busy}
+                >
                   <p className="label-caps">Understanding your company</p>
+                  <FoldSteps
+                    label="Dossier progress"
+                    steps={[
+                      { label: `Checked ${session.canonical_domain}`, state: "done" },
+                      { label: `Read ${sourceCount} sources`, state: "done" },
+                      {
+                        label: "Compiling your dossier",
+                        state: dossierJob.error ? "todo" : "active",
+                      },
+                    ]}
+                  />
                   {dossierJob.busy && (
-                    <p className="muted">
-                      The brand analyst is compiling your dossier from your site and research…
-                    </p>
+                    <div className="kraft-card dossier-placeholder">
+                      <p className="muted">
+                        The brand analyst is writing up what your site and research say about you.
+                        This usually takes under a minute.
+                      </p>
+                      <Skeleton title lines={4} />
+                    </div>
                   )}
                   {dossierJob.error && (
-                    <>
-                      <p role="alert" className="mono form-error">
-                        {dossierJob.error}
-                      </p>
+                    <Callout tone="error">
+                      <p>{dossierJob.error}</p>
                       <button
                         type="button"
-                        className="hanko-btn"
+                        className="hanko-btn callout__action"
                         onClick={() => void campaign.generateDossier()}
                       >
                         Try again
                       </button>
-                    </>
+                    </Callout>
                   )}
                 </section>
               )}
@@ -128,9 +150,12 @@ export default function Dashboard({ onNewCampaign }: { onNewCampaign: () => void
               )}
 
               {dossier && confirmed && (
-                <section className="overview-section">
-                  <p className="label-caps">What should I do next to grow?</p>
-                  <div className="job-grid">
+                <section className="overview-section unfold">
+                  <div className="overview-heading">
+                    <p className="label-caps">What should I do next to grow?</p>
+                    <Seal tone="moss">Dossier confirmed</Seal>
+                  </div>
+                  <div className="job-grid unfold-stagger">
                     <div className="kraft-card job-card">
                       <h3>Find customers</h3>
                       <p className="muted">

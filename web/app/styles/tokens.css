@@ -1,0 +1,50 @@
+/*
+ * Kami tactile system — extended tokens (see DESIGN.md).
+ * Base colours (--paper, --ink, --hanko, --moss, --kraft…) are in globals.css.
+ */
+:root {
+  /* Text hierarchy: ink → soft → muted → faint */
+  --ink-muted: #7c766e;
+  --ink-faint: #a8a196;
+
+  /* Surfaces: sunk (inputs, wells) < paper < kraft-light (cards) < kraft */
+  --paper-sunk: #f6f0e2;
+  --paper-raised: #fffcf4;
+
+  /* Creases: folds you feel more than see */
+  --crease-soft: rgba(29, 28, 20, 0.08);
+  --crease-strong: rgba(29, 28, 20, 0.32);
+
+  /* Semantic pigments */
+  --moss-deep: #5f7065;
+  --ochre: #b5832a;
+  --error-wash: rgba(155, 28, 28, 0.06);
+  --hanko-wash: rgba(180, 71, 42, 0.08);
+  --moss-wash: rgba(122, 139, 127, 0.12);
+
+  /* Contact shadow: thin and sharp where paper meets paper */
+  --contact: 0 1px 0 rgba(29, 28, 20, 0.18);
+  --lift: 2px 2px 0 rgba(29, 28, 20, 0.14);
+
+  /* Motion: paper settles, it doesn't bounce */
+  --ease-settle: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-press: cubic-bezier(0.4, 0, 0.6, 1);
+  --dur-quick: 120ms;
+  --dur-base: 200ms;
+  --dur-unfold: 360ms;
+
+  /* Spacing scale (4px base) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+}
+
+@media (max-width: 640px) {
+  :root {
+    --margin-page: 1rem;
+  }
+}
