@@ -16,7 +16,6 @@ web/.env.local
 
 # Hermes / local agent clutter
 .claude/settings.local.json
-references/
 .cursor/
 tasks/
 lessons/
@@ -46,3 +45,7 @@ yarn-error.log*
 
 # Local coding-agent worktrees
 .claude/worktrees/
+
+# E2E eval artifacts (contain local session ids)
+web/evals/e2e/GAPLOG.md
+web/evals/e2e/results/

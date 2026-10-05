@@ -50,7 +50,7 @@ Never calls `drafts` send, `/api/email/send`, or distribution publish actions.
 | ----------------------------- | ----------------------------------------- |
 | `results/<fixture>-<ts>.json` | Per-run scorecard (gitignored)            |
 | `results/summary-<ts>.md`     | Aggregate pass rate                       |
-| `GAPLOG.md`                   | Durable failures + RCA fields (committed) |
+| `GAPLOG.md`                   | Durable failures + RCA fields (local, gitignored) |
 
 ## Scoring
 

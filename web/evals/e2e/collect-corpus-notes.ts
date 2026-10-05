@@ -457,7 +457,7 @@ async function main(): Promise<void> {
   lines.push("");
   lines.push("Machine-readable dump: `web/evals/e2e/results/corpus-8-snapshot.json`.");
   lines.push("");
-  lines.push("Related: [GAPLOG.md](./GAPLOG.md) · fixtures in `fixtures/companies.json`.");
+  lines.push("Related: local `GAPLOG.md` · fixtures in `fixtures/companies.json`.");
   lines.push("");
 
   const outMd = join(__dirname, "CORPUS-8-OUTPUT-NOTES.md");
