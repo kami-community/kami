@@ -1,10 +1,8 @@
+import { env } from "@/lib/config/env";
 import type { DiscoveredCrmEntry } from "@/lib/marketingDiscoverTypes";
 
-const APIFY_TOKEN = process.env.APIFY_API_TOKEN;
-const ACTOR = process.env.APIFY_IG_HASHTAG_ACTOR ?? "apify/instagram-hashtag-scraper";
-
 export function apifyConfigured(): boolean {
-  return Boolean(APIFY_TOKEN);
+  return Boolean(env().APIFY_API_TOKEN);
 }
 
 interface ApifyItem {
@@ -34,6 +32,7 @@ export async function discoverIgCreatorsViaApify(params: {
   minFollowers: number;
   limit?: number;
 }): Promise<{ entries: DiscoveredCrmEntry[]; error?: string }> {
+  const { APIFY_API_TOKEN: APIFY_TOKEN, APIFY_IG_HASHTAG_ACTOR: ACTOR } = env();
   if (!APIFY_TOKEN) {
     return {
       entries: [],
