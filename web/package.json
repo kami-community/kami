@@ -34,6 +34,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.2.10",
+    "postcss": "^8.5.29",
     "prettier": "^3.9.9",
     "tsx": "^4.23.15",
     "typescript": "^5",

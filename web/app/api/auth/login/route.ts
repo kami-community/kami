@@ -16,7 +16,7 @@ export const POST = route(async (request) => {
   if (!safeEqual(token, KAMI_ADMIN_TOKEN)) throw new AppError("unauthorized", "invalid token");
 
   const cookie = [
-    `${ADMIN_COOKIE}=${adminCookieValue(KAMI_ADMIN_TOKEN)}`,
+    `${ADMIN_COOKIE}=${await adminCookieValue(KAMI_ADMIN_TOKEN)}`,
     "Path=/",
     "HttpOnly",
     "SameSite=Lax",

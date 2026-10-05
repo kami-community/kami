@@ -47,7 +47,7 @@ npm install
 
 ## 4. Database
 
-Apply every migration in `web/supabase/migrations/` **in order** (`001` → `016`).
+Apply every migration in `web/supabase/migrations/` **in order** (`001` → `018`).
 
 - **Supabase dashboard:** paste each file into the SQL editor and run it.
 - **Supabase CLI** (from `web/`):
@@ -57,7 +57,7 @@ Apply every migration in `web/supabase/migrations/` **in order** (`001` → `016
   ```
 - **Fully local:** `supabase start` from `web/` runs Postgres + API locally and applies the migrations; use the printed API URL and `service_role` key below.
 
-Migration `016` enables row-level security on every table. Kami's server uses the service-role key (which bypasses RLS); the public anon key can read nothing.
+Migrations `016`–`018` enable row-level security on every table and grant access only to the service role Kami's server uses; the public anon key can read nothing.
 
 ## 5. Configure the web app
 
@@ -118,7 +118,7 @@ Without `KAMI_ADMIN_TOKEN`, Kami refuses any request whose host isn't `localhost
 |---|---|
 | Banner: "Hermes is not reachable" | Gateway running? `HERMES_API_KEY` equals Hermes `API_SERVER_KEY`? |
 | "Supabase is not configured" | URL + service-role key in `web/.env.local`; restart `npm run dev` |
-| `relation … does not exist` | A migration is missing — apply `001`–`016` in order |
+| `relation … does not exist` | A migration is missing — apply `001`–`018` in order |
 | "Kami only serves localhost" | You opened it by IP or hostname; use `localhost` or set `KAMI_ADMIN_TOKEN` |
 | Connect X/Instagram fails immediately | Set `KAMI_TOKEN_ENCRYPTION_KEY`; check the redirect URI matches the app's settings exactly |
 | Dossier keeps failing | Activity → Agent runs shows the brand analyst's input, output and the validation problem |

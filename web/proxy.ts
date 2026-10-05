@@ -5,7 +5,7 @@ import { env } from "@/lib/config/env";
 /** Paths reachable without the admin session (they verify requests themselves). */
 const PUBLIC_PATHS = ["/login", "/api/auth/login", "/api/webhooks/"];
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isApi = pathname.startsWith("/api/");
   const host = request.headers.get("host");
@@ -30,7 +30,7 @@ export function proxy(request: NextRequest) {
   }
 
   const config = env();
-  const decision = decideAccess({
+  const decision = await decideAccess({
     host,
     authorization: request.headers.get("authorization"),
     adminCookie: request.cookies.get(ADMIN_COOKIE)?.value ?? null,

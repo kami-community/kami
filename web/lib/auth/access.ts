@@ -1,5 +1,3 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
-
 /**
  * Single-user access control for Community Edition.
  *
@@ -9,6 +7,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
  * - `KAMI_CRON_SECRET` lets schedulers call job routes with a bearer secret.
  *
  * Pure functions over plain inputs so the proxy and tests share one implementation.
+ * Uses Web Crypto so it runs in every runtime the proxy may be compiled for.
  */
 
 export const ADMIN_COOKIE = "kami_admin";
@@ -28,14 +27,25 @@ export function isLoopbackHost(hostHeader: string | null): boolean {
 }
 
 /** Value stored in the admin cookie: an HMAC of the token, never the token itself. */
-export function adminCookieValue(adminToken: string): string {
-  return createHmac("sha256", adminToken).update(COOKIE_CONTEXT).digest("hex");
+export async function adminCookieValue(adminToken: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(adminToken),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const mac = await crypto.subtle.sign("HMAC", key, encoder.encode(COOKIE_CONTEXT));
+  return [...new Uint8Array(mac)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+/** Constant-time string comparison (length is not secret here). */
 export function safeEqual(a: string, b: string): boolean {
-  const ab = Buffer.from(a);
-  const bb = Buffer.from(b);
-  return ab.length === bb.length && timingSafeEqual(ab, bb);
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
 }
 
 function bearer(authorization: string | null): string | null {
@@ -55,7 +65,7 @@ export type AccessDecision =
   | { allowed: true; via: "loopback" | "cookie" | "bearer" | "cron" }
   | { allowed: false; reason: string };
 
-export function decideAccess(input: AccessInput): AccessDecision {
+export async function decideAccess(input: AccessInput): Promise<AccessDecision> {
   const token = bearer(input.authorization);
 
   if (input.cronSecret && token && safeEqual(token, input.cronSecret)) {
@@ -72,7 +82,7 @@ export function decideAccess(input: AccessInput): AccessDecision {
   }
 
   if (token && safeEqual(token, input.adminToken)) return { allowed: true, via: "bearer" };
-  if (input.adminCookie && safeEqual(input.adminCookie, adminCookieValue(input.adminToken))) {
+  if (input.adminCookie && safeEqual(input.adminCookie, await adminCookieValue(input.adminToken))) {
     return { allowed: true, via: "cookie" };
   }
   return { allowed: false, reason: "sign in required" };

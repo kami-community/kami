@@ -1,17 +1,6 @@
-/**
- * Next.js server start hook: registers Langfuse tracing (no-op without
- * LANGFUSE_* keys) and the optional in-process job scheduler.
- */
+/** Next.js server start hook. Node-only work lives in instrumentation-node.ts. */
 export async function register() {
-  if (process.env.NEXT_RUNTIME !== "nodejs") return;
-
-  const { NodeTracerProvider } = await import("@opentelemetry/sdk-trace-node");
-  const { langfuseSpanProcessor } = await import("./lib/langfuseProcessor");
-  new NodeTracerProvider({ spanProcessors: [langfuseSpanProcessor] }).register();
-
-  const { env } = await import("./lib/config/env");
-  if (env().KAMI_SCHEDULER) {
-    const { startScheduler } = await import("./lib/jobs/scheduler");
-    startScheduler();
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    await import("./instrumentation-node");
   }
 }

@@ -55,3 +55,6 @@ yarn-error.log*
 # E2E eval artifacts (contain local session ids)
 web/evals/e2e/GAPLOG.md
 web/evals/e2e/results/
+
+# Local browser-automation artifacts
+.playwright-mcp/

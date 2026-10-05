@@ -52,7 +52,7 @@ npm run sync:skills                 # copy playbooks into Hermes
 npm run readiness                   # checks config without printing secrets
 ```
 
-Apply the database migrations (in order, `001`–`016`): either run each file in `web/supabase/migrations/` in the Supabase SQL editor, or with the Supabase CLI from `web/`: `supabase link` then `supabase db push`.
+Apply the database migrations (in order, `001`–`018`): either run each file in `web/supabase/migrations/` in the Supabase SQL editor, or with the Supabase CLI from `web/`: `supabase link` then `supabase db push`.
 
 Then run Hermes' gateway and the app in two terminals:
 

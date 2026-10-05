@@ -1059,91 +1059,6 @@ h3 {
  * .chip-toggle, .choice-card, .fine-print. */
 
 .card-list {
-
-/* --- Sales: core flow (panel header, Confirm ICP, Find step, funnel, account drawer) --- */
-
-.sales-panel-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--stack-sm);
-}
-.sales-panel-actions {
-  display: flex;
-  gap: var(--stack-sm);
-  align-items: center;
-}
-.sales-more {
-  margin-top: var(--stack-lg);
-}
-.sales-more > .btn-outline {
-  margin-bottom: var(--stack-sm);
-}
-
-.segment-confirm {
-  position: relative;
-  min-height: 160px;
-  padding-top: var(--stack-md);
-}
-.segment-remove {
-  align-self: flex-end;
-}
-.segment-add {
-  margin-top: 0.5rem;
-}
-
-.target-review {
-  position: relative;
-  padding: var(--stack-md);
-  margin-top: var(--stack-md);
-}
-.target-offer,
-.target-intro {
-  margin-bottom: var(--stack-sm);
-}
-.target-actions {
-  margin-bottom: var(--stack-sm);
-}
-.target-actions > .label-caps {
-  margin-bottom: var(--stack-sm);
-}
-.target-actions__buttons {
-  display: flex;
-  gap: var(--stack-sm);
-  flex-wrap: wrap;
-  align-items: center;
-}
-.target-hint {
-  font-size: 11px;
-  margin-top: var(--stack-sm);
-}
-.target-notices {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  margin-bottom: var(--stack-sm);
-}
-.target-banner {
-  border: 1px solid var(--hanko);
-  background: var(--kraft);
-  padding: var(--stack-sm);
-  font-size: 14px;
-}
-.target-warning {
-  font-size: 12px;
-}
-.target-empty {
-  padding: var(--stack-sm) 0;
-}
-.target-groups {
-  display: flex;
-  flex-direction: column;
-  gap: var(--stack-md);
-}
-.target-groups > section > .label-caps {
-  margin-bottom: var(--stack-sm);
-}
-.target-group {
   display: flex;
   flex-direction: column;
   gap: var(--stack-sm);
@@ -1436,6 +1351,94 @@ button.entity-card {
   margin: 0.5rem 0 0.75rem;
 }
 
+/* --- Sales: core flow (panel header, Confirm ICP, Find step, funnel, account drawer) --- */
+
+.sales-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--stack-sm);
+}
+.sales-panel-actions {
+  display: flex;
+  gap: var(--stack-sm);
+  align-items: center;
+}
+.sales-more {
+  margin-top: var(--stack-lg);
+}
+.sales-more > .btn-outline {
+  margin-bottom: var(--stack-sm);
+}
+
+.segment-confirm {
+  position: relative;
+  min-height: 160px;
+  padding-top: var(--stack-md);
+}
+.segment-remove {
+  align-self: flex-end;
+}
+.segment-add {
+  margin-top: 0.5rem;
+}
+
+.target-review {
+  position: relative;
+  padding: var(--stack-md);
+  margin-top: var(--stack-md);
+}
+.target-offer,
+.target-intro {
+  margin-bottom: var(--stack-sm);
+}
+.target-actions {
+  margin-bottom: var(--stack-sm);
+}
+.target-actions > .label-caps {
+  margin-bottom: var(--stack-sm);
+}
+.target-actions__buttons {
+  display: flex;
+  gap: var(--stack-sm);
+  flex-wrap: wrap;
+  align-items: center;
+}
+.target-hint {
+  font-size: 11px;
+  margin-top: var(--stack-sm);
+}
+.target-notices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: var(--stack-sm);
+}
+.target-banner {
+  border: 1px solid var(--hanko);
+  background: var(--kraft);
+  padding: var(--stack-sm);
+  font-size: 14px;
+}
+.target-warning {
+  font-size: 12px;
+}
+.target-empty {
+  padding: var(--stack-sm) 0;
+}
+.target-groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack-md);
+}
+.target-groups > section > .label-caps {
+  margin-bottom: var(--stack-sm);
+}
+.target-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack-sm);
+}
 .target-card {
   border: 1px solid var(--outline-variant);
   padding: var(--stack-sm);
@@ -1540,6 +1543,7 @@ button.entity-card {
   display: flex;
   gap: 0.35rem;
   flex-wrap: wrap;
+}
 
 /* --- Boosts and meetings --------------------------------------------------- */
 
