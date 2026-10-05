@@ -43,3 +43,6 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 *.tsbuildinfo
+
+# Local coding-agent worktrees
+.claude/worktrees/

@@ -1,3 +1,8 @@
+---
+name: producthunt_distribution
+description: Plan Product Hunt launch opportunities and draft launch copy and maker comments.
+---
+
 # Product Hunt distribution
 
 ## When to use

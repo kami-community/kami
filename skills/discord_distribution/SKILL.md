@@ -1,3 +1,8 @@
+---
+name: discord_distribution
+description: Find relevant Discord communities and draft helpful messages that follow server rules.
+---
+
 # Discord distribution
 
 ## When to use

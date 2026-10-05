@@ -1,3 +1,8 @@
+---
+name: reddit_distribution
+description: Find relevant subreddit threads and draft value-first comments that respect each community's rules.
+---
+
 # Reddit distribution
 
 ## When to use

@@ -1,3 +1,8 @@
+---
+name: linkedin_distribution
+description: Find relevant LinkedIn conversations and draft posts or comments as distribution opportunities.
+---
+
 # LinkedIn distribution
 
 ## When to use

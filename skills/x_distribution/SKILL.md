@@ -1,3 +1,8 @@
+---
+name: x_distribution
+description: Find relevant X conversations and draft posts or replies as Marketing distribution opportunities.
+---
+
 # X distribution
 
 ## When to use

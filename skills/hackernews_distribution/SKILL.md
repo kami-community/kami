@@ -1,3 +1,8 @@
+---
+name: hackernews_distribution
+description: Find relevant Hacker News threads and draft substantive comments or Show HN posts.
+---
+
 # Hacker News distribution
 
 ## When to use

@@ -12,7 +12,8 @@
     "eval:sales": "npm --prefix web run eval:sales",
     "eval:e2e": "npm --prefix web run eval:e2e",
     "readiness": "node scripts/readiness.mjs",
-    "sync:skills": "node scripts/sync-hermes-skills.mjs"
+    "sync:skills": "node scripts/sync-hermes-skills.mjs",
+    "check:skills": "node scripts/sync-hermes-skills.mjs --check"
   },
   "engines": {
     "node": ">=20.9"

@@ -1,3 +1,8 @@
+---
+name: creator_outreach
+description: Draft and run creator collaboration outreach on Instagram: first message, negotiation within the founder's budget, and when to escalate.
+---
+
 # Creator Outreach Playbook
 
 ## First Message Rules
@@ -10,8 +15,8 @@
 - NO "I'd love to explore a partnership" — be direct about what you want
 
 ## Negotiation Guidelines
-- If they counter within your budget range: accept and move to terms
-- If they counter above your max: say "That's above what we've budgeted for this campaign, but let me check with my team" → ESCALATE to user
+- If they counter within the budget range: draft an acceptance for the founder to approve, then move to terms
+- If they counter above the maximum: do not reply — escalate to the founder with the counter-offer
 - Never haggle more than 2 rounds — either agree or escalate
 - Terms to confirm: deliverable format, posting date, whether they need product access, payment timeline
 
