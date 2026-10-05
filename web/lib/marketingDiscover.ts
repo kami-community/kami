@@ -6,6 +6,7 @@ import { discoverXLeads } from "@/lib/xLeadDiscover";
 import { discoverIgCreatorsViaApify, apifyConfigured } from "@/lib/apifyIgDiscover";
 import { requireConnection } from "@/lib/connections/service";
 import { db } from "@/lib/db/client";
+import { AppError } from "@/lib/http/errors";
 
 export type { DiscoveredCrmEntry, DiscoverResult } from "@/lib/marketingDiscoverTypes";
 
@@ -131,7 +132,9 @@ export async function runMarketingDiscovery(params: {
   if (config.platforms.includes("instagram")) {
     try {
       await requireConnection(db(), sessionId, "instagram");
-    } catch {
+    } catch (err) {
+      // Only "not connected" becomes a warning; anything else is a real failure.
+      if (!(err instanceof AppError && err.details?.needs_connection)) throw err;
       warnings.push(
         "Instagram is not connected for this campaign — connect it before sending creator DMs.",
       );

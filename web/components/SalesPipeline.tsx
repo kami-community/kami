@@ -1,7 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import type { PipelineStage, SalesAccount } from "@/lib/salesTypes";
+import { useState } from "react";
+import type { PipelineView } from "@/lib/sales/pipeline";
+import type { PipelineStage } from "@/lib/salesTypes";
+import { withQuery } from "@/lib/client/api";
+import { useApi } from "@/lib/client/useApi";
 import AccountDrawer from "@/components/AccountDrawer";
 
 const STAGE_LABELS: Record<PipelineStage, string> = {
@@ -35,86 +38,67 @@ const VISIBLE_STAGES: PipelineStage[] = [
   "suppressed",
 ];
 
-type PipelineAccount = SalesAccount & { score?: number; score_explanation?: string };
-
 interface SalesPipelineProps {
   sessionDbId: string | null;
 }
 
 export default function SalesPipeline({ sessionDbId }: SalesPipelineProps) {
-  const [pipeline, setPipeline] = useState<Record<string, PipelineAccount[]>>({});
+  const { data, error, loading, reload } = useApi<PipelineView>(
+    sessionDbId ? withQuery("/api/sales/pipeline", { session_id: sessionDbId }) : null,
+  );
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const fetchPipeline = useCallback(() => {
-    if (!sessionDbId) return;
-    fetch(`/api/sales/pipeline?session_id=${sessionDbId}`)
-      .then((r) => r.json())
-      .then((j) => setPipeline(j.pipeline ?? {}))
-      .catch(() => {});
-  }, [sessionDbId]);
-
-  useEffect(() => {
-    fetchPipeline();
-  }, [fetchPipeline]);
-
   return (
-    <div>
-      <div
-        style={{
-          display: "flex",
-          gap: "0.5rem",
-          overflowX: "auto",
-          paddingBottom: "var(--stack-sm)",
-        }}
-      >
-        {VISIBLE_STAGES.map((stage) => {
-          const cards = pipeline[stage] ?? [];
-          return (
-            <div key={stage} style={{ minWidth: 140, flex: "0 0 140px" }}>
-              <p
-                className="label-caps"
-                style={{ fontSize: 10, marginBottom: "0.35rem", color: "var(--outline)" }}
-              >
-                {STAGE_LABELS[stage]} ({cards.length})
-              </p>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-                {cards.map((acc) => (
-                  <button
-                    key={acc.id}
-                    type="button"
-                    className="kraft-card"
-                    onClick={() => setSelectedId(acc.id ?? null)}
-                    style={{
-                      padding: "0.5rem",
-                      textAlign: "left",
-                      cursor: "pointer",
-                      border: selectedId === acc.id ? "1px solid var(--hanko)" : undefined,
-                      width: "100%",
-                    }}
-                  >
-                    <p style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>{acc.name}</p>
-                    <p
-                      className="mono"
-                      style={{ fontSize: 11, color: "var(--ink-soft)", margin: "0.2rem 0 0" }}
+    <section className="panel-section" aria-labelledby="sales-pipeline-title">
+      <p id="sales-pipeline-title" className="label-caps">
+        Pipeline {data ? `(${data.total})` : ""}
+      </p>
+      {error && (
+        <p role="alert" className="form-error">
+          {error}
+        </p>
+      )}
+      {loading && !data && <p className="fine-print">Loading pipeline…</p>}
+
+      {data && (
+        <div className="pipeline-board">
+          {VISIBLE_STAGES.map((stage) => {
+            const cards = data.pipeline[stage] ?? [];
+            return (
+              <div key={stage} className="pipeline-col">
+                <p className="label-caps pipeline-col__head">
+                  {STAGE_LABELS[stage]} ({cards.length})
+                </p>
+                <div className="card-list card-list--tight">
+                  {cards.map((acc) => (
+                    <button
+                      key={acc.id}
+                      type="button"
+                      className="kraft-card pipeline-card"
+                      aria-pressed={selectedId === acc.id}
+                      onClick={() => setSelectedId(acc.id ?? null)}
                     >
-                      {acc.tier ? `T${acc.tier}` : "—"}
-                      {acc.score != null ? ` · ${Math.round(acc.score)}` : ""}
-                    </p>
-                  </button>
-                ))}
+                      <span className="pipeline-card__name">{acc.name}</span>
+                      <span className="fine-print">
+                        {acc.tier ? `T${acc.tier}` : "—"}
+                        {acc.score != null ? ` · ${Math.round(acc.score)}` : ""}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {selectedId && (
         <AccountDrawer
           accountId={selectedId}
           onClose={() => setSelectedId(null)}
-          onUpdated={fetchPipeline}
+          onUpdated={reload}
         />
       )}
-    </div>
+    </section>
   );
 }

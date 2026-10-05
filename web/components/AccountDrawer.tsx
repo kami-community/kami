@@ -9,6 +9,7 @@ import type {
   SalesContact,
   SalesTask,
 } from "@/lib/salesTypes";
+import { api, errorMessage, withQuery } from "@/lib/client/api";
 
 interface AccountDrawerProps {
   accountId: string;
@@ -22,6 +23,7 @@ export default function AccountDrawer({ accountId, onClose, onUpdated }: Account
   const [contacts, setContacts] = useState<SalesContact[]>([]);
   const [leadScore, setLeadScore] = useState<LeadScore | null>(null);
   const [tasks, setTasks] = useState<SalesTask[]>([]);
+  const [tasksError, setTasksError] = useState<string | null>(null);
 
   const fetchDetail = useCallback(() => {
     fetch(`/api/sales/accounts/${accountId}`)
@@ -33,12 +35,15 @@ export default function AccountDrawer({ accountId, onClose, onUpdated }: Account
         setLeadScore(j.lead_score ?? null);
         const sessionId = j.account?.session_id;
         if (sessionId) {
-          fetch(`/api/sales/tasks?session_id=${sessionId}`)
-            .then((r) => r.json())
-            .then((t) =>
-              setTasks((t.tasks ?? []).filter((task: SalesTask) => task.account_id === accountId)),
+          api
+            .get<{ tasks: SalesTask[] }>(
+              withQuery("/api/sales/tasks", { session_id: sessionId, account_id: accountId }),
             )
-            .catch(() => {});
+            .then((t) => {
+              setTasks(t.tasks);
+              setTasksError(null);
+            })
+            .catch((err) => setTasksError(errorMessage(err, "Could not load tasks")));
         }
       })
       .catch(() => {});
@@ -144,6 +149,12 @@ export default function AccountDrawer({ accountId, onClose, onUpdated }: Account
             </p>
           ))}
         </div>
+      )}
+
+      {tasksError && (
+        <p role="alert" className="form-error">
+          {tasksError}
+        </p>
       )}
 
       {tasks.length > 0 && (

@@ -1,121 +1,141 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import type { InboxView } from "@/lib/sales/inbox";
 import type { SalesConversation, SalesNotification } from "@/lib/salesTypes";
+import { api, errorMessage, withQuery } from "@/lib/client/api";
+import { useApi } from "@/lib/client/useApi";
 import SalesConversationThread from "@/components/SalesConversationThread";
+
+/**
+ * The campaign's Sales inbox plus its conversations, and the action that opens
+ * a notification's conversation (marking it read). Shared by Inbox and Needs you.
+ */
+export function useSalesInbox(sessionId: string | null) {
+  const inbox = useApi<InboxView>(
+    sessionId ? withQuery("/api/sales/inbox", { session_id: sessionId }) : null,
+  );
+  const conversations = useApi<{ conversations: SalesConversation[] }>(
+    sessionId ? withQuery("/api/sales/conversations", { session_id: sessionId }) : null,
+  );
+  const [active, setActive] = useState<SalesConversation | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const reloadInbox = inbox.reload;
+  const reloadConversations = conversations.reload;
+  const reload = useCallback(() => {
+    reloadInbox();
+    reloadConversations();
+  }, [reloadInbox, reloadConversations]);
+
+  const conversationFor = (n: SalesNotification) =>
+    n.entity_type === "sales_conversation" && n.entity_id
+      ? (conversations.data?.conversations.find((c) => c.id === n.entity_id) ?? null)
+      : null;
+
+  async function open(n: SalesNotification) {
+    const conv = conversationFor(n);
+    if (!conv || !sessionId) return;
+    setActive(conv);
+    if (!n.id || n.read) return;
+    try {
+      await api.patch("/api/sales/inbox", { session_id: sessionId, id: n.id, read: true });
+      setActionError(null);
+      reloadInbox();
+    } catch (err) {
+      setActionError(errorMessage(err, "Could not mark the notification read"));
+    }
+  }
+
+  return {
+    inbox: inbox.data,
+    loading: inbox.loading || conversations.loading,
+    error: inbox.error ?? conversations.error ?? actionError,
+    active,
+    close: () => {
+      setActive(null);
+      reload();
+    },
+    open,
+    canOpen: (n: SalesNotification) => Boolean(conversationFor(n)),
+    reload,
+  };
+}
+
+export function NotificationCard({
+  notification: n,
+  canOpen,
+  onOpen,
+}: {
+  notification: SalesNotification;
+  canOpen: boolean;
+  onOpen: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="kraft-card notice-card"
+      data-kind={n.kind}
+      onClick={onOpen}
+      disabled={!canOpen}
+    >
+      <span className="notice-card__head">
+        <span className="label-caps notice-card__kind">{n.kind.replace(/_/g, " ")}</span>
+        {n.created_at && (
+          <span className="fine-print">{new Date(n.created_at).toLocaleDateString()}</span>
+        )}
+      </span>
+      <span className="notice-card__title">{n.title}</span>
+      {n.body && <span className="fine-print notice-card__body">{n.body}</span>}
+    </button>
+  );
+}
 
 interface SalesInboxProps {
   sessionDbId: string | null;
 }
 
 export default function SalesInbox({ sessionDbId }: SalesInboxProps) {
-  const [notifications, setNotifications] = useState<SalesNotification[]>([]);
-  const [escalations, setEscalations] = useState<SalesNotification[]>([]);
-  const [conversations, setConversations] = useState<SalesConversation[]>([]);
-  const [activeConv, setActiveConv] = useState<SalesConversation | null>(null);
+  const inbox = useSalesInbox(sessionDbId);
 
-  const fetchInbox = useCallback(() => {
-    if (!sessionDbId) return;
-    fetch(`/api/sales/inbox?session_id=${sessionDbId}`)
-      .then((r) => r.json())
-      .then((j) => {
-        setNotifications(j.notifications ?? []);
-        setEscalations(j.escalations ?? []);
-      })
-      .catch(() => {});
-
-    fetch(`/api/sales/conversations?session_id=${sessionDbId}`)
-      .then((r) => r.json())
-      .then((j) => setConversations(j.conversations ?? []))
-      .catch(() => {});
-  }, [sessionDbId]);
-
-  useEffect(() => {
-    fetchInbox();
-  }, [fetchInbox]);
-
-  async function markRead(id: string) {
-    await fetch("/api/sales/inbox", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, read: true }),
-    });
-    fetchInbox();
-  }
-
-  function openConversation(notif: SalesNotification) {
-    if (notif.entity_type === "sales_conversation" && notif.entity_id) {
-      const conv = conversations.find((c) => c.id === notif.entity_id);
-      if (conv) {
-        setActiveConv(conv);
-        if (notif.id) markRead(notif.id);
-      }
-    }
-  }
-
-  if (activeConv) {
+  if (inbox.active) {
     return (
       <SalesConversationThread
-        conversation={activeConv}
-        onBack={() => {
-          setActiveConv(null);
-          fetchInbox();
-        }}
-        onRefresh={fetchInbox}
+        conversation={inbox.active}
+        onBack={inbox.close}
+        onRefresh={inbox.reload}
       />
     );
   }
 
-  const items = [...escalations, ...notifications.filter((n) => !n.read)].slice(0, 20);
+  const items = inbox.inbox
+    ? [...inbox.inbox.escalations, ...inbox.inbox.notifications.filter((n) => !n.read)]
+        .filter((n, i, all) => all.findIndex((m) => m.id === n.id) === i)
+        .slice(0, 20)
+    : [];
 
   return (
-    <div>
-      {items.length === 0 && (
-        <p className="mono" style={{ color: "var(--ink-soft)", fontSize: 13 }}>
-          No pending decisions.
+    <section className="panel-section" aria-labelledby="sales-inbox-title">
+      <p id="sales-inbox-title" className="label-caps">
+        Inbox
+      </p>
+      {inbox.error && (
+        <p role="alert" className="form-error">
+          {inbox.error}
         </p>
       )}
-      {items.map((n) => (
-        <button
-          key={n.id}
-          type="button"
-          className="kraft-card"
-          onClick={() => openConversation(n)}
-          style={{
-            display: "block",
-            width: "100%",
-            textAlign: "left",
-            padding: "0.6rem 0.75rem",
-            marginBottom: "0.35rem",
-            cursor: n.entity_type === "sales_conversation" ? "pointer" : "default",
-            borderLeft: n.kind === "escalation" ? "3px solid var(--hanko)" : undefined,
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span
-              className="label-caps"
-              style={{
-                fontSize: 10,
-                color: n.kind === "escalation" ? "var(--hanko)" : "var(--moss)",
-              }}
-            >
-              {n.kind}
-            </span>
-            <span className="mono" style={{ fontSize: 10, color: "var(--outline)" }}>
-              {n.created_at ? new Date(n.created_at).toLocaleDateString() : ""}
-            </span>
-          </div>
-          <p style={{ fontSize: 13, margin: "0.25rem 0 0", fontWeight: 600 }}>{n.title}</p>
-          {n.body && (
-            <p
-              className="mono"
-              style={{ fontSize: 12, color: "var(--ink-soft)", margin: "0.15rem 0 0" }}
-            >
-              {n.body}
-            </p>
-          )}
-        </button>
-      ))}
-    </div>
+      {inbox.loading && !inbox.inbox && <p className="fine-print">Loading inbox…</p>}
+      {inbox.inbox && items.length === 0 && <p className="fine-print">No pending decisions.</p>}
+      <div className="card-list card-list--tight">
+        {items.map((n) => (
+          <NotificationCard
+            key={n.id}
+            notification={n}
+            canOpen={inbox.canOpen(n)}
+            onOpen={() => void inbox.open(n)}
+          />
+        ))}
+      </div>
+    </section>
   );
 }

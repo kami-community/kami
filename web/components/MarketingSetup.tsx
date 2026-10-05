@@ -3,6 +3,7 @@
 import ConnectSocials, { useConnections } from "@/components/ConnectSocials";
 import { useState } from "react";
 import type { MarketingConfig, MarketingPlatform, OutreachGoal } from "@/lib/marketingTypes";
+import { api, errorMessage } from "@/lib/client/api";
 
 interface MarketingSetupProps {
   sessionDbId: string | null;
@@ -31,6 +32,25 @@ const GOALS: { key: OutreachGoal; label: string }[] = [
 
 const TONES = ["professional", "casual", "witty", "direct"];
 
+function ToggleChip({
+  pressed,
+  onClick,
+  children,
+}: {
+  pressed: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button type="button" className="chip-toggle" aria-pressed={pressed} onClick={onClick}>
+      <span className="chip-toggle__mark" aria-hidden>
+        {pressed ? "✓" : "·"}
+      </span>
+      {children}
+    </button>
+  );
+}
+
 export default function MarketingSetup({
   sessionDbId,
   existingTone,
@@ -46,7 +66,8 @@ export default function MarketingSetup({
   const [tone, setTone] = useState<string[]>(existingTone ?? []);
   const [useDossierTone, setUseDossierTone] = useState(Boolean(existingTone?.length));
   const [saving, setSaving] = useState(false);
-  const { handleOf } = useConnections(sessionDbId);
+  const [error, setError] = useState<string | null>(null);
+  const { handleOf, error: connectionsError } = useConnections(sessionDbId);
   const xConnected = Boolean(handleOf("x"));
   const igConnected = Boolean(handleOf("instagram"));
 
@@ -60,40 +81,33 @@ export default function MarketingSetup({
     setTone((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
   }
 
-  async function submit() {
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
     if (platforms.length === 0 || !sessionDbId) return;
+    const hasX = platforms.includes("x");
+    const hasIg = platforms.includes("instagram");
     setSaving(true);
-    const payload = {
-      session_id: sessionDbId,
-      platforms,
-      x_boost_budget: platforms.includes("x") ? xBudget : undefined,
-      x_outreach_goal: platforms.includes("x") ? xGoal : undefined,
-      ig_offer_min: platforms.includes("instagram") ? igOfferMin : undefined,
-      ig_offer_max: platforms.includes("instagram") ? igOfferMax : undefined,
-      ig_niche_keywords: platforms.includes("instagram")
-        ? igKeywords
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : undefined,
-      ig_min_followers: platforms.includes("instagram") ? igMinFollowers : undefined,
-      tone: useDossierTone ? existingTone : tone,
-    };
-
+    setError(null);
     try {
-      const res = await fetch("/api/marketing/setup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      const { config } = await api.post<{ config: MarketingConfig }>("/api/marketing/setup", {
+        session_id: sessionDbId,
+        platforms,
+        x_boost_budget: hasX ? xBudget : undefined,
+        x_outreach_goal: hasX ? xGoal : undefined,
+        ig_offer_min: hasIg ? igOfferMin : undefined,
+        ig_offer_max: hasIg ? igOfferMax : undefined,
+        ig_niche_keywords: hasIg
+          ? igKeywords
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean)
+          : undefined,
+        ig_min_followers: hasIg ? igMinFollowers : undefined,
+        tone: useDossierTone ? existingTone : tone,
       });
-      const json = await res.json();
-      if (res.ok && json.config) {
-        onComplete(json.config as MarketingConfig);
-      } else {
-        onComplete({ ...payload, session_id: sessionDbId });
-      }
-    } catch {
-      onComplete({ ...payload, session_id: sessionDbId });
+      onComplete(config);
+    } catch (err) {
+      setError(errorMessage(err, "Could not save Marketing setup"));
     } finally {
       setSaving(false);
     }
@@ -103,68 +117,62 @@ export default function MarketingSetup({
   const hasIg = platforms.includes("instagram");
 
   return (
-    <div style={{ maxWidth: 640, margin: "0 auto", paddingTop: "var(--stack-lg)" }}>
-      <h3 style={{ marginBottom: "var(--stack-md)" }}>Set up Marketing</h3>
+    <form className="setup-form" onSubmit={submit}>
+      <h3>Set up Marketing</h3>
 
       {!sessionDbId && (
-        <p className="mono" style={{ color: "var(--hanko)", marginBottom: "var(--stack-md)" }}>
+        <p role="alert" className="form-error">
           Waiting for session — launch a campaign first.
         </p>
       )}
 
       {sessionDbId && (
-        <div style={{ marginBottom: "var(--stack-md)" }}>
+        <div className="setup-section">
           <ConnectSocials sessionId={sessionDbId} />
+          {connectionsError && (
+            <p role="alert" className="form-error">
+              {connectionsError}
+            </p>
+          )}
         </div>
       )}
 
-      <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>
-        Select platforms
-      </p>
-      <div style={{ display: "flex", gap: "var(--stack-md)", marginBottom: "var(--stack-lg)" }}>
-        {PLATFORM_INFO.map((p) => {
-          const locked = (p.key === "x" && !xConnected) || (p.key === "instagram" && !igConnected);
-          const selected = platforms.includes(p.key);
-          return (
-            <button
-              key={p.key}
-              type="button"
-              className="kraft-card"
-              onClick={() => togglePlatform(p.key)}
-              disabled={locked}
-              style={{
-                flex: 1,
-                cursor: locked ? "not-allowed" : "pointer",
-                opacity: locked ? 0.55 : 1,
-                border: selected ? "2px solid var(--hanko)" : "1px solid var(--ink)",
-                textAlign: "left",
-              }}
-            >
-              <div
-                style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+      <fieldset className="setup-section">
+        <legend className="label-caps">Select platforms</legend>
+        <div className="choice-grid">
+          {PLATFORM_INFO.map((p) => {
+            const locked =
+              (p.key === "x" && !xConnected) || (p.key === "instagram" && !igConnected);
+            const selected = platforms.includes(p.key);
+            return (
+              <button
+                key={p.key}
+                type="button"
+                className="kraft-card choice-card"
+                aria-pressed={selected}
+                onClick={() => togglePlatform(p.key)}
+                disabled={locked}
               >
-                <strong style={{ fontFamily: "var(--font-headline)" }}>{p.name}</strong>
-                <span
-                  style={{ color: selected ? "var(--hanko)" : "var(--outline)", fontWeight: 700 }}
-                >
-                  {locked ? "🔒" : selected ? "✓" : "·"}
+                <span className="choice-card__head">
+                  {p.name}
+                  <span className="choice-card__mark" aria-hidden>
+                    {locked ? "🔒" : selected ? "✓" : "·"}
+                  </span>
                 </span>
-              </div>
-              <p style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: "0.4rem" }}>
-                {locked ? `Connect ${p.name} first, then select.` : p.blurb}
-              </p>
-            </button>
-          );
-        })}
-      </div>
+                <span className="choice-card__blurb">
+                  {locked ? `Connect ${p.name} first, then select.` : p.blurb}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
 
       {hasX && (
-        <div style={{ marginBottom: "var(--stack-lg)" }}>
-          <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>
-            X — Budget & Goal
-          </p>
-          <div style={{ display: "flex", gap: "var(--stack-md)", flexWrap: "wrap" }}>
-            <div className="form-line" style={{ flex: 1, minWidth: 180 }}>
+        <div className="setup-section">
+          <p className="label-caps">X — Budget &amp; Goal</p>
+          <div className="field-row">
+            <div className="form-line">
               <label className="mono label-caps" htmlFor="x-budget">
                 Monthly boost budget ($)
               </label>
@@ -176,36 +184,13 @@ export default function MarketingSetup({
                 onChange={(e) => setXBudget(Number(e.target.value))}
               />
             </div>
-            <div style={{ flex: 1, minWidth: 180 }}>
-              <p className="mono label-caps" style={{ marginBottom: "var(--stack-sm)" }}>
-                Outreach goal
-              </p>
-              <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+            <div>
+              <p className="mono label-caps">Outreach goal</p>
+              <div className="chip-row">
                 {GOALS.map((g) => (
-                  <button
-                    key={g.key}
-                    type="button"
-                    className="mono"
-                    onClick={() => setXGoal(g.key)}
-                    style={{
-                      background: xGoal === g.key ? "var(--kraft)" : "transparent",
-                      border: "1px solid var(--ink)",
-                      padding: "0.4rem 0.75rem",
-                      cursor: "pointer",
-                      color: "var(--ink)",
-                    }}
-                  >
-                    <span
-                      style={{
-                        color: xGoal === g.key ? "var(--hanko)" : "var(--outline)",
-                        fontWeight: 700,
-                        marginRight: "0.4rem",
-                      }}
-                    >
-                      {xGoal === g.key ? "✓" : "·"}
-                    </span>
+                  <ToggleChip key={g.key} pressed={xGoal === g.key} onClick={() => setXGoal(g.key)}>
                     {g.label}
-                  </button>
+                  </ToggleChip>
                 ))}
               </div>
             </div>
@@ -214,19 +199,10 @@ export default function MarketingSetup({
       )}
 
       {hasIg && (
-        <div style={{ marginBottom: "var(--stack-lg)" }}>
-          <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>
-            Instagram — Creator Criteria
-          </p>
-          <div
-            style={{
-              display: "flex",
-              gap: "var(--stack-md)",
-              flexWrap: "wrap",
-              marginBottom: "var(--stack-md)",
-            }}
-          >
-            <div className="form-line" style={{ flex: 1, minWidth: 140 }}>
+        <div className="setup-section">
+          <p className="label-caps">Instagram — Creator Criteria</p>
+          <div className="field-row">
+            <div className="form-line">
               <label className="mono label-caps" htmlFor="ig-offer-min">
                 Offer min ($)
               </label>
@@ -238,7 +214,7 @@ export default function MarketingSetup({
                 onChange={(e) => setIgOfferMin(Number(e.target.value))}
               />
             </div>
-            <div className="form-line" style={{ flex: 1, minWidth: 140 }}>
+            <div className="form-line">
               <label className="mono label-caps" htmlFor="ig-offer-max">
                 Offer max ($)
               </label>
@@ -250,7 +226,7 @@ export default function MarketingSetup({
                 onChange={(e) => setIgOfferMax(Number(e.target.value))}
               />
             </div>
-            <div className="form-line" style={{ flex: 1, minWidth: 140 }}>
+            <div className="form-line">
               <label className="mono label-caps" htmlFor="ig-min-followers">
                 Min followers
               </label>
@@ -278,75 +254,40 @@ export default function MarketingSetup({
       )}
 
       {platforms.length > 0 && (
-        <div style={{ marginBottom: "var(--stack-lg)" }}>
-          <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>
-            Tone & Voice
-          </p>
+        <div className="setup-section">
+          <p className="label-caps">Tone &amp; Voice</p>
           {existingTone?.length ? (
-            <div style={{ marginBottom: "var(--stack-sm)" }}>
-              <button
-                type="button"
-                className="mono"
-                onClick={() => setUseDossierTone(!useDossierTone)}
-                style={{
-                  background: useDossierTone ? "var(--kraft)" : "transparent",
-                  border: "1px solid var(--ink)",
-                  padding: "0.4rem 0.75rem",
-                  cursor: "pointer",
-                }}
-              >
-                <span
-                  style={{
-                    color: useDossierTone ? "var(--hanko)" : "var(--outline)",
-                    fontWeight: 700,
-                    marginRight: "0.4rem",
-                  }}
-                >
-                  {useDossierTone ? "✓" : "·"}
-                </span>
+            <div className="chip-row">
+              <ToggleChip pressed={useDossierTone} onClick={() => setUseDossierTone((v) => !v)}>
                 Use brand voice from dossier ({existingTone.join(", ")})
-              </button>
+              </ToggleChip>
             </div>
           ) : null}
           {!useDossierTone && (
-            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+            <div className="chip-row">
               {TONES.map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  className="mono"
-                  onClick={() => toggleTone(t)}
-                  style={{
-                    background: tone.includes(t) ? "var(--kraft)" : "transparent",
-                    border: "1px solid var(--ink)",
-                    padding: "0.4rem 0.75rem",
-                    cursor: "pointer",
-                  }}
-                >
-                  <span
-                    style={{
-                      color: tone.includes(t) ? "var(--hanko)" : "var(--outline)",
-                      fontWeight: 700,
-                      marginRight: "0.4rem",
-                    }}
-                  >
-                    {tone.includes(t) ? "✓" : "·"}
-                  </span>
+                <ToggleChip key={t} pressed={tone.includes(t)} onClick={() => toggleTone(t)}>
                   {t}
-                </button>
+                </ToggleChip>
               ))}
             </div>
           )}
         </div>
       )}
 
+      {error && (
+        <p role="alert" className="form-error">
+          {error}
+        </p>
+      )}
+
       <button
+        type="submit"
         className="hanko-btn"
-        onClick={submit}
         disabled={platforms.length === 0 || !sessionDbId || saving}
       >
         {saving ? "Saving…" : "Launch Marketing"}
       </button>
-    </div>
+    </form>
   );
 }

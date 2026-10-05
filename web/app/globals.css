@@ -1052,3 +1052,301 @@ h3 {
   text-transform: uppercase;
   color: var(--ink-soft);
 }
+
+/* --- Sales ops & Advanced Marketing views ----------------------------------
+ * Inbox, Needs-you, pipeline board, task board, Marketing setup, CRM tables
+ * and conversations. Shared building blocks: .card-list, .entity-card,
+ * .chip-toggle, .choice-card, .fine-print. */
+
+.card-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack-sm);
+}
+.card-list--tight {
+  gap: 0.35rem;
+}
+
+.fine-print {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  color: var(--ink-soft);
+}
+.fine-print--alert {
+  color: var(--hanko);
+}
+.fine-print--ok {
+  color: var(--moss);
+}
+
+.panel-section {
+  margin-top: var(--stack-md);
+}
+
+/* Notifications (Sales inbox / Needs you) */
+.notice-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.notice-card:disabled {
+  cursor: default;
+}
+.notice-card[data-kind="escalation"] {
+  border-left: 3px solid var(--hanko);
+}
+.notice-card__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.notice-card__kind {
+  font-size: 10px;
+  color: var(--moss);
+}
+.notice-card[data-kind="escalation"] .notice-card__kind {
+  color: var(--hanko);
+}
+.notice-card__title,
+.notice-card__body {
+  display: block;
+}
+.notice-card__title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 0.25rem;
+}
+.notice-card__body {
+  margin-top: 0.15rem;
+}
+
+.compact-card {
+  padding: 0.5rem 0.75rem;
+}
+
+/* Pipeline board */
+.pipeline-board {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: var(--stack-sm);
+}
+.pipeline-col {
+  flex: 0 0 140px;
+  min-width: 140px;
+}
+.pipeline-col__head {
+  font-size: 10px;
+  color: var(--outline);
+  margin-bottom: 0.35rem;
+}
+.pipeline-card {
+  width: 100%;
+  padding: 0.5rem;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.pipeline-card[aria-pressed="true"] {
+  border-color: var(--hanko);
+}
+.pipeline-card__name {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Task board */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--stack-sm);
+}
+@media (max-width: 640px) {
+  .two-col {
+    grid-template-columns: 1fr;
+  }
+}
+.inline-form .form-line {
+  flex: 1;
+  min-width: 180px;
+}
+.task-card__title {
+  font-size: 13px;
+}
+.task-card .btn-outline {
+  margin-top: 0.25rem;
+}
+
+/* Choice cards and toggle chips (Marketing setup, filters) */
+.setup-form {
+  max-width: 640px;
+  margin: 0 auto;
+  padding-top: var(--stack-lg);
+}
+.setup-section {
+  margin-bottom: var(--stack-lg);
+}
+fieldset.setup-section {
+  border: none;
+}
+.setup-form > h3 {
+  margin-bottom: var(--stack-md);
+}
+.setup-section > .label-caps {
+  margin-bottom: var(--stack-sm);
+}
+.field-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--stack-md);
+  margin-bottom: var(--stack-md);
+}
+.field-row > * {
+  flex: 1;
+  min-width: 140px;
+}
+
+.choice-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--stack-md);
+}
+.choice-card {
+  flex: 1;
+  min-width: 220px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.choice-card[aria-pressed="true"] {
+  border: 2px solid var(--hanko);
+}
+.choice-card:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.choice-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-headline);
+  font-weight: 700;
+}
+.choice-card__mark {
+  color: var(--outline);
+}
+.choice-card__blurb {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-top: 0.4rem;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.chip-toggle {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
+}
+.chip-toggle--small {
+  font-size: 11px;
+  padding: 0.2rem 0.5rem;
+}
+.chip-toggle[aria-pressed="true"] {
+  background: var(--kraft);
+}
+.chip-toggle__mark {
+  color: var(--outline);
+  font-weight: 700;
+  margin-right: 0.4rem;
+}
+.chip-toggle[aria-pressed="true"] .chip-toggle__mark,
+.choice-card[aria-pressed="true"] .choice-card__mark {
+  color: var(--hanko);
+}
+
+/* CRM entities and conversations */
+.entity-card {
+  padding: 0.75rem 1rem;
+}
+button.entity-card {
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.entity-card__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.entity-card__main {
+  flex: 1;
+  min-width: 160px;
+}
+.entity-card__name {
+  font-family: var(--font-headline);
+  font-size: 14px;
+  font-weight: 700;
+}
+.entity-card__stats {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+.entity-card__reason {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-top: 0.4rem;
+}
+.entity-card__detail {
+  margin-top: var(--stack-sm);
+  padding-top: var(--stack-sm);
+  border-top: 1px solid var(--crease);
+}
+.expand-toggle {
+  width: 100%;
+  background: none;
+  border: none;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.tab-row {
+  display: flex;
+}
+
+.advanced-disclosure {
+  margin-top: var(--stack-lg);
+}
+.advanced-disclosure > summary {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.advanced-disclosure > p {
+  color: var(--ink-soft);
+  margin: 0.5rem 0 0.75rem;
+}
