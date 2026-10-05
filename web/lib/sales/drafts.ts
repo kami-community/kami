@@ -94,3 +94,32 @@ export async function approveTouchpoint(db: Db, sessionId: string, touchpointId:
   await audit(db, sessionId, "user", "draft_approved", touchpointId);
   return { touchpoint: data };
 }
+
+/** Save the founder's edits. Any change needs a fresh review and approval. */
+export async function editTouchpoint(
+  db: Db,
+  sessionId: string,
+  touchpointId: string,
+  edits: { subject: string; body: string },
+) {
+  const touchpoint = await loadTouchpoint(db, sessionId, touchpointId);
+  if (touchpoint.status === "sent" || touchpoint.sent_at) {
+    throw forbidden("this email was already sent and can't be edited");
+  }
+  const { data, error } = await db
+    .from("sales_touchpoints")
+    .update({
+      draft_subject: edits.subject,
+      draft_body: edits.body,
+      reviewer_verdict: null,
+      status: "drafted",
+      approved_at: null,
+    })
+    .eq("id", touchpointId)
+    .select("*")
+    .single();
+  if (error) throw new AppError("internal", error.message);
+
+  await audit(db, sessionId, "user", "draft_edited", touchpointId);
+  return { touchpoint: data };
+}

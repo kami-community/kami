@@ -159,7 +159,12 @@ export function defaultSequenceName(date: Date): string {
   return `Email sequence — ${date.toISOString().slice(0, 10)}`;
 }
 
-export function touchpointRows(sessionId: string, enrollmentId: string, drafts: EmailDraft[]) {
+export function touchpointRows(
+  sessionId: string,
+  enrollmentId: string,
+  drafts: EmailDraft[],
+  provenance: { source: "agent" | "template"; notes?: string } = { source: "template" },
+) {
   return drafts.map((draft) => ({
     session_id: sessionId,
     enrollment_id: enrollmentId,
@@ -172,6 +177,8 @@ export function touchpointRows(sessionId: string, enrollmentId: string, drafts: 
     draft_metadata: {
       evidence_refs: draft.evidence_refs,
       signal_ref: draft.signal_ref ?? null,
+      source: provenance.source,
+      notes: provenance.notes ?? null,
     },
   }));
 }

@@ -363,3 +363,78 @@
   gap: var(--space-2);
   margin-top: var(--space-2);
 }
+
+/* --- Email drafts ---------------------------------------------------------- */
+
+.draft-queue {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+.draft-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.draft {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.draft__head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.draft__to {
+  font-weight: 700;
+}
+.draft__tags {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+.draft__email {
+  background: var(--paper-raised);
+  border: 1px solid var(--crease);
+  padding: var(--space-4);
+}
+.draft__subject {
+  font-weight: 700;
+  margin-bottom: var(--space-2);
+}
+.draft__body {
+  white-space: pre-wrap;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.55;
+}
+.draft__editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.draft__editor textarea,
+.draft__editor input {
+  width: 100%;
+}
+.draft__verdict {
+  border-left: 3px solid var(--ochre);
+  padding-left: var(--space-3);
+  font-size: 13px;
+}
+.draft__verdict ul {
+  margin: var(--space-1) 0 0 var(--space-4);
+}
+.draft__verdict--pass {
+  border-left-color: var(--moss-deep);
+  color: var(--moss-deep);
+}
+.draft__actions {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  flex-wrap: wrap;
+}

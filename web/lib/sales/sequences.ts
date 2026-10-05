@@ -2,9 +2,10 @@ import { getCampaign } from "@/lib/campaigns/sessions";
 import type { Db } from "@/lib/db/client";
 import { isSequenceEligibleContact } from "@/lib/domain/contacts";
 import { badRequest } from "@/lib/http/errors";
-import { buildEmailSequence } from "@/lib/salesSequences";
+import { buildCompanyContextPack } from "@/lib/campaigns/contextPack";
 import type { AccountSignal } from "@/lib/salesTypes";
 import type { Row } from "./rows";
+import { draftSequence } from "./outreachDrafts";
 import { defaultSequenceName, sequenceSteps, touchpointRows } from "./rules";
 import { audit, dbError, loadSalesCampaign, now } from "./shared";
 
@@ -74,23 +75,26 @@ async function accountSignals(db: Db, sessionId: string, accountId: string) {
 /** Enroll one account; returns the enrollment id or the reason it was skipped. */
 async function enrollAccount(
   db: Db,
-  ctx: { sessionId: string; sequenceId: string; campaign: Row; goal: string },
+  ctx: { sessionId: string; sequenceId: string; campaign: Row; goal: string; contextPack: string },
   account: Row,
 ): Promise<{ enrollmentId: string } | { skipped: string }> {
   const accountId = account.id as string;
   const contact = await eligibleContact(db, ctx.sessionId, accountId);
   if (!contact) return { skipped: "no verified contact email" };
 
-  const drafts = buildEmailSequence({
+  const sequence = await draftSequence({
+    sessionId: ctx.sessionId,
+    contextPack: ctx.contextPack,
     offer: ctx.campaign.offer as string,
-    claims: (ctx.campaign.approved_claims as string[] | null) ?? [],
-    account: {
-      name: (contact.name as string | null) ?? (account.name as string),
-      industry: (account.industry as string | null) ?? undefined,
-      domain: (account.domain as string | null) ?? undefined,
-    },
-    signals: await accountSignals(db, ctx.sessionId, accountId),
+    approvedClaims: (ctx.campaign.approved_claims as string[] | null) ?? [],
     goal: ctx.goal,
+    account: {
+      name: account.name as string,
+      domain: account.domain as string | null,
+      industry: account.industry as string | null,
+    },
+    contact: { name: contact.name as string | null, title: contact.title as string | null },
+    signals: await accountSignals(db, ctx.sessionId, accountId),
   });
 
   const { data: enrollment, error: enrollError } = await db
@@ -109,7 +113,12 @@ async function enrollAccount(
 
   const { error: draftError } = await db
     .from("sales_touchpoints")
-    .insert(touchpointRows(ctx.sessionId, enrollment.id as string, drafts));
+    .insert(
+      touchpointRows(ctx.sessionId, enrollment.id as string, sequence.drafts, {
+        source: sequence.source,
+        notes: sequence.notes,
+      }),
+    );
   if (draftError) {
     // Do not leave an enrollment without drafts behind.
     const { error: cleanupError } = await db
@@ -138,7 +147,7 @@ export async function createSequence(
   const { sessionId } = input;
   const campaign = await loadSalesCampaign(db, sessionId);
   const accounts = await loadTargetAccounts(db, sessionId, input.accountIds);
-  const { session } = await getCampaign(db, sessionId);
+  const { session, dossier } = await getCampaign(db, sessionId);
 
   const { data: sequence, error } = await db
     .from("sales_sequences")
@@ -159,6 +168,7 @@ export async function createSequence(
     sequenceId: sequence.id as string,
     campaign,
     goal: session.goals[0] ?? "",
+    contextPack: buildCompanyContextPack({ dossier, domain: session.canonical_domain, goals: session.goals }),
   };
   const enrolled: string[] = [];
   const skipped: SkippedAccount[] = [];

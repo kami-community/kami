@@ -4,6 +4,8 @@ export interface BuildEmailSequenceParams {
   offer: string;
   claims: string[];
   account: { name: string; industry?: string; domain?: string };
+  /** The person being emailed, when known. Never the company name. */
+  contactName?: string | null;
   signals: AccountSignal[];
   tone?: string;
   /** Campaign / session goals — drives CTA wording (never defaults to meetings-only). */
@@ -39,6 +41,12 @@ function trimToWordLimit(text: string, maxWords: number): string {
   return `${words.slice(0, maxWords).join(" ")}…`;
 }
 
+/** First name of the contact, or a neutral greeting when we don't know it. */
+export function greetingName(contactName?: string | null): string {
+  const first = contactName?.trim().split(/\s+/)[0];
+  return first && /^[\p{L}'-]{2,}$/u.test(first) ? first : "there";
+}
+
 function pickSignal(signals: AccountSignal[]): AccountSignal | null {
   if (!signals.length) return null;
   return (
@@ -65,7 +73,7 @@ function buildOpener(
   claim: string | null,
 ): EmailDraft {
   const { offer, account, goal } = params;
-  const firstName = account.name.split(/\s+/)[0] || "there";
+  const firstName = greetingName(params.contactName);
   const cta = ctaFromGoal(goal);
   const hook = signal
     ? formatSignalHook(signal, account.name)
@@ -99,7 +107,7 @@ function buildValueFollowUp(
   claim: string | null,
 ): EmailDraft {
   const { offer, account, claims } = params;
-  const firstName = account.name.split(/\s+/)[0] || "there";
+  const firstName = greetingName(params.contactName);
   const angle =
     claims[1]?.trim() ||
     claim ||
@@ -128,7 +136,7 @@ function buildValueFollowUp(
 
 function buildCloseLoop(params: BuildEmailSequenceParams): EmailDraft {
   const { offer, account } = params;
-  const firstName = account.name.split(/\s+/)[0] || "there";
+  const firstName = greetingName(params.contactName);
 
   const bodyCore = trimToWordLimit(
     `Hi ${firstName},\n\nI'll close the loop here — if ${offer.toLowerCase()} isn't a priority right now, no worries.\n\nIf timing opens up later, reply anytime and we can pick this back up.`,
