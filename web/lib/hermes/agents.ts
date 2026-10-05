@@ -47,6 +47,18 @@ export const AGENTS = {
     file: "marketing-researcher.md",
     skills: ["creator_outreach", "business_rules"],
   },
+  outreach: {
+    file: "outreach.md",
+    skills: ["signal_cold_email", "email_sequence", "review_rubric", "business_rules"],
+  },
+  "sales-conversation-manager": {
+    file: "sales-conversation-manager.md",
+    skills: ["reply_triage", "suppression_and_consent", "business_rules"],
+  },
+  "dm-assistant": {
+    file: "dm-assistant.md",
+    skills: ["founder_voice", "x_cold_dm", "creator_outreach", "review_rubric", "business_rules"],
+  },
 } as const;
 
 export type AgentName = keyof typeof AGENTS;

@@ -2,7 +2,7 @@ import type { Db } from "@/lib/db/client";
 import { AppError } from "@/lib/http/errors";
 import type { InboundEmail } from "@/lib/ports/email";
 import { addSuppression } from "@/lib/outbound/suppressions";
-import { classifyReplyContent } from "@/lib/salesClassify";
+import { triageReply } from "./triage";
 
 /**
  * Inbound replies to sales outreach. The AgentMail webhook and the polling job
@@ -126,7 +126,20 @@ export async function recordSalesReply(db: Db, input: ReplyInput): Promise<Recor
     .update({ status: "needs_review", last_message_at: now, updated_at: now })
     .eq("id", conversationId);
 
-  const classification = classifyReplyContent(content);
+  const { data: earlier } = await db
+    .from("sales_conversation_messages")
+    .select("direction, content")
+    .eq("conversation_id", conversationId)
+    .neq("id", message.id)
+    .order("sent_at", { ascending: true })
+    .limit(6);
+  const classification = await triageReply(db, {
+    sessionId: input.sessionId,
+    content,
+    previousMessages: (earlier ?? []).map(
+      (m) => `${m.direction === "inbound" ? "Prospect" : "Founder"}: ${m.content}`,
+    ),
+  });
   const { data: cls, error: clsErr } = await db
     .from("sales_reply_classifications")
     .insert({

@@ -1,7 +1,7 @@
 import type { Db } from "@/lib/db/client";
 import { AppError, notFound } from "@/lib/http/errors";
 import { applyUnsubscribe } from "@/lib/inbound/salesReplies";
-import { classifyReplyContent } from "@/lib/salesClassify";
+import { triageReply } from "@/lib/inbound/triage";
 import type { ReplyClassificationLabel, SalesConversation, SalesMessage } from "@/lib/salesTypes";
 
 /** Sales conversations: inbox listing, thread view, manual classification and escalation. */
@@ -74,7 +74,7 @@ export async function classifyMessage(
     .maybeSingle();
   if (!message) throw notFound("message not found in this conversation");
 
-  const auto = classifyReplyContent(message.content);
+  const auto = await triageReply(db, { sessionId: params.sessionId, content: message.content });
   const label = params.label ?? auto.label;
   const manual = Boolean(params.label);
   const escalation = manual

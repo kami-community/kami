@@ -67,6 +67,16 @@ for (const [, file] of registry.matchAll(/file:\s*"([^"]+)"/g)) {
   if (!existsSync(join(root, "agents", file))) agents.problems.push(`web/lib/hermes/agents.ts references missing agents/${file}`);
 }
 
+// Every agent role file must be registered (and so actually used) by the app,
+// except leaf specialists that only run as Hermes delegate_task subagents.
+const DELEGATE_ONLY = new Set(["distribution-platform-specialist"]);
+const registered = new Set([...registry.matchAll(/file:\s*"([^"]+)\.md"/g)].map((m) => m[1]));
+for (const { name } of agents.names) {
+  if (!registered.has(name) && !DELEGATE_ONLY.has(name)) {
+    agents.problems.push(`agents/${name}.md is not registered in web/lib/hermes/agents.ts`);
+  }
+}
+
 const problems = [...skills.problems, ...agents.problems];
 if (problems.length) {
   console.error(`Invalid skills/agents:\n  ${problems.join("\n  ")}`);

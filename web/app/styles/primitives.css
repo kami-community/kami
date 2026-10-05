@@ -318,3 +318,48 @@
 .queue-x-status {
   margin: var(--space-2) 0;
 }
+
+/* --- Conversation threads ---------------------------------------------------- */
+
+.thread {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.thread__messages {
+  max-height: 420px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.thread__message {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-2);
+  align-items: baseline;
+  max-width: 85%;
+}
+.thread__message p {
+  width: 100%;
+  white-space: pre-wrap;
+  font-size: 14px;
+}
+.thread__message--out {
+  align-self: flex-end;
+  border-right: 2px solid var(--moss);
+  padding-right: var(--space-3);
+}
+.thread__message--in {
+  border-left: 2px solid var(--crease-strong);
+  padding-left: var(--space-3);
+}
+.thread__composer textarea {
+  width: 100%;
+}
+.thread__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}

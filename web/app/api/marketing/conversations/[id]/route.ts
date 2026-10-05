@@ -2,6 +2,7 @@ import { z } from "zod";
 import { db } from "@/lib/db/client";
 import { ids, parseBody, parseQuery, route } from "@/lib/http/route";
 import { listMessages, resolveEscalation } from "@/lib/marketing/conversations";
+import { suggestDm } from "@/lib/marketing/dmSuggestions";
 import { sendConversationMessage } from "@/lib/outbound/marketingDm";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -15,6 +16,7 @@ const Body = z.discriminatedUnion("action", [
     content: z.string().min(1).max(10_000),
     client_message_id: z.string().uuid(),
   }),
+  z.object({ action: z.literal("suggest"), session_id: ids.sessionId }),
   z.object({
     action: z.literal("resolve"),
     session_id: ids.sessionId,
@@ -39,6 +41,9 @@ export const POST = route<Ctx>(async (request, { params }) => {
       clientMessageId: body.client_message_id,
     });
     return Response.json({ sent: true, account, receipt });
+  }
+  if (body.action === "suggest") {
+    return Response.json(await suggestDm(db(), { sessionId: body.session_id, conversationId: id }));
   }
   const status = await resolveEscalation(db(), {
     sessionId: body.session_id,
