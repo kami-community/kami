@@ -48,10 +48,10 @@ Never calls `drafts` send, `/api/email/send`, or distribution publish actions.
 
 ## Artifacts
 
-| Path                          | Purpose                                   |
-| ----------------------------- | ----------------------------------------- |
-| `results/<fixture>-<ts>.json` | Per-run scorecard (gitignored)            |
-| `results/summary-<ts>.md`     | Aggregate pass rate                       |
+| Path                          | Purpose                                           |
+| ----------------------------- | ------------------------------------------------- |
+| `results/<fixture>-<ts>.json` | Per-run scorecard (gitignored)                    |
+| `results/summary-<ts>.md`     | Aggregate pass rate                               |
 | `GAPLOG.md`                   | Durable failures + RCA fields (local, gitignored) |
 
 ## Scoring

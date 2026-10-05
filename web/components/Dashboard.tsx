@@ -78,6 +78,7 @@ export default function Dashboard({ onNewCampaign }: { onNewCampaign: () => void
         </p>
       )}
 
+      {campaign.setupError && <Callout tone="error">{campaign.setupError}</Callout>}
       <CapabilityBanner />
       <CampaignTabs active={tab} onChange={setTab} />
 

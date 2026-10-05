@@ -112,6 +112,23 @@ export async function getUserPosts(
   return json.data ?? [];
 }
 
+export interface XPostDetail {
+  id: string;
+  text: string;
+  author_id: string;
+}
+
+/** One post with its author — used to prove a post belongs to the connected account. */
+export async function getPost(token: string, id: string): Promise<XPostDetail> {
+  const qs = new URLSearchParams({ "tweet.fields": "author_id" });
+  const json = await xFetch<{ data?: XPostDetail }>(
+    token,
+    `/tweets/${encodeURIComponent(id)}?${qs}`,
+  );
+  if (!json.data?.id || !json.data.author_id) throw upstreamFailed(`X returned no post ${id}`);
+  return json.data;
+}
+
 export async function getPostMetrics(token: string, ids: string[]): Promise<XTimelinePost[]> {
   if (!ids.length) return [];
   const qs = new URLSearchParams({ ids: ids.join(","), "tweet.fields": "public_metrics" });

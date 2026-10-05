@@ -196,14 +196,20 @@ async function runFixture(
 
   steps.push(
     await step("session_create", async () => {
-      const { data, status } = await api.post<{ session: Record<string, unknown> }>("/api/sessions", {
-        domain: fixture.domain,
-        goals: route === "marketing" ? ["early users"] : ["book meetings"],
-        stage: "mvp",
-      });
+      const { data, status } = await api.post<{ session: Record<string, unknown> }>(
+        "/api/sessions",
+        {
+          domain: fixture.domain,
+          goals: route === "marketing" ? ["early users"] : ["book meetings"],
+          stage: "mvp",
+        },
+      );
       sessionId = String(data.session.id);
       identity = (data.session.domain_check as Record<string, unknown>) ?? null;
-      return { status, summary: `${sessionId} · ${String(identity?.canonical_domain ?? fixture.domain)}` };
+      return {
+        status,
+        summary: `${sessionId} · ${String(identity?.canonical_domain ?? fixture.domain)}`,
+      };
     }),
   );
   if (!sessionId) return finalize();

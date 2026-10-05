@@ -33,6 +33,8 @@ interface CampaignContextValue {
   dossierJob: DossierJob;
   salesConfig: SalesCampaignConfig | null;
   marketingConfig: MarketingConfig | null;
+  /** Loading Sales/Marketing setup failed (shown by the dashboard). */
+  setupError: string | null;
   generateDossier: () => Promise<void>;
   setDossier: (dossier: Dossier) => void;
   confirmDossier: () => Promise<void>;
@@ -61,6 +63,7 @@ export function CampaignProvider({
   const [dossierJob, setDossierJob] = useState<DossierJob>({ busy: false, error: null });
   const [salesConfig, setSalesConfig] = useState<SalesCampaignConfig | null>(null);
   const [marketingConfig, setMarketingConfig] = useState<MarketingConfig | null>(null);
+  const [setupError, setSetupError] = useState<string | null>(null);
   const sessionId = session.id;
 
   useEffect(() => {
@@ -78,8 +81,8 @@ export function CampaignProvider({
         setSalesConfig(sales.config);
         setMarketingConfig(marketing.config);
       })
-      .catch(() => {
-        /* setup panels show their own empty state */
+      .catch((err) => {
+        if (!cancelled) setSetupError(errorMessage(err, "Could not load campaign setup"));
       });
     return () => {
       cancelled = true;
@@ -146,6 +149,7 @@ export function CampaignProvider({
       dossierJob,
       salesConfig,
       marketingConfig,
+      setupError,
       generateDossier,
       setDossier,
       confirmDossier,
@@ -160,6 +164,7 @@ export function CampaignProvider({
       dossierJob,
       salesConfig,
       marketingConfig,
+      setupError,
       generateDossier,
       setDossier,
       confirmDossier,

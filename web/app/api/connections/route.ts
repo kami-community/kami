@@ -2,6 +2,7 @@ import { z } from "zod";
 import { OAUTH_PROVIDERS } from "@/lib/connections/providers";
 import { disconnect, listConnections } from "@/lib/connections/service";
 import { env } from "@/lib/config/env";
+import { boostProvider } from "@/lib/providers";
 import { db } from "@/lib/db/client";
 import { ids, parseQuery, route } from "@/lib/http/route";
 
@@ -19,7 +20,7 @@ export const GET = route(async (request) => {
       instagram: OAUTH_PROVIDERS.instagram.configured(),
       token_encryption: Boolean(c.KAMI_TOKEN_ENCRYPTION_KEY),
       apify: Boolean(c.APIFY_API_TOKEN),
-      x_ads: Boolean(c.X_ADS_ACCESS_TOKEN && c.X_ADS_ACCOUNT_ID),
+      x_ads: boostProvider() !== null,
     },
   });
 });

@@ -1,6 +1,8 @@
 import type { Db } from "@/lib/db/client";
 import { AppError, badRequest, conflict, forbidden, notFound } from "@/lib/http/errors";
 import type { EmailProvider } from "@/lib/ports/email";
+import { isUndeliverable } from "@/lib/ports/emailVerifier";
+import { emailVerifier } from "@/lib/providers";
 import {
   assertNotPaused,
   assertNotSuppressed,
@@ -86,6 +88,9 @@ export async function sendSalesTouchpoint(
   if (!recipient) throw badRequest("this contact has no email address — Kami never invents one");
   if (enrollment.sales_contacts?.do_not_contact)
     throw forbidden(`${recipient} is marked do-not-contact`);
+  if (isUndeliverable(await emailVerifier().verify(recipient))) {
+    throw forbidden(`${recipient} cannot receive mail (its domain has no mail server)`);
+  }
 
   const subject = tp.draft_subject?.trim() ?? "";
   const text = tp.draft_body?.trim() ?? "";

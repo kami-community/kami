@@ -79,12 +79,20 @@ Cold IG DMs may still fail without messaging permissions / prior thread — the 
 
 ## D. X Ads — optional real boosts
 
-**Pay?** Yes — **ad spend** + Ads API access. Skip until needed; Boost button queues as `pending`.
+**Pay?** Yes — **ad spend** + Ads API access. Skip until needed; without these the Boost endpoint returns `not_configured` and creates nothing.
+
+Requires an X developer app **approved for Ads API access**, and OAuth 1.0a user tokens (regenerated after approval) for an X user who can manage the ads account. The connected X account must be a promotable user of that ads account, and the account needs an active funding instrument.
 
 ```
-X_ADS_ACCESS_TOKEN=
-X_ADS_ACCOUNT_ID=
+X_ADS_CONSUMER_KEY=          # app API key
+X_ADS_CONSUMER_SECRET=       # app API key secret
+X_ADS_ACCESS_TOKEN=          # user access token (OAuth 1.0a)
+X_ADS_ACCESS_TOKEN_SECRET=   # user access token secret
+X_ADS_ACCOUNT_ID=            # ads account id, e.g. 18ce54d4x5t
+X_ADS_FUNDING_INSTRUMENT_ID= # optional; default: first active, fundable instrument
 ```
+
+A boost creates a paused campaign → engagement line item (automatic bid, founder's budget) → promoted post, then activates the campaign. Each boost is capped at 500 (account currency).
 
 ---
 

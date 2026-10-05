@@ -23,7 +23,9 @@ export type FinderVerificationStatus =
   | "unverified"
   | "valid"
   | "hermes_evidence"
-  | "founder_provided";
+  | "founder_provided"
+  /** The address's domain cannot receive mail (no MX/A/AAAA, null MX, or bad syntax). */
+  | "undeliverable";
 
 /** Verifications that may receive a sequence. Role/shared inboxes stay visible but are not eligible. */
 export const SEQUENCE_ELIGIBLE_VERIFICATIONS: readonly StoredEmailVerification[] = [

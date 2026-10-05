@@ -1540,4 +1540,49 @@ button.entity-card {
   display: flex;
   gap: 0.35rem;
   flex-wrap: wrap;
+
+/* --- Boosts and meetings --------------------------------------------------- */
+
+.boost-manager {
+  margin-bottom: var(--stack-md);
+}
+.boost-manager__subhead {
+  margin-top: var(--stack-md);
+}
+.boost-manager__error {
+  flex-basis: 100%;
+  font-size: 11px;
+}
+
+.meeting-queue__group {
+  margin-bottom: var(--stack-sm);
+}
+.meeting-queue__item .row--flat {
+  border: none;
+}
+.meeting-queue__note {
+  padding: 0 0.75rem 0.5rem;
+  font-size: 11px;
+}
+.meeting-queue__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack-sm);
+  padding: 0.5rem 0.75rem 0.75rem;
+  border-top: 1px solid var(--crease);
+}
+.meeting-queue__form select,
+.meeting-queue__form input[type="datetime-local"] {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--ink);
+  padding: 0.4rem 0;
+}
+.meeting-queue__actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
 }

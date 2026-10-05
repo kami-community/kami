@@ -58,8 +58,12 @@ const schema = z.object({
   X_CLIENT_ID: optional,
   X_CLIENT_SECRET: optional,
   X_REDIRECT_URI: optional,
+  X_ADS_CONSUMER_KEY: optional,
+  X_ADS_CONSUMER_SECRET: optional,
   X_ADS_ACCESS_TOKEN: optional,
+  X_ADS_ACCESS_TOKEN_SECRET: optional,
   X_ADS_ACCOUNT_ID: optional,
+  X_ADS_FUNDING_INSTRUMENT_ID: optional,
 
   // Instagram
   INSTAGRAM_APP_ID: optional,
