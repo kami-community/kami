@@ -27,8 +27,8 @@ Read first: README.md, SETUP.md, docs/community-edition.md, web/.env.example, ro
 
 Do:
 1) Install Hermes if missing. Enable API server on 127.0.0.1:8642. Windows Hermes home = %LOCALAPPDATA%\hermes (not ~/.hermes). Ask me for the model key and API_SERVER_KEY; never print or commit secrets.
-2) Create or connect my Supabase project. Apply migrations in web/supabase/migrations/ in order: 001–005, 007–010 (skip 006 if absent). Confirm before running SQL.
-3) Write web/.env.local with HERMES_GATEWAY_URL=http://127.0.0.1:8642/v1/chat/completions, HERMES_API_KEY matching API_SERVER_KEY, NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY. Leave AgentMail, X, Linkup/Exa/Tavily, CDP unset unless I provide them.
+2) Create or connect my Supabase project. Apply migrations in web/supabase/migrations/ in order: 001–012. Confirm before running SQL.
+3) Write web/.env.local from web/.env.example (not root .env.example) with HERMES_GATEWAY_URL=http://127.0.0.1:8642/v1/chat/completions, HERMES_API_KEY matching API_SERVER_KEY, NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY. Leave AgentMail, X, Linkup/Exa/Tavily, CDP unset unless I provide them.
 4) npm install in web/. From repo root: npm run sync:skills && npm run readiness.
 5) Start Hermes gateway, then npm run dev in web/ (prefer next dev --webpack if Turbopack fails on Windows/WSL).
 6) Verify GET http://localhost:3000/api/capabilities has hermes + database (+ modelConfigured when possible). Fix blockers until true.
@@ -46,8 +46,8 @@ Read SETUP.md, docs/community-edition.md, web/.env.example, root .env.example. N
 
 Target state:
 - Hermes API server on 127.0.0.1:8642 with my model key (Windows home: %LOCALAPPDATA%\hermes)
-- Supabase migrations 001–005, 007–010 applied (skip 006 if absent)
-- web/.env.local: Hermes gateway URL + matching API key + Supabase URL + service role only
+- Supabase migrations 001–012 applied
+- web/.env.local from web/.env.example: Hermes gateway URL + matching API key + Supabase URL + service role only
 - AgentMail, X, research providers, CDP only if I explicitly provide credentials
 
 Actions: check each dependency, explain blockers, write only safe local config after I confirm, npm install in web/, npm run sync:skills, npm run readiness, start Hermes + npm run dev (webpack if needed). Verify /api/capabilities. End with unlocked vs optional capabilities and the first click path (domain → dossier → Sales or Marketing).

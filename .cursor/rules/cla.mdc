@@ -1,0 +1,16 @@
+---
+description: Kami CLA — every PR contributor must sign; relicensing for a possible Enterprise edition
+globs: CLA.md,.github/workflows/cla.yml,.github/CODEOWNERS,.github/PULL_REQUEST_TEMPLATE.md,signatures/**
+alwaysApply: false
+---
+
+# Kami CLA
+
+- Community Edition stays MIT. The CLA is a **license grant** (not assignment) so maintainers can later dual-license / ship Enterprise without re-collecting grants.
+- Every human PR author and committer must sign by commenting: `I have read the CLA Document and I hereby sign the CLA`
+- Do not allowlist `@saranambiar` or `@VaradDurge`. They sign once; the bot stores it on `cla-signatures`.
+- Allowlist only bots (`bot*`, `cursor[bot]`, `cursoragent`, Dependabot, github-actions).
+- Never hand-edit `signatures/version1/cla.json`. Comment `recheck` on the PR if status is stale.
+- Signatures live on the unprotected `cla-signatures` branch. Do not point the workflow `branch:` at `main` or `dev`.
+- Do not weaken CLA checks to land a PR. Do not replace the CLA with DCO unless both maintainers agree.
+- Legal/automation file owners: both maintainers (see CODEOWNERS).

@@ -16,7 +16,13 @@ web/.env.local
 
 # Hermes / local agent clutter
 .claude/settings.local.json
-.cursor/
+# Local Cursor junk; keep shared rules, skills, and Bugbot config
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
+!.cursor/skills/
+!.cursor/skills/**
+!.cursor/BUGBOT.md
 tasks/
 lessons/
 memory/

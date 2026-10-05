@@ -27,4 +27,4 @@ alter table connected_accounts drop constraint if exists connected_accounts_sess
 alter table connected_accounts add constraint connected_accounts_session_platform_key
   unique (session_id, platform);
 
-alter table connected_accounts enable row level security;
+

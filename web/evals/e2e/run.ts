@@ -449,12 +449,42 @@ async function runFixture(
   async function runMarketingPath(): Promise<void> {
     steps.push(
       await step("distribution_setup", async () => {
-        const { status } = await api.post("/api/marketing/distribution/setup", {
+        const { data, status } = await api.post<{
+          config?: { goal?: string; status?: string; angle?: string };
+          source?: string;
+          error?: string;
+        }>("/api/marketing/distribution/setup", {
           session_id: sessionId,
-          goal: fixture.expected.marketing.goal,
-          surfaces: ["x", "reddit", "linkedin"],
+          action: "recommend",
         });
-        return { status, summary: `goal=${fixture.expected.marketing.goal}` };
+        if (data.error && !data.config) {
+          throw new ApiError(data.error, status, data);
+        }
+        const goal = data.config?.goal ?? fixture.expected.marketing.goal;
+        return {
+          status,
+          summary: `recommended goal=${goal} source=${data.source ?? "?"}`,
+        };
+      }),
+    );
+    if (!steps[steps.length - 1].ok) return;
+
+    steps.push(
+      await step("distribution_plan_approve", async () => {
+        const { data, status } = await api.post<{
+          config?: { status?: string; goal?: string };
+          error?: string;
+        }>("/api/marketing/distribution/setup", {
+          session_id: sessionId,
+          action: "approve",
+        });
+        if (data.error && data.config?.status !== "approved") {
+          throw new ApiError(data.error ?? "approve failed", status, data);
+        }
+        return {
+          status,
+          summary: `status=${data.config?.status ?? "?"} goal=${data.config?.goal ?? "?"}`,
+        };
       }),
     );
     if (!steps[steps.length - 1].ok) return;

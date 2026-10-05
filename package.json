@@ -2,7 +2,8 @@
   "name": "kami",
   "private": true,
   "version": "0.1.0",
-  "description": "Kami Community Edition \u2014 self-hosted AI GTM agency",
+  "license": "MIT",
+  "description": "Kami Community Edition — self-hosted AI GTM agency",
   "scripts": {
     "dev": "npm --prefix web run dev",
     "build": "npm --prefix web run build",
@@ -16,6 +17,6 @@
     "check:skills": "node scripts/sync-hermes-skills.mjs --check"
   },
   "engines": {
-    "node": ">=20.9"
+    "node": ">=22"
   }
 }

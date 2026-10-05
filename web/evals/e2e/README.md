@@ -2,10 +2,12 @@
 
 API-scripted founder path over fixtures in `fixtures/companies.json`. No Playwright. No email send. No publish.
 
+**No affiliation:** Names like cal.com / notion.so / nike.in in fixtures are **test cases only**. Kami has no partnership with those companies. See [`fixtures/NOTICE.md`](fixtures/NOTICE.md).
+
 ## Prerequisites
 
 1. Web app running (`npm run dev` from repo root) with Supabase + Hermes configured
-2. Migrations through **`010_agent_run_logs.sql`** (and **`009`** for Marketing fixtures)
+2. Migrations through **`011_distribution_plan.sql`** (includes **`009`** / **`010`** for Marketing + logs)
 3. Hermes gateway reachable (`/api/capabilities` shows `hermes: true`)
 
 ## Commands
@@ -39,7 +41,7 @@ npm run eval:e2e -- --fixture cal
 ```text
 domain validate → research → session → dossier/generate
   → Sales: setup → segments derive/confirm → plan → approve → discover → STOP
-  → Marketing: distribution setup → opportunities research → STOP
+  → Marketing: distribution recommend → plan approve → opportunities research → STOP
 ```
 
 Never calls `drafts` send, `/api/email/send`, or distribution publish actions.

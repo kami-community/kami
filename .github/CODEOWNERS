@@ -1,0 +1,9 @@
+# Default owners — either maintainer may review.
+# PR authors cannot approve their own PRs; the other owner must.
+# GitHub: Settings → Rules → require 1 approving review (write access).
+* @saranambiar @VaradDurge
+
+# Legal + automation: same two people (no silent third-party ownership).
+/CLA.md @saranambiar @VaradDurge
+/.github/ @saranambiar @VaradDurge
+/.cursor/ @saranambiar @VaradDurge

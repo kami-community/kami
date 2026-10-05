@@ -29,21 +29,22 @@ Optional later: Linkup/Exa/Tavily, AgentMail, X developer app, Chrome with remot
 
 ## 2. Clone and install the web app
 
-```powershell
+```bash
 git clone https://github.com/saranambiar/kami.git
-cd kami
-cd web
+cd kami/web
 npm install
 ```
+
+Windows (PowerShell): `cd kami\web` then `npm install`.
 
 ---
 
 ## 3. Install and configure Hermes
 
 1. Install Hermes per [official docs](https://hermes-agent.nousresearch.com/docs/).
-2. Copy the repo root [`.env.example`](.env.example) into Hermes home:
+2. Copy the repo root [`.env.example`](.env.example) into Hermes home (this file is for Hermes, not the web app):
    - **Windows:** `%LOCALAPPDATA%\hermes\.env`
-   - **macOS / Linux:** `~/.hermes\.env`
+   - **macOS / Linux:** `~/.hermes/.env`
 3. Set at least:
    - Your model provider key (e.g. `OPENAI_API_KEY=…`)
    - `API_SERVER_ENABLED=true`
@@ -52,10 +53,16 @@ npm install
    - `API_SERVER_KEY=` a long random secret (same value will go in `web/.env.local` as `HERMES_API_KEY`)
 4. Confirm `config.yaml` (or env) does not leave you on a provider with an empty key.
 5. For nested manager → specialist delegation, Hermes `delegation.max_spawn_depth` should be **≥ 2** if you use orchestrator roles (see Hermes docs / project `AGENTS.md`).
+6. **Marketing distribution research** uses a Hermes Distribution Manager that calls `delegate_task` with a parallel `tasks` array (platform specialists). Ensure:
+   - `delegation.orchestrator_enabled` is not `false`
+   - Research/browser tools are enabled on the gateway so **leaf** specialists inherit them
+   - Skills are synced (`npm run sync:skills`) so `{platform}_distribution` playbooks exist under Hermes `skills/gtm/`
+   - Top-level manager → leaf only needs default spawn depth; raise `max_spawn_depth` if the manager itself is nested
+   - The OpenAI-compatible API server runs `delegate_task` **synchronously** on `/v1/chat/completions` (stateless), so research requests may take several minutes — keep the gateway process up
 
 Start the gateway when ready (exact command depends on your Hermes install; common pattern):
 
-```powershell
+```bash
 hermes gateway run
 ```
 
@@ -65,10 +72,14 @@ Health check: API server listening on `http://127.0.0.1:8642` (chat completions 
 
 ## 4. Configure the web app
 
-```powershell
+Use [`web/.env.example`](web/.env.example) (not the root Hermes template):
+
+```bash
 cd web
-copy .env.example .env.local
+cp .env.example .env.local
 ```
+
+Windows (PowerShell): `copy .env.example .env.local`
 
 ### Required in `web/.env.local`
 
@@ -103,12 +114,14 @@ In the Supabase **SQL editor** (or CLI), apply **in this order**:
 | 3 | `003_marketing.sql` | Marketing |
 | 4 | `004_sales.sql` | Sales |
 | 5 | `005_connected_accounts_session.sql` | Connected accounts |
-| 6 | `007_sales_segments.sql` | ICP segments |
-| 7 | `008_domain_truth.sql` | Domain / dossier |
-| 8 | `009_distribution_opportunities.sql` | **Required for Marketing queue** |
-| 9 | `010_agent_run_logs.sql` | **Required for observability / Ledger-style logs** |
+| 6 | `006_placeholder.sql` | No-op (keeps numbering contiguous) |
+| 7 | `007_sales_segments.sql` | ICP segments |
+| 8 | `008_domain_truth.sql` | Domain / dossier |
+| 9 | `009_distribution_opportunities.sql` | **Required for Marketing queue** |
+| 10 | `010_agent_run_logs.sql` | **Required for observability / Ledger-style logs** |
+| 11 | `011_distribution_plan.sql` | **Required for Hermes-recommended distribution plans** (flexible goal + approve status) |
+| 12 | `012_opportunity_formats.sql` | **Required for viral format fields** (`format_used` / `format_why`) on opportunities |
 
-Skip **`006`** if it is not in the tree.  
 If a step errors on “already exists”, you may be re-applying — check which migrations already ran.
 
 ---
@@ -117,8 +130,8 @@ If a step errors on “already exists”, you may be re-applying — check which
 
 From **repo root** (with Hermes home configured):
 
-```powershell
-cd kami
+```bash
+cd kami   # if you are still in web/
 npm run sync:skills
 npm run readiness
 ```
@@ -132,20 +145,22 @@ npm run readiness
 
 **Terminal A — Hermes**
 
-```powershell
+```bash
 hermes gateway run
 ```
 
 **Terminal B — Next.js**
 
-```powershell
-cd kami\web
+```bash
+cd kami/web
 npm run dev
 ```
 
+Windows (PowerShell): `cd kami\web` then `npm run dev`.
+
 If you hit Turbopack / instrumentation errors on Windows or WSL, use webpack:
 
-```powershell
+```bash
 npx next dev --webpack
 ```
 

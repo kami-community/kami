@@ -1,6 +1,6 @@
 ---
 name: producthunt_distribution
-description: Plan Product Hunt launch opportunities and draft launch copy and maker comments.
+description: Product Hunt launch assets for founder-led submission — not daily conversation discovery.
 ---
 
 # Product Hunt distribution
@@ -12,8 +12,10 @@ Only when the founder goal is **launch** (or they explicitly ask for a PH kit).
 No automated PH posting. Produce launch assets for founder-led submission.
 
 ## Procedure
-Return opportunities/assets for: tagline, description, maker comment, FAQ bullets, gallery/script checklist.
-Do not present PH as daily conversation discovery.
+1. Follow `viral_formats` for current PH maker-comment / launch patterns; set `format_used` + `format_why`.
+2. Return opportunities/assets for: tagline, description, maker comment, FAQ bullets, gallery/script checklist.
+3. Do not present PH as daily conversation discovery.
+4. If no specific URL: `manual://paste-ph-launch-or-discussion-url` with `[needs_url]`.
 
 ## Output schema
-platform=`producthunt` opportunity objects (may use source_url pointing to producthunt.com/posts/new or docs).
+platform=`producthunt` opportunity objects including `format_used` and `format_why`.

@@ -128,12 +128,15 @@ export default function MarketingPanel({
     }
   }
 
-  if (!distConfig) {
+  const needsPlanConfirm = !distConfig || distConfig.status !== "approved";
+
+  if (needsPlanConfirm) {
     return (
       <div>
         <CapabilityBanner />
         <DistributionSetup
           sessionDbId={sessionDbId}
+          initialConfig={distConfig}
           onComplete={(c) => {
             setDistConfig(c);
           }}
@@ -236,8 +239,9 @@ export default function MarketingPanel({
         <div>
           <p className="label-caps">Distribution</p>
           <p className="mono" style={{ fontSize: 12, color: "var(--ink-soft)" }}>
-            Goal: {distConfig.goal.replace("_", " ")}
+            {distConfig.goal_label || distConfig.goal.replace(/_/g, " ")}
             {distConfig.angle ? ` · ${distConfig.angle.slice(0, 80)}` : ""}
+            {distConfig.surfaces?.length ? ` · ${distConfig.surfaces.join(", ")}` : ""}
           </p>
         </div>
         <KillSwitch

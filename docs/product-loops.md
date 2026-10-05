@@ -66,12 +66,12 @@ Kami recommends one first customer segment in plain English, helps the founder c
 
 **Founder job:** “Help the right people discover and care about what I’m building.”
 
-1. Founder chooses one simple goal: launch, early users, credibility, or waitlist.
-2. Kami recommends one campaign angle and the right distribution surfaces.
-3. Platform agents research timely, evidence-backed opportunities.
-4. Kami presents a short **Today’s distribution opportunities** queue.
-5. Every item shows the link, why it matters, suggested action, ready-to-use draft, and community rules or risks.
-6. The founder posts manually, or approves a supported publishing action.
+1. Founder chooses **Create distribution** (no goal chip quiz).
+2. Hermes Distribution Manager recommends one goal, angle, and 2–3 surfaces from the dossier; founder confirms or edits (“Try another”).
+3. On **Find opportunities**, the Manager `delegate_task`s platform specialists (`*_distribution` + `viral_formats` skills) in parallel and synthesizes a short queue **only for the approved surfaces**.
+4. Kami presents **Today’s distribution opportunities**.
+5. Every item shows the link, why it matters, suggested action, the **current format** used for the draft (`format_used`), and community rules or risks. Formats are re-researched each run so drafts stay timely — not a static tip list.
+6. The founder posts manually, or approves a supported publishing action (X when connected).
 7. Kami records replies, interest, traffic, or signups and recommends whether to repeat, revise, or stop.
 
 **Required outcome:** the product appears in the right conversations with a useful, credible message—not merely a queue of AI-generated posts.
@@ -101,7 +101,7 @@ Kami recommends one first customer segment in plain English, helps the founder c
 | Draft | After include + email | Open Review emails | Sequences + touchpoints | “Drafts ready” |
 | Trust send | Drafts ready | Review 1–3, then batch | Reviewer + AgentMail + receipt | Real send |
 | Convert | Reply / meeting | Decide | Classify, escalate, calendar | Meeting path |
-| Choose Marketing | Create distribution | Pick launch, early users, credibility, or waitlist | Recommend a single angle and surfaces | “I know what story to tell” |
+| Choose Marketing | Create distribution | Confirm / edit Hermes plan | Distribution Manager recommends goal + angle + surfaces | “I know what story to tell” |
 | Opportunities | Agent research completes | Review a short action queue | Link evidence, explain why, draft platform-specific action | “These are worth doing today” |
 | Participate | Opportunity approved | Post manually or approve a supported action | Record action and supported receipt | “We showed up credibly” |
 | Learn | Outcome recorded | See the next recommended move | Recommend repeat, revise, or stop | “Kami learns what works” |

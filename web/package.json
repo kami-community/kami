@@ -2,6 +2,7 @@
   "name": "kami-web",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "dev": "next dev --webpack",
     "dev:turbo": "next dev",
@@ -39,6 +40,6 @@
     "vitest": "^5.0.3"
   },
   "engines": {
-    "node": ">=20.9"
+    "node": ">=22"
   }
 }

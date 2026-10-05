@@ -2,6 +2,8 @@
   "name": "kami-video",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
+  "description": "Kami demo video sources (MIT). Remotion runtime is separately licensed — see README.md.",
   "scripts": {
     "dev": "remotion studio",
     "render": "remotion render Montage out/montage.mp4"

@@ -78,7 +78,9 @@ async function main(): Promise<void> {
         get(`/api/marketing/distribution/opportunities?session_id=${encodeURIComponent(sid)}`),
         get(`/api/sales/setup?session_id=${encodeURIComponent(sid)}`),
         get(`/api/sales/plan?session_id=${encodeURIComponent(sid)}`),
-        get(`/api/sales/segments?session_id=${encodeURIComponent(sid)}`).catch((): AnyRec => ({})),
+        get(`/api/sales/segments?session_id=${encodeURIComponent(sid)}`).catch(
+          () => ({}) as AnyRec,
+        ),
       ]);
 
     const brand = (sessionPack.brand ?? null) as AnyRec | null;
@@ -155,7 +157,7 @@ async function main(): Promise<void> {
               segments_confirmed_at: (salesSetup.config as AnyRec).segments_confirmed_at,
             }
           : null,
-        segments: (segments.segments as unknown[]) ?? null,
+        segments: ((segments as AnyRec).segments as unknown[]) ?? null,
         plan: plan.plan
           ? {
               id: (plan.plan as AnyRec).id,
@@ -313,9 +315,7 @@ async function main(): Promise<void> {
     }
     lines.push(`- **Offer:** ${clip((sales.config as AnyRec).offer, 280)}`);
     lines.push(`- **ICP:** \`${JSON.stringify((sales.config as AnyRec).icp)}\``);
-    lines.push(
-      `- **Segments confirmed:** ${(sales.config as AnyRec).segments_confirmed_at || "—"}`,
-    );
+    lines.push(`- **Segments confirmed:** ${(sales.config as AnyRec).segments_confirmed_at || "—"}`);
     if (sales.plan) {
       const p = sales.plan as AnyRec;
       lines.push(`- **Plan status:** ${p.status}`);
@@ -391,14 +391,18 @@ async function main(): Promise<void> {
 
   lines.push("## 6. Cross-cutting observations (for later RCA / gold compare)");
   lines.push("");
-  lines.push("Hard gates already passed; these are qualitative notes from the pulled outputs.");
+  lines.push(
+    "Hard gates already passed; these are qualitative notes from the pulled outputs.",
+  );
   lines.push("");
 
   // Auto observations
   const salesRows = collected.filter((r) =>
     ["argus", "cal", "linear", "browserbase", "notion"].includes(String(r.id)),
   );
-  const mktRows = collected.filter((r) => ["mirage", "nike-in", "duolingo"].includes(String(r.id)));
+  const mktRows = collected.filter((r) =>
+    ["mirage", "nike-in", "duolingo"].includes(String(r.id)),
+  );
 
   lines.push("### Identity / dossier");
   lines.push("");
@@ -434,16 +438,10 @@ async function main(): Promise<void> {
   lines.push("");
   lines.push("### Suggested next analysis questions");
   lines.push("");
-  lines.push(
-    "1. Do B2B account lists avoid listicles/publishers (spot-check domains against gold `must_not`)?",
-  );
+  lines.push("1. Do B2B account lists avoid listicles/publishers (spot-check domains against gold `must_not`)?");
   lines.push("2. For argus — is biomedical language absent from dossier + segments?");
-  lines.push(
-    "3. For mirage/arc-class PLG — is distribution honestly preferred over inventing consumer emails?",
-  );
-  lines.push(
-    "4. For notion (mixed) — are segments overfitted to one niche or appropriately broad?",
-  );
+  lines.push("3. For mirage/arc-class PLG — is distribution honestly preferred over inventing consumer emails?");
+  lines.push("4. For notion (mixed) — are segments overfitted to one niche or appropriately broad?");
   lines.push("5. Are distribution drafts specific (why_now + URL) or generic engagement bait?");
   lines.push("");
   lines.push("## 7. Artifact index");
@@ -457,7 +455,7 @@ async function main(): Promise<void> {
   lines.push("");
   lines.push("Machine-readable dump: `web/evals/e2e/results/corpus-8-snapshot.json`.");
   lines.push("");
-  lines.push("Related: local `GAPLOG.md` · fixtures in `fixtures/companies.json`.");
+  lines.push("Related: [GAPLOG.md](./GAPLOG.md) · fixtures in `fixtures/companies.json`.");
   lines.push("");
 
   const outMd = join(__dirname, "CORPUS-8-OUTPUT-NOTES.md");

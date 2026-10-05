@@ -15,7 +15,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20.x"
+          # node:sqlite (hermesDb / kanban) needs Node 22+
+          node-version: "22"
           cache: npm
           cache-dependency-path: web/package-lock.json
       - run: npm ci
@@ -37,15 +38,23 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20.x"
+          node-version: "22"
       - name: skills and agents are valid
         run: node scripts/sync-hermes-skills.mjs --check
-      - name: readiness passes with required config
-        run: node scripts/readiness.mjs
+      - name: readiness fails without required keys
+        run: |
+          set +e
+          node scripts/readiness.mjs
+          status=$?
+          set -e
+          test "$status" -eq 1
+      - name: readiness passes with fixture env
         env:
           HERMES_API_KEY: ci-placeholder
+          HERMES_GATEWAY_URL: http://127.0.0.1:8642/v1/chat/completions
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
           SUPABASE_SERVICE_ROLE_KEY: ci-placeholder
+        run: node scripts/readiness.mjs
 
   secrets:
     runs-on: ubuntu-latest

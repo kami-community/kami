@@ -93,11 +93,11 @@ export async function POST(request: Request): Promise<Response> {
 
   const { data: sessionRow } = await sb
     .from("agent_sessions")
-    .select("goals_list")
+    .select("goals")
     .eq("id", session_id)
     .maybeSingle();
-  const goalsList = Array.isArray(sessionRow?.goals_list)
-    ? (sessionRow!.goals_list as string[])
+  const goalsList = Array.isArray(sessionRow?.goals)
+    ? (sessionRow.goals as unknown[]).filter((g): g is string => typeof g === "string")
     : [];
   const goal = goalsList[0] ?? "";
 

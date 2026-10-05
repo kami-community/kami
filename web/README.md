@@ -9,9 +9,9 @@ Next.js UI for Kami (Community Edition).
 - [CONTRIBUTING.md](../CONTRIBUTING.md) — how to contribute
 - [docs/community-edition.md](../docs/community-edition.md) — BYOK + agent prompts
 
-```powershell
+```bash
 npm install
-copy .env.example .env.local
+cp .env.example .env.local   # Windows: copy .env.example .env.local
 npm run dev
 ```
 

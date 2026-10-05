@@ -1,0 +1,50 @@
+name: CLA Assistant
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_target:
+    types: [opened, closed, synchronize]
+
+# Needs repo Settings → Actions → General → Workflow permissions = Read and write.
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+  statuses: write
+
+jobs:
+  CLAAssistant:
+    runs-on: ubuntu-latest
+    if: (github.event_name == 'pull_request_target') || (github.event_name == 'issue_comment' && github.event.issue.pull_request)
+    steps:
+      - name: CLA Assistant
+        if: |
+          github.event_name == 'pull_request_target' ||
+          github.event.comment.body == 'recheck' ||
+          contains(github.event.comment.body, 'I have read the CLA Document and I hereby sign the CLA')
+        # Maintained fork of contributor-assistant/github-action (archived). Pin to commit, not a floating tag.
+        uses: badideasforsale/cla-github-action@38936d31c921b8e536f5b786ea57c537b7cf297c
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          path-to-signatures: signatures/version1/cla.json
+          path-to-document: https://github.com/kami-community/kami/blob/dev/CLA.md
+          # Must be an unprotected branch. Do not store signatures on main/dev.
+          branch: cla-signatures
+          # Humans sign once (including maintainers). Bots cannot sign.
+          allowlist: bot*,cursor[bot],cursoragent,dependabot[bot],github-actions[bot],renovate[bot]
+          lock-pullrequest-aftermerge: false
+          signed-commit-message: $contributorName signed the Kami CLA in $owner/$repo#$pullRequestNo
+          create-file-commit-message: Create CLA signatures file
+          custom-allsigned-prcomment: All contributors on this PR have signed the Kami CLA.
+          custom-notsigned-prcomment: |
+            Thank you for contributing to Kami.
+
+            Please read the [Kami Contributor License Agreement](https://github.com/kami-community/kami/blob/dev/CLA.md). It is a license grant (you keep copyright) so we can keep Community Edition MIT and, if we ever ship Enterprise, relicense the same contributions.
+
+            To sign, comment exactly:
+
+            I have read the CLA Document and I hereby sign the CLA
+
+            Maintainers: @saranambiar and @VaradDurge also sign once. Bots are allowlisted. Comment `recheck` if the status is stale.

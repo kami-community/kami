@@ -2,6 +2,22 @@
 
 Keep PRs small and easy to review. Skim [README.md](README.md) and [AGENTS.md](AGENTS.md) if you touch agents, skills, or product behavior.
 
+## CLA (required)
+
+Every human contributor must sign the [Contributor License Agreement](CLA.md) on their pull request by commenting:
+
+```text
+I have read the CLA Document and I hereby sign the CLA
+```
+
+You keep copyright. The grant lets Kami keep Community Edition MIT and, if maintainers later ship Enterprise, relicense the same contributions. Sign once per GitHub user; the bot stores it on the `cla-signatures` branch. Bots are allowlisted. Maintainers (`@saranambiar`, `@VaradDurge`) sign once too.
+
+Comment `recheck` if the CLA check is stale.
+
+## Reviews
+
+PRs need **one approving review from the other maintainer** (GitHub will not let you approve your own PR). [CODEOWNERS](.github/CODEOWNERS) lists both. Open PRs against **`dev`**.
+
 ## Product contract
 
 Read [docs/product-loops.md](docs/product-loops.md) first. UX must stay simple: domain → confirm dossier → **Find customers** or **Create distribution** → small approved batches.
@@ -19,14 +35,14 @@ Ask Kami style lives in [`web/lib/prompts.ts`](web/lib/prompts.ts) (`cmoPrompt`)
 
 ## Local setup
 
-Follow the minimal path in **[SETUP.md](SETUP.md)** (Hermes + Supabase + migrations `001`–`010`).
+Follow the minimal path in **[SETUP.md](SETUP.md)** (Hermes + Supabase + migrations `001`–`012`).
 
 BYOK detail and **copy-paste agent setup prompts**: [docs/community-edition.md](docs/community-edition.md).
 
-```powershell
+```bash
 cd web
 npm install
-copy .env.example .env.local
+cp .env.example .env.local   # Windows: copy .env.example .env.local
 cd ..
 npm run sync:skills
 npm run readiness
@@ -129,7 +145,7 @@ Board, Ledger, and CRM pages may exist in the repo for maintainers but are **not
 
 ## Checks before PR
 
-```powershell
+```bash
 npm run eval:sales
 npm run build
 ```
@@ -140,6 +156,7 @@ When touching Marketing or Sales flows, also run a focused `npm run eval:e2e -- 
 - [ ] Change is scoped (one concern)
 - [ ] Real-surface behavior still real
 - [ ] PR description: **what**, **why**, **how to verify**
+- [ ] CLA signed on the PR (see above)
 - [ ] No secrets committed
 
 ## What we will reject

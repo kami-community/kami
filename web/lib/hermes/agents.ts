@@ -30,6 +30,19 @@ export const AGENTS = {
       "business_rules",
     ],
   },
+  "distribution-manager": {
+    file: "distribution-manager.md",
+    skills: [
+      "viral_formats",
+      "x_distribution",
+      "reddit_distribution",
+      "linkedin_distribution",
+      "hackernews_distribution",
+      "producthunt_distribution",
+      "discord_distribution",
+      "business_rules",
+    ],
+  },
   "marketing-researcher": {
     file: "marketing-researcher.md",
     skills: ["creator_outreach", "business_rules"],

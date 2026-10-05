@@ -25,7 +25,7 @@ flowchart LR
 
 ## 2. Why a workflow, not an autonomous manager
 
-The product is a gated loop: *recommend → confirm → act → learn → escalate*, with the founder approving between steps. Steps whose order is known are a **deterministic workflow owned by the app**; each step runs **one named agent** and validates its output before using it. Only the open-ended Kami Guide runs as an orchestrator — and it can only propose actions.
+The product is a gated loop: *recommend → confirm → act → learn → escalate*, with the founder approving between steps. Steps whose order is known are a **deterministic workflow owned by the app**; each step runs **one named agent** and validates its output before using it. Two steps are open-ended and run as Hermes orchestrators that use `delegate_task`: **Kami Guide** (questions) and the **Distribution manager** (one platform specialist per surface, in parallel). Neither can act on the world — they return proposals the founder approves.
 
 This keeps the parts that must be reliable (approvals, the kill switch, suppression, sending) in testable code, and the parts that need judgment (research, positioning, drafting, triage) in agents.
 
@@ -53,7 +53,7 @@ flowchart TB
 | Companies, contacts, signals | `sales-researcher` | `lib/salesResearch.ts`, `lib/salesContactFinder.ts` |
 | Email drafts | `outreach` | `lib/sales/` (sequences) |
 | Reply triage | `sales-conversation-manager` | `lib/inbound/salesReplies.ts` |
-| Distribution opportunities | `marketing-strategist` | `lib/distributionResearch.ts` |
+| Distribution plan + opportunities | `distribution-manager` (orchestrator) → `distribution-platform-specialist` per surface; `marketing-strategist` shapes the angle | `lib/distributionManager.ts`, `lib/distributionResearch.ts` |
 | CRM ranking | `marketing-researcher` | `lib/marketingDiscover.ts` |
 | DM suggestions | `dm-assistant` | `lib/marketing/` |
 | Kami Guide | `guide` (orchestrator) | `lib/guide/guide.ts` |

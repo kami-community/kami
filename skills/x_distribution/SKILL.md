@@ -1,6 +1,6 @@
 ---
 name: x_distribution
-description: Find relevant X conversations and draft posts or replies as Marketing distribution opportunities.
+description: Finding X (Twitter) conversations and drafting posts/replies for Kami Marketing distribution opportunities.
 ---
 
 # X distribution
@@ -14,10 +14,11 @@ Finding X (Twitter) conversations and drafting posts/replies for Kami Marketing 
 
 ## Procedure
 1. Read company dossier, campaign goal, and angle.
-2. Find 1–3 relevant public conversations or draft 1–2 standalone posts.
-3. For each opportunity return: source_url, evidence, why_now, suggested_action, draft, risks.
-4. Prefer usefulness and specificity. Product mention only if natural.
-5. Never claim a post was published. Manual-first.
+2. Follow the `viral_formats` skill: research current X formats, pick **one**, note `format_used` + `format_why`.
+3. Find 1 relevant public conversation **or** draft 1 standalone post in that format.
+4. Prefer usefulness and specificity. Product mention only if natural. No generic “we built X” pitches unless the format is explicitly a demo.
+5. Prefer `source_url` as `https://…` to a specific post/thread. If none: `manual://paste-x-thread-or-post-url` with `evidence` starting `[needs_url]`.
+6. Never claim a post was published. Manual-first.
 
 ## Output schema
-JSON object matching distribution_opportunities fields (platform=`x`).
+JSON object matching distribution_opportunities fields (platform=`x`), including `format_used` and `format_why`.

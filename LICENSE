@@ -19,3 +19,14 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---------------------------------------------------------------------------
+
+EXCEPTION — Remotion (video tooling)
+
+The MIT license above applies to Kami-authored source. It does **not** apply to
+the Remotion runtime or `@remotion/*` packages used under `video/`. Those remain
+under the Remotion License:
+https://github.com/remotion-dev/remotion/blob/main/LICENSE.md
+
+See `video/README.md` and `THIRD_PARTY_LICENSES.md`.

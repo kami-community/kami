@@ -1,0 +1,31 @@
+---
+description: Two-maintainer GitHub review rules, CODEOWNERS, and Cursor Bugbot off
+alwaysApply: true
+---
+
+# GitHub governance (kami-community/kami)
+
+## People
+
+| GitHub | Role today | Review / merge |
+|---|---|---|
+| `@saranambiar` | Org admin, repo admin | Can approve Varad's PRs; **cannot approve her own** |
+| `@VaradDurge` | Org member, repo **write** | Can approve Sara's PRs; **cannot approve his own**; cannot change rulesets, secrets, or GitHub Apps |
+
+Either maintainer's approving review satisfies the required-review rule. Request the other person as reviewer on every PR.
+
+## CODEOWNERS
+
+`.github/CODEOWNERS` assigns `*` (and legal/automation paths) to both people. Do not add a third owner without an explicit maintainer decision. Do not require *both* approvals unless they change branch protection.
+
+## Cursor Bugbot
+
+Bugbot is **off** for this repo. Do not re-enable it. Do not `@cursor review` / `bugbot run` on PRs. Use human review. `.cursor/BUGBOT.md` tells Bugbot to skip if it still fires.
+
+Disable in the Cursor dashboard (repo toggle) if comments still appear: https://cursor.com/dashboard?tab=bugbot — Sara (admin / whoever installed the GitHub App) may need to flip it.
+
+## PRs
+
+- Base branch is `dev` (not `main`), except hotfixes.
+- CLA bot must pass on contributor PRs after `.github/workflows/cla.yml` is on `dev`.
+- Do not commit secrets. Do not add `Co-authored-by: Claude` / similar AI trailers.
