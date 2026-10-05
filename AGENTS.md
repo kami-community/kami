@@ -1,147 +1,90 @@
-# AGENTS.md — GTM-as-a-Service Agent Org (Hermes Buildathon)
+# AGENTS.md — working on Kami
 
-This is the guiding document for the coding agent building this project. Read fully before starting. Public setup lives in `README.md` / `SETUP.md`. Optional local-only notes (`tasks/`, `lessons/`, `memory/`) may exist on your machine but are not part of the published Community Edition tree.
+Guidance for coding agents and human contributors. Read this before changing code, agents or skills. Setup lives in [SETUP.md](SETUP.md); product behaviour in [docs/product-loops.md](docs/product-loops.md); architecture in [docs/architecture.md](docs/architecture.md).
 
----
+## What Kami is
 
-## 1. What we're building
+Kami is a self-hosted, bring-your-own-key AI go-to-market agency for early-stage founders. A founder enters their domain, confirms what Kami learned about the company, then chooses **Find customers** (Sales) or **Create distribution** (Marketing). Kami researches and drafts; the founder approves every real send, post or DM.
 
-An open-source, multi-agent marketing/GTM agency — powered by real running **Hermes agents** (Nous Research's agent framework), not a custom app that merely calls an LLM API. Hermes itself is the backend. We are not simulating agents; Hermes processes are the manager and the specialists.
+- **Hermes** ([Nous Research](https://hermes-agent.nousresearch.com/docs/)) is the agent runtime. Kami never calls a model provider directly.
+- **`web/`** is the Next.js app: UI, API routes, the workflow that sequences agent steps, and every integration.
+- **`agents/`** holds one role prompt per agent; **`skills/`** holds the playbooks agents apply (synced into Hermes).
+- **Supabase (Postgres)** is the only state store.
 
-**Team:** 2 people, 8-hour build sprint, at the Hermes Buildathon, "AI as Agency" track.
+## Architecture in one screen
 
-**Core mechanic:** A user submits a campaign brief (company, ICP, goal, tone) through a web app on our own domain. That request hits a persistent Hermes manager session running on our server. The manager plans, delegates to specialist Hermes subagents, reviews their output, and the specialists execute real actions on real surfaces (send a real email, publish a real post) — not staged or sandboxed.
+The product is a gated workflow: *recommend → confirm → act → learn*. The app owns the workflow; each step runs **one named Hermes agent** whose output is validated before it is used. Only Kami Guide runs as an open-ended orchestrator, and it can only *propose* actions.
 
-**Capabilities (specialists), in priority order — do not build all of these to equal depth:**
-1. **Outreach engine (one build, three playbooks)** — outbound/SDR, investor/VC, influencer outreach. Same pipeline: research target → apply the relevant playbook → send real email → log. Build this once, well, and parametrize the playbook.
-2. **Content specialist** — research an angle/trend → draft → publish to a real platform (X, plain text posts).
-3. **Manager agent** — parses the brief, produces a genuinely different plan per genuinely different brief, delegates, reviews specialist output, bounces at least one thing back for revision before it ships.
-
-**Explicitly descoped for the 8-hour build (do not attempt unless everything above is done early and solid):** Community engagement (Reddit/Discord), LinkedIn company-page posting (requires multi-week API approval — do not attempt). If time allows, the flex move is the manager **spawning a new specialist role live** (e.g. a "PR angle" specialist) rather than half-building a fifth pre-built specialist.
-
-**Scope discipline:** We will not spend the full 8 hours purely coding. Time is also needed for shooting demo/content footage and rehearsing the live demo. Budget accordingly — treat roughly the back 90 minutes as reserved for demo prep, not new features, regardless of how development is going.
-
----
-
-## 2. Architecture — how this actually gets deployed and accessed
-
-**Non-negotiable requirement:** Judges access this via a real link to our own domain, from their own device, with no install. Do not build a Telegram-bot-only flow as the primary surface (a bot can be an *additional* nice-to-have, not the main path).
-
-**How it works:**
 ```
-judge's browser → yourdomain.com (TLS) → reverse proxy → Hermes API Server (running on our VPS)
-                                                              → manager session (role=orchestrator)
-                                                              → delegate_task → specialist subagents
-                                                              → real email send / real post / real research
+web/
+  app/api/**/route.ts   thin HTTP layer: parse (zod) → call a service → respond
+  lib/
+    config/env.ts       the only reader of process.env (zod-validated)
+    http/               route(), parseBody/parseQuery, AppError → { error, code }
+    auth/access.ts      single-user access rules used by proxy.ts
+    db/client.ts        db(): service-role Supabase client (RLS denies everyone else)
+    domain/             zod schemas + types shared by server and browser
+    ports/              provider interfaces (email, search)
+    adapters/           one module per vendor (AgentMail, X, Instagram, Linkup/Exa/Tavily)
+    providers.ts        picks adapters from config — services never import vendors
+    hermes/             the one Hermes client, agent registry, JSON parsing, SSE
+    campaigns/          sessions, research, dossier, context pack
+    outbound/           send policy, suppressions, receipts, every send/post/DM flow
+    inbound/            replies (webhooks + polling)
+    sales/ marketing/   feature services
+    connections/        OAuth connections with sealed tokens
+    jobs/               optional in-process scheduler
+    client/             browser-only helpers (api client, useApi, streaming)
+  components/           React UI; campaign state via components/campaign/CampaignProvider
+  supabase/migrations/  numbered SQL, applied in order
 ```
 
-- **Host:** a small always-on VPS (not a laptop — must survive the whole judging window). Set this up first, before feature work.
-- **Backend:** Hermes running with the `api_server` platform enabled in `config.yaml`, exposing an OpenAI-compatible `/v1/chat/completions` endpoint natively off the running gateway process. This is Hermes's built-in API Server adapter — do not build a custom bridge.
-- **Domain:** our own purchased domain, A record pointed at the VPS, TLS via reverse proxy (Caddy is simplest — automatic HTTPS in ~5 lines of config).
-- **Frontend:** a thin web app (chat UI or campaign-brief form — form is more demo-friendly if time allows) that POSTs to the Hermes API Server endpoint with a bearer token, and streams the manager's response. Each browser session gets its own `X-Hermes-Session-Id` so concurrent judges don't collide — Hermes supports multiple concurrent sessions natively.
-- **The manager = a Hermes session running with `role="orchestrator"`.** It is a real Hermes agent instance, not a wrapper.
-- **Specialists = subagents spawned via `delegate_task`**, isolated context/terminal/toolset per specialist, running inside the same Hermes process. Use the `async_delegation` toolset (non-blocking) so the manager can dispatch outreach + content in parallel without freezing the session — verify this is stable on install before relying on it for the demo.
-- **Playbooks = Hermes skills.** Each GTM playbook (see Section 4) is a `SKILL.md` file under `~/.hermes/skills/`. Skills are shared automatically with spawned subagents — write playbooks as skills, not hardcoded prompts, so they're inspectable, versioned, and improvable.
-- **Shared state / "don't re-contact this person" memory:** subagents are stateless and isolated by default — Hermes does not give you cross-agent memory for free. Explicitly persist campaign state (contacted lists, prior outputs) via Hermes memory files or a lightweight external store (Convex is a good fit if we use it as a power-up) that the manager reads before delegating and writes after each specialist returns.
-- **Real send/publish surfaces:**
-  - Email: AgentMail via MCP (agent-native inbox, no OAuth dance, real send/receive, avoids Gmail's automation-detection bans) — or Gmail via MCP/Composio if we specifically want the credibility of a real Gmail domain. Decide and lock this in the first hour; don't build both.
-  - Content: X (plain-text posts only — link posts cost more per the current API pricing and add no value here).
-- **Observability:** use Hermes's native `/agents` overlay, `kanban tail/log`, and `hermes sessions export` for a raw trace — don't build a custom observability dashboard from scratch unless there's spare time; these give a real, inspectable trace tree for free.
-- **Open source split:** the repo IS our skills folder + config.yaml + setup/deploy docs, not a separate application codebase. BYOK vs hosted is just: our deployed instance (our key, our VPS, our domain) = hosted; anyone can clone the repo and run their own Hermes with their own key = self-host. Hermes's own provider-agnostic config already handles this — do not build a custom key-routing layer.
+## Rules
 
----
+### Layering
+- Routes are thin: `export const POST = route(async (request) => { const input = await parseBody(request, Schema); return Response.json(await service(db(), input)); })`.
+- Business logic lives in `lib/<area>/` services that take `db` as their first argument and throw `AppError`s (`badRequest`, `notFound`, `forbidden`, `paused`, `conflict`, `notConfigured`, `upstreamFailed`). Never return `null` to signal failure, and never swallow errors silently.
+- Every list endpoint requires `session_id` (a uuid) and every query is scoped to it.
+- Read configuration through `env()`, never `process.env`.
+- Browser code imports server modules for **types only** (enforced by ESLint). The browser talks to the server through `lib/client/api.ts`.
 
-## 3. Research references — go and read these yourself, this document is a guide not a cage
+### Agents
+- Call Hermes only through `lib/hermes/client.ts`: `runAgentJson({ agent, kind, input, schema, kamiSessionId })` for structured output, `completeOrNull` where a step has a deterministic fallback, `streamResponse` for streaming.
+- Each agent has a role prompt in `agents/<name>.md` registered in `lib/hermes/agents.ts`. Change *how an agent behaves* there or in `skills/`, not in route code. The per-call input (evidence, context pack) is built in the service.
+- Validate agent output with a zod schema from `lib/domain/`. Put checks the agent can fix (identity lock, grounding) in the schema (`superRefine`) so the agent gets one corrective retry.
 
-Do not treat this file as the complete picture. Actively search and read the following, and anything else relevant you find while building:
+### Real-world actions (non-negotiable)
+- Every send, post and DM goes through `lib/outbound/`: kill switch and area pause → suppression list → approvals and review → claim an idempotent receipt → provider call → record the provider id. A send without a provider id is not a send.
+- Never invent contact details. Recipients come from stored contacts, never free text from an agent.
+- Kami never sends on its own initiative: the founder's click is the approval, and Kami Guide only proposes.
+- Webhooks verify signatures (Svix for AgentMail, `X-Hub-Signature-256` for Instagram). Jobs accept the cron secret.
 
-- **Team Hermes local setup (teammate + agent):** `references/hermes-setup-guide.md` — OpenAI BYOK, API server, orchestrator nesting. Match this before product work. VPS/hosting later.
-- **Hermes Agent official docs:** https://hermes-agent.nousresearch.com/docs/ — especially the Subagent Delegation, MCP, Cron, and Messaging Gateway pages. Also check `/docs/llms-full.txt` for a single-file ingest of the whole doc set if useful.
-- **Hermes Agent GitHub:** https://github.com/NousResearch/hermes-agent — installation, config.yaml reference, AGENTS.md conventions used by the Hermes project itself.
-- **Buildathon rules and scoring rubric (read this fully, it governs every build decision):** https://growthx.club/docs/hermes-buildathon-builder-handbook — "AI as Agency" track, 7 weighted parameters. The single most important constraint: **real output on real live surfaces only** — staged/sandboxed surfaces (mocked CRM, sandbox email, Airtable/Notion/Sheets as a "database") cap scoring at L3 regardless of build quality. Also governs Hermes eligibility (must use Hermes as coding partner and/or as the base harness), submission format, and disqualifiers.
-- **okara.ai** — closest existing product to what we're building ("AI CMO," specialist agents per channel, daily opportunities feed, human-approval gate). Study their positioning and UX for inspiration, not to copy. Their real weakness: mostly-parallel content generation with no true planning manager — our manager-that-plans-and-delegates is the differentiation.
-- **Recent viral/breakout GTM playbooks — research current, not historical, examples:** companies like Cal AI (influencer-saturation-first, demonstrable "magic moment" content), Cluely (provocative/controversial launch hooks, content-army distribution — note the guardrail: controversy must have core value congruence with the product, and note their later PR walk-back as a cautionary data point, not a tactic to copy blindly), and similar current AI/consumer breakout products (e.g. Hey Clicky-type launches). Pull concrete, current patterns into the playbook skills — what a good cold investor email looks like *right now*, what makes a launch post get reshared *right now* — not generic evergreen marketing advice.
-- **Current cold outreach / cold email benchmarks** — reply rate data, deliverability rules (SPF/DKIM/DMARC, sends/day limits), signal-based personalization approaches. Search for current-year data, this changes fast.
-- **Current investor/VC cold email structure** — short (under ~150 words), single traction number, single specific ask, no deck attachment.
-- **Community-led growth mechanics** (if time allows this build) — value-first participation ratios, platform-specific norms; do not attempt this without researching current platform-specific anti-spam signals.
+### Data
+- New tables go in a new numbered migration and must `enable row level security`.
+- Prefer one table per concept: one suppression list (`suppressions`), one outbound ledger (`outbound_receipts`).
 
-When in doubt on any current fact, tactic, API limit, or pricing figure — search for it rather than relying on internal knowledge. This space (API pricing, platform rules, growth tactics) moves fast and stale information will actively hurt the build.
+### UI
+- One primary (`hanko-btn`) action per screen; everything else is `btn-secondary` or `btn-outline`.
+- Use the design tokens in `app/globals.css` and the shared primitives (`Tabs`, `ConfirmDialog`, `ConnectSocials`). Avoid new inline styles.
+- Every fetch shows loading and error states (`useApi`, `ApiError`). Never `catch(() => {})`.
+- Accessible by default: labelled inputs, `role="alert"` for errors, `aria-live` for streaming text, keyboard-operable tabs and dialogs.
 
----
+## Product principles
 
-## 4. Playbooks as skills
+Canonical loops live in [docs/product-loops.md](docs/product-loops.md).
 
-Each outreach/content playbook must be written as a proper `SKILL.md` file (name, description, step-by-step procedure), not embedded inline in a prompt. This makes them inspectable by judges, reusable across specialists, and improvable over time (feeds the evaluation/iteration parameter). Research current best-practice structure for each playbook (see Section 3) before writing it — do not write these from memory alone.
+- **Domain-first:** the founder confirms the dossier ("That's us") before any GTM choice; never start from a blank ICP form. The server enforces this.
+- **Two jobs:** Find customers (Sales) or Create distribution (Marketing).
+- **Recommend → confirm → act → learn → escalate**, in small batches, with the kill switch always visible.
+- **Never invent emails:** sends are blocked until a real contact email exists.
+- **Marketing CRM / cold DMs** are Advanced; the default Marketing view is the distribution opportunity queue.
+- **Kami Guide** is available on every tab and gets a fresh context pack every turn.
 
----
+## Verify before calling something done
 
-## 5. Speed and prioritization
+```bash
+cd web
+npm run lint && npm run typecheck && npm test && npm run eval:sales && npm run build
+```
 
-This is an 8-hour build. In order:
-1. Infra first — domain, VPS, Hermes running, API Server exposed, reverse proxy live. Nothing else matters if this isn't working.
-2. Manager + one specialist (outreach) working end-to-end on a real send. Prove this before building anything else.
-3. Second specialist (content) + manager delegation logic (dynamic plan per brief, review/revision step).
-4. Third outreach playbook variant (investor or influencer) reusing the outreach engine.
-5. Observability/proof surfaces, demo rehearsal, content/footage shoot.
-
-If something is behind schedule, cut breadth (fewer playbooks/specialists) before cutting depth (real sends, real manager delegation, real observability) — a smaller thing that actually works beats a bigger thing that's staged or flaky. Real-surface execution is the single heaviest-weighted thing being judged.
-
----
-
-## 6. Workflow orchestration (how you, the coding agent, must operate)
-
-### Plan mode is default
-- Enter plan mode for any non-trivial task (3+ steps or an architectural decision). Trivial one-line fixes don't need it.
-- Check in with the user before starting implementation on anything non-trivial.
-- Mark items complete as you go; give a high-level summary of what changed at each step.
-- Use plan mode for verification steps too, not just building.
-- If something goes sideways mid-implementation, stop and re-plan immediately — don't keep pushing on a broken approach.
-
-### Subagent strategy (for you, the coding agent, separate from the Hermes subagents we're building)
-- Use subagents liberally to keep your own main context window clean.
-- Offload research, exploration, and parallel analysis to subagents.
-- One clear, focused task per subagent.
-- For hard problems, throw more compute at it via subagents rather than one long single-threaded attempt.
-
-### Verification before marking anything done
-- Never mark a task complete without proving it works — run it, check logs, show real output.
-- For real-surface actions (sending an email, posting), verify the actual send/post happened, don't trust a 200 response alone.
-- Ask: would a senior engineer approve this as actually done, not just "looks done"?
-
-### Elegance (balanced, not perfectionist)
-- For non-trivial changes, pause and ask if there's a more elegant way before committing to a hacky fix.
-- Skip this for simple, obvious fixes — don't over-engineer under an 8-hour clock.
-
-### Autonomous bug fixing
-- When given a bug report, error, or failing test — just fix it. Don't ask for hand-holding or step-by-step confirmation on how to fix something already diagnosed.
-- Zero unnecessary context-switching back to the user.
-
-### Core principles
-- Simplicity first — smallest change that correctly solves the problem.
-- No laziness — find root causes, no temporary/band-aid fixes, hold yourself to senior-developer standards.
-- Minimal blast radius — changes touch only what's necessary; don't introduce incidental bugs elsewhere.
-
-### Token economy (conversation only, never coding quality)
-- Optimize for token/output brevity **only in how you communicate with the user** — concise, to the point, no fluff, no restating what was already said, no unnecessary preamble or elaboration.
-- Do **not** apply this to actual code, prompts written for Hermes skills, or anything that affects build quality or correctness — those should be as thorough and correct as the task requires. Brevity is a communication-style rule, not a shortcut on engineering rigor.
-
----
-
-## 7. Product UX principles (founder GTM flow)
-
-Canonical loops live in [docs/product-loops.md](docs/product-loops.md). Community Edition is **self-hosted / BYOK** — see [docs/community-edition.md](docs/community-edition.md).
-
-When changing Domain → Overview → Sales / Marketing:
-
-- **Domain-first:** confirm the dossier (**That’s us**) before GTM choices; never start with a blank ICP jargon form.
-- **Two jobs:** Find customers (Sales) or Create distribution (Marketing). One primary Hanko-red CTA per screen.
-- **Recommend → confirm → act → learn → escalate:** small batches; hybrid send; kill switch always visible in the shell.
-- **Never invent emails:** block send until a real contact email exists on the account.
-- **Marketing CRM / cold DMs** are a later Advanced feature — default Marketing is the distribution opportunity queue.
-- **Kami Guide** (formerly CMO) is persistent across tabs with a fresh context pack every turn.
-
----
-
-## 8. Note on additional skills
-
-Additional `.cursor` skills will be added by the team for specific reference material and workflows. Treat those as authoritative supplementary instructions alongside this file — read them when present, they are not optional context.
+For real-surface changes, also check the outbound ledger on the Activity page: a provider id or URL is the proof, not an HTTP 200.
