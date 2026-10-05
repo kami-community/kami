@@ -222,3 +222,99 @@
   text-align: left;
   color: var(--ink-soft);
 }
+
+/* --- Tags and chips -------------------------------------------------------- */
+
+.tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  border: 1px solid var(--crease-strong);
+  padding: 0.05rem 0.45rem;
+  color: var(--ink-soft);
+}
+.tag--muted {
+  border-style: dashed;
+  color: var(--ink-muted);
+}
+
+.chip {
+  font-size: 11px;
+  border: 1px solid var(--crease-strong);
+  background: transparent;
+  padding: 0.25rem 0.55rem;
+  cursor: pointer;
+  color: var(--ink-soft);
+  transition:
+    border-color var(--dur-quick) var(--ease-settle),
+    background-color var(--dur-quick) var(--ease-settle);
+}
+.chip:hover:not(:disabled) {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.chip[aria-pressed="true"] {
+  border-color: var(--hanko);
+  background: var(--hanko-wash);
+  color: var(--ink);
+}
+
+/* --- Distribution opportunities ------------------------------------------- */
+
+.opportunity-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+}
+
+.opportunity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.opportunity--template {
+  background: var(--paper);
+  border-style: dashed;
+}
+.opportunity__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.opportunity__risk {
+  color: var(--hanko-deep);
+}
+.opportunity__draft textarea {
+  width: 100%;
+}
+.opportunity__draft--read {
+  white-space: pre-wrap;
+  font-family: var(--font-body);
+  font-size: 14px;
+  background: var(--paper-sunk);
+  border-left: 2px solid var(--crease-strong);
+  padding: var(--space-3) var(--space-4);
+}
+.opportunity__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+.opportunity__outcomes {
+  border: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  align-items: center;
+}
+.opportunity__outcomes legend {
+  width: 100%;
+  margin-bottom: var(--space-1);
+}
+
+.queue-x-status {
+  margin: var(--space-2) 0;
+}
