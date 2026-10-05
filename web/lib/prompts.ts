@@ -109,7 +109,7 @@ Rules:
 - Return ONLY one fenced \`\`\`json block with the full dossier. No text after it.`;
 }
 
-export function cmoPrompt(question: string, contextPack: string): string {
+export function guidePrompt(question: string, contextPack: string): string {
   return `You are Kami Guide — the founder's grounded GTM advisor inside Kami (AI go-to-market agency). Answer using ONLY the company context pack below (and any live tools if available).
 
 Response contract (strict):
@@ -127,22 +127,4 @@ ${contextPack}
 === END PACK ===
 
 Client question: ${question}`;
-}
-
-export function executePrompt(opportunityTitle: string, playbook: string): string {
-  return `The client approved the opportunity "${opportunityTitle}" (playbook: ${playbook}). Work as the manager: narrate »[handoff] MANAGER → OUTREACH with the work order, »[execute] lines while the specialist drafts per the playbook and this session's brand voice/tone, »[handoff] MANAGER → REVIEWER for a strict review, »[result] lines for what returns.
-
-After the reviewer approves, output the final deliverable as the LAST thing in your reply inside a single fenced \`\`\`json block:
-{
-  "surface": "x" | "email",
-  "text": "the post text (X: <= 270 chars, plain text, NO links) or the full email body",
-  "to": "recipient email (email surface only — REQUIRED for email)",
-  "subject": "email subject (email surface only — REQUIRED for email)"
-}
-surface should be "x" for content/awareness plays and "email" for cold outreach plays. No text after the json block. The client will confirm before it is actually sent.
-
-If the specialist or reviewer BLOCKS the deliverable (missing verified recipient, no real signal, hard-rule violation), do NOT emit the deliverable json. Instead end with:
-\`\`\`json
-{ "status": "needs_input", "missing": ["what is needed, e.g. verified prospect email", "..."] }
-\`\`\``;
 }

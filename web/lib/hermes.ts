@@ -133,9 +133,3 @@ export function parseDossierRaw(text: string): unknown | null {
   }
 }
 
-/** @deprecated Use parseDossierRaw + validateDossier */
-export function parseDossier(text: string): Dossier | null {
-  const raw = parseDossierRaw(text);
-  if (!raw || typeof raw !== "object" || !("icp_buckets" in (raw as object))) return null;
-  return raw as Dossier;
-}

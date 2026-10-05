@@ -2,13 +2,19 @@
   "name": "kami",
   "private": true,
   "version": "0.1.0",
-  "description": "Kami Community Edition — self-hosted AI GTM agency",
+  "description": "Kami Community Edition \u2014 self-hosted AI GTM agency",
   "scripts": {
     "dev": "npm --prefix web run dev",
     "build": "npm --prefix web run build",
+    "lint": "npm --prefix web run lint",
+    "typecheck": "npm --prefix web run typecheck",
+    "test": "npm --prefix web test",
     "eval:sales": "npm --prefix web run eval:sales",
     "eval:e2e": "npm --prefix web run eval:e2e",
     "readiness": "node scripts/readiness.mjs",
     "sync:skills": "node scripts/sync-hermes-skills.mjs"
+  },
+  "engines": {
+    "node": ">=20.9"
   }
 }

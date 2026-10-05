@@ -1,5 +1,5 @@
 import { supabaseServer } from "@/lib/supabase";
-import { dossierFromBrandPayload } from "@/lib/cmoContext";
+import { dossierFromBrandPayload } from "@/lib/guideContext";
 import { generateSalesStrategy } from "@/lib/salesStrategy";
 import type { SalesCampaignConfig, SalesPlan } from "@/lib/salesTypes";
 import type { SalesSegment } from "@/lib/salesSegments";

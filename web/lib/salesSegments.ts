@@ -1,5 +1,5 @@
 import type { Dossier } from "@/lib/hermes";
-import { buildCompanyContextPack } from "@/lib/cmoContext";
+import { buildCompanyContextPack } from "@/lib/guideContext";
 import { hermesChatOnce, hermesGatewayConfigured, parseLastJsonBlock } from "@/lib/hermesServer";
 
 export type SegmentMotion = "b2b_sales_assisted" | "plg_self_serve";

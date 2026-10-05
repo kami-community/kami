@@ -7,7 +7,7 @@ import {
   validateSegmentsForConfirm,
   type SalesSegment,
 } from "@/lib/salesSegments";
-import { dossierFromBrandPayload } from "@/lib/cmoContext";
+import { dossierFromBrandPayload } from "@/lib/guideContext";
 
 async function loadSessionContext(sessionId: string): Promise<{
   dossier: Dossier | null;

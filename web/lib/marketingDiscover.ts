@@ -178,6 +178,6 @@ export async function runMarketingDiscovery(params: {
   const ranked = await rankWithHermes(entries, hermesSessionId, { domain, config });
   return {
     entries: ranked,
-    warnings: [...warnings, ...errors.filter((e) => !ranked.length)],
+    warnings: [...warnings, ...(ranked.length ? [] : errors)],
   };
 }

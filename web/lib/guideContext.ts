@@ -3,7 +3,7 @@ import type { SalesCampaignConfig } from "@/lib/salesTypes";
 
 const PLATFORM_BLURB = `Kami can: Find customers (Sales: research → draft emails → founder approves before send) · Create distribution (Marketing: opportunity queue with drafts; manual post first; CRM/cold DMs are Advanced). Never invent CRM numbers, contacts, or company facts not in this pack. Never claim you sent or published.`;
 
-export interface CmoContextInput {
+export interface GuideContextInput {
   dossier: Dossier | null;
   domain: string;
   salesConfig?: SalesCampaignConfig | null;
@@ -24,8 +24,8 @@ export interface CmoContextInput {
   blockers?: string[] | null;
 }
 
-/** Compact company pack for every CMO turn (~1–2k tokens). */
-export function buildCompanyContextPack(input: CmoContextInput): string {
+/** Compact company pack for every Kami Guide turn (~1–2k tokens). */
+export function buildCompanyContextPack(input: GuideContextInput): string {
   const {
     dossier,
     domain,

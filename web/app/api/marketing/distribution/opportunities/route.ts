@@ -1,5 +1,5 @@
 import { logAgentRunAsync } from "@/lib/agentRunLog";
-import { dossierFromBrandPayload } from "@/lib/cmoContext";
+import { dossierFromBrandPayload } from "@/lib/guideContext";
 import { researchDistributionOpportunities } from "@/lib/distributionResearch";
 import type {
   DistributionActionStatus,

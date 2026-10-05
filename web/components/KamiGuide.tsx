@@ -3,11 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import type { Dossier } from "@/lib/hermes";
 import { streamChat } from "@/lib/hermes";
-import { cmoPrompt } from "@/lib/prompts";
+import { guidePrompt } from "@/lib/prompts";
 import {
   buildCompanyContextPack,
   dossierFromBrandPayload,
-} from "@/lib/cmoContext";
+} from "@/lib/guideContext";
 import type { SalesCampaignConfig } from "@/lib/salesTypes";
 import type { CampaignTab } from "@/lib/marketingTypes";
 
@@ -92,7 +92,7 @@ export default function KamiGuide({
       });
       const guideSession = `kami-guide-${sessionId}`;
       await streamChat(
-        cmoPrompt(question, contextPack),
+        guidePrompt(question, contextPack),
         guideSession,
         (delta) => {
           setMessages((m) => {

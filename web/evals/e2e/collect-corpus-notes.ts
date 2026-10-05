@@ -78,7 +78,7 @@ async function main(): Promise<void> {
         get(`/api/marketing/distribution/opportunities?session_id=${encodeURIComponent(sid)}`),
         get(`/api/sales/setup?session_id=${encodeURIComponent(sid)}`),
         get(`/api/sales/plan?session_id=${encodeURIComponent(sid)}`),
-        get(`/api/sales/segments?session_id=${encodeURIComponent(sid)}`).catch(() => ({})),
+        get(`/api/sales/segments?session_id=${encodeURIComponent(sid)}`).catch((): AnyRec => ({})),
       ]);
 
     const brand = (sessionPack.brand ?? null) as AnyRec | null;

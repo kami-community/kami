@@ -1,7 +1,7 @@
 import { supabaseServer } from "@/lib/supabase";
 
 // Cron: poll all active conversations for new replies.
-// In production, call this every 60s via Vercel Cron or external scheduler.
+// Call on a schedule (e.g. every 60s) from a local scheduler.
 export async function POST(): Promise<Response> {
   const sb = supabaseServer();
   if (!sb) return Response.json({ error: "supabase not configured" }, { status: 503 });
@@ -36,7 +36,7 @@ export async function POST(): Promise<Response> {
     }
   }
 
-  let replies = 0;
+  const replies = 0;
   let skippedPaused = 0;
 
   for (const conv of active) {

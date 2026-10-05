@@ -24,7 +24,3 @@ export function claimCookieHeader(claimId: string): string {
     ...(process.env.NODE_ENV === "production" ? ["Secure"] : []),
   ].join("; ");
 }
-
-export function appendSetCookie(headers: Headers, value: string): void {
-  headers.append("Set-Cookie", value);
-}

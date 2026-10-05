@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import ActivityFeed, { type ActivityEvent } from "@/components/ActivityFeed";
-import type { OpportunityStatus } from "@/components/ApprovalCard";
 import IntelPanel from "@/components/IntelPanel";
 import KamiGuide from "@/components/KamiGuide";
 import CampaignTabs from "@/components/CampaignTabs";
@@ -20,19 +19,13 @@ interface DashboardProps {
   events: ActivityEvent[];
   running: boolean;
   dossier: Dossier | null;
-  oppStatus: Record<string, OpportunityStatus>;
-  executing: boolean;
   sessionId: string;
   sessionDbId: string | null;
-  connectedChannels: string[];
   marketingConfig: MarketingConfig | null;
   salesConfig: SalesCampaignConfig | null;
   identityMeta?: { company?: string | null; confidence?: number; evidenceCount?: number } | null;
   sessionGoals?: string[];
-  onConnect: (platform: string) => void;
   onNewCampaign: () => void;
-  onApprove: (title: string, playbook: string) => void;
-  onDismiss: (title: string) => void;
   onMarketingSetup: (config: MarketingConfig) => void;
   onSalesSetup: (config: SalesCampaignConfig) => void;
   onDossierUpdated: (dossier: Dossier) => void;

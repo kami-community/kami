@@ -153,12 +153,3 @@ export async function researchDomainIdentity(identity: DomainIdentity): Promise<
     },
   };
 }
-
-/** @deprecated Prefer researchDomainIdentity */
-export async function researchDomain(domain: string): Promise<string> {
-  const { validateDomainIdentity } = await import("./domainIdentity");
-  const validated = await validateDomainIdentity(domain);
-  if (!validated.ok) return "";
-  const researched = await researchDomainIdentity(validated.identity);
-  return researched.ok ? researched.snapshot.facts_markdown : "";
-}

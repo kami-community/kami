@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function Nav() {
   const router = useRouter();
@@ -38,7 +39,7 @@ export default function Nav() {
             ← back
           </button>
         )}
-        <a
+        <Link
           href="/"
           aria-label="Kami home"
           style={{ display: "flex", alignItems: "center", height: "100%", lineHeight: 0 }}
@@ -48,7 +49,7 @@ export default function Nav() {
             alt="Kami"
             style={{ height: "100%", width: "auto", objectFit: "contain", display: "block" }}
           />
-        </a>
+        </Link>
       </div>
     </nav>
   );

@@ -4,7 +4,7 @@
  */
 
 import type { Dossier } from "@/lib/hermes";
-import { buildCompanyContextPack } from "@/lib/cmoContext";
+import { buildCompanyContextPack } from "@/lib/guideContext";
 import { hermesChatOnce, hermesGatewayConfigured, parseLastJsonBlock } from "@/lib/hermesServer";
 import { synthesizePlanFromConfig } from "@/lib/salesPlan";
 import type { SalesSegment } from "@/lib/salesSegments";
