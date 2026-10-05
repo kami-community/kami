@@ -19,10 +19,7 @@ export async function getLatestPlan(
 ): Promise<SalesPlan | null> {
   let query = db.from("sales_plans").select("*").eq("session_id", sessionId);
   if (status) query = query.eq("status", status);
-  const { data, error } = await query
-    .order("version", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const { data, error } = await query.order("version", { ascending: false }).limit(1).maybeSingle();
   if (error) throw dbError(error);
   return data ? rowToPlan(data as Row) : null;
 }
@@ -36,7 +33,8 @@ export async function approvePlan(db: Db, sessionId: string, planId: string) {
     .maybeSingle();
   if (loadError) throw dbError(loadError);
   if (!plan) throw notFound("plan not found for this session");
-  if (plan.status === "superseded") throw badRequest("this plan was superseded — approve the latest one");
+  if (plan.status === "superseded")
+    throw badRequest("this plan was superseded — approve the latest one");
 
   const { error: supersedeError } = await db
     .from("sales_plans")

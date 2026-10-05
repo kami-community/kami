@@ -122,7 +122,11 @@ async function bumpLatestScore(
   if (updateError) throw dbError(updateError);
 }
 
-async function lookupAccount(db: Db, sessionId: string, account: Row): Promise<ContactLookupResult> {
+async function lookupAccount(
+  db: Db,
+  sessionId: string,
+  account: Row,
+): Promise<ContactLookupResult> {
   const accountId = account.id as string;
   const domain = (account.domain as string | null) ?? "";
   if (!domain) return { account_id: accountId, domain: "", status: "skipped" };

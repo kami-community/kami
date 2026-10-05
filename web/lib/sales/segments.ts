@@ -26,7 +26,11 @@ function storedSegments(campaign: Row): SalesSegment[] | null {
 }
 
 /** Run the strategist (or dossier fallback) and store the result as an unconfirmed draft. */
-async function deriveAndStore(db: Db, sessionId: string, campaignId: string): Promise<SegmentsView> {
+async function deriveAndStore(
+  db: Db,
+  sessionId: string,
+  campaignId: string,
+): Promise<SegmentsView> {
   const { session, dossier } = await getCampaign(db, sessionId);
   const derived = await deriveSalesSegments({
     domain: session.canonical_domain || session.domain,
@@ -58,7 +62,8 @@ export async function getSegments(
   const stored = storedSegments(campaign);
   const confirmedAt = (campaign.segments_confirmed_at as string | null) ?? null;
 
-  if (stored && confirmedAt) return { segments: stored, confirmed_at: confirmedAt, source: "confirmed" };
+  if (stored && confirmedAt)
+    return { segments: stored, confirmed_at: confirmedAt, source: "confirmed" };
   if (stored && !refresh) return { segments: stored, confirmed_at: null, source: "draft" };
   return deriveAndStore(db, sessionId, campaign.id as string);
 }

@@ -60,7 +60,10 @@ describe("latestByAccount", () => {
 describe("bumpContactability", () => {
   it("raises contactability and records where the email came from", () => {
     const result = bumpContactability(
-      { factors: { fit: 0.7, intent: 0.4, contactability: 0.1, priority: 0.5 }, explanation: "Fit" },
+      {
+        factors: { fit: 0.7, intent: 0.4, contactability: 0.1, priority: 0.5 },
+        explanation: "Fit",
+      },
       { email: "ana@acme.com", method: "site_scrape" },
     );
     expect(result.factors).toEqual({

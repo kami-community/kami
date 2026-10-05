@@ -42,7 +42,8 @@ export async function loadAccount(db: Db, sessionId: string, accountId: string):
  * while the campaign kill switch or the Sales-area pause is on.
  */
 export function assertSalesActive(session: { paused: boolean }, campaign: Row): void {
-  if (session.paused) throw new AppError("paused", "Kami is paused for this campaign", { paused: true });
+  if (session.paused)
+    throw new AppError("paused", "Kami is paused for this campaign", { paused: true });
   if (campaign.autonomous_paused) {
     throw new AppError("paused", "sales autonomous actions are paused for this session", {
       paused: true,

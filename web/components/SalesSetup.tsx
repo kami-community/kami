@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
+import { api, errorMessage } from "@/lib/client/api";
 import type { Dossier } from "@/lib/domain/dossier";
 import {
   configToNlPrefill,
@@ -30,12 +31,11 @@ export default function SalesSetup({
   goals,
   onComplete,
 }: SalesSetupProps) {
-  const initial = useMemo(
-    () =>
-      existingConfig
-        ? configToNlPrefill(existingConfig)
-        : dossierToNlPrefill(dossier, domain, null, goals),
-    [existingConfig, dossier, domain, goals],
+  // Prefill once on mount; the parent remounts (via `key`) when the source changes.
+  const [initial] = useState(() =>
+    existingConfig
+      ? configToNlPrefill(existingConfig)
+      : dossierToNlPrefill(dossier, domain, null, goals),
   );
 
   const [whoSentence, setWhoSentence] = useState(initial.whoSentence);
@@ -55,19 +55,12 @@ export default function SalesSetup({
   );
   const [channels] = useState<SalesChannel[]>(existingConfig?.allowed_channels ?? ["email"]);
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    setWhoSentence(initial.whoSentence);
-    setWhatSentence(initial.whatSentence);
-    setTargetQty(initial.targetQty);
-    setIcpTitles(initial.icpTitles);
-    setIcpIndustries(initial.icpIndustries);
-    setGeo(initial.geo);
-  }, [initial]);
+  const [error, setError] = useState<string | null>(null);
 
   async function submit() {
     if (!sessionDbId || !whatSentence.trim()) return;
     setSaving(true);
+    setError(null);
 
     const prefill: SalesNlPrefill = {
       whoSentence,
@@ -93,18 +86,14 @@ export default function SalesSetup({
     });
 
     try {
-      const res = await fetch("/api/sales/setup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const json = await res.json();
-      const config = (json.config ?? payload) as SalesCampaignConfig;
-
+      const { config } = await api.post<{ config: SalesCampaignConfig }>(
+        "/api/sales/setup",
+        payload,
+      );
       // Plan is generated after ICP segments are confirmed (failsafe).
       onComplete(config, false);
-    } catch {
-      onComplete(payload, false);
+    } catch (err) {
+      setError(errorMessage(err, "Could not save the sales setup"));
     } finally {
       setSaving(false);
     }
@@ -291,6 +280,12 @@ export default function SalesSetup({
           </div>
         </div>
       </details>
+
+      {error && (
+        <p className="form-error" role="alert">
+          {error}
+        </p>
+      )}
 
       <button
         className="hanko-btn"

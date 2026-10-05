@@ -44,9 +44,7 @@ async function loadTargetAccounts(db: Db, sessionId: string, accountIds?: string
   const { data, error } = await query;
   if (error) throw dbError(error);
   if (!data?.length) {
-    throw badRequest(
-      "no eligible accounts — select accounts or include them for approval first",
-    );
+    throw badRequest("no eligible accounts — select accounts or include them for approval first");
   }
   return data as Row[];
 }
@@ -156,7 +154,12 @@ export async function createSequence(
     .single();
   if (error) throw dbError(error, "could not create the sequence");
 
-  const ctx = { sessionId, sequenceId: sequence.id as string, campaign, goal: session.goals[0] ?? "" };
+  const ctx = {
+    sessionId,
+    sequenceId: sequence.id as string,
+    campaign,
+    goal: session.goals[0] ?? "",
+  };
   const enrolled: string[] = [];
   const skipped: SkippedAccount[] = [];
   for (const account of accounts) {

@@ -102,7 +102,10 @@ export const PipelineStageSchema = z.enum(PIPELINE_STAGES);
 
 export const AccountPatch = z.object({
   pipeline_stage: PipelineStageSchema.optional(),
-  tier: z.union([z.literal(1), z.literal(2), z.literal(3)]).nullable().optional(),
+  tier: z
+    .union([z.literal(1), z.literal(2), z.literal(3)])
+    .nullable()
+    .optional(),
   notes: z.string().max(5000).nullable().optional(),
   industry: z.string().max(200).nullable().optional(),
 });

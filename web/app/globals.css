@@ -1048,3 +1048,197 @@ h3 {
   text-transform: uppercase;
   color: var(--ink-soft);
 }
+
+/* --- Sales: core flow (panel header, Confirm ICP, Find step, funnel, account drawer) --- */
+
+.sales-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--stack-sm);
+}
+.sales-panel-actions {
+  display: flex;
+  gap: var(--stack-sm);
+  align-items: center;
+}
+.sales-more {
+  margin-top: var(--stack-lg);
+}
+.sales-more > .btn-outline {
+  margin-bottom: var(--stack-sm);
+}
+
+.segment-confirm {
+  position: relative;
+  min-height: 160px;
+  padding-top: var(--stack-md);
+}
+.segment-remove {
+  align-self: flex-end;
+}
+.segment-add {
+  margin-top: 0.5rem;
+}
+
+.target-review {
+  position: relative;
+  padding: var(--stack-md);
+  margin-top: var(--stack-md);
+}
+.target-offer,
+.target-intro {
+  margin-bottom: var(--stack-sm);
+}
+.target-actions {
+  margin-bottom: var(--stack-sm);
+}
+.target-actions > .label-caps {
+  margin-bottom: var(--stack-sm);
+}
+.target-actions__buttons {
+  display: flex;
+  gap: var(--stack-sm);
+  flex-wrap: wrap;
+  align-items: center;
+}
+.target-hint {
+  font-size: 11px;
+  margin-top: var(--stack-sm);
+}
+.target-notices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: var(--stack-sm);
+}
+.target-banner {
+  border: 1px solid var(--hanko);
+  background: var(--kraft);
+  padding: var(--stack-sm);
+  font-size: 14px;
+}
+.target-warning {
+  font-size: 12px;
+}
+.target-empty {
+  padding: var(--stack-sm) 0;
+}
+.target-groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack-md);
+}
+.target-groups > section > .label-caps {
+  margin-bottom: var(--stack-sm);
+}
+.target-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack-sm);
+}
+.target-card {
+  border: 1px solid var(--outline-variant);
+  padding: var(--stack-sm);
+  opacity: 0.8;
+}
+.target-card[data-selected="true"] {
+  opacity: 1;
+}
+.target-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.target-card__domain {
+  margin-left: 0.5rem;
+  font-size: 12px;
+}
+.target-card__scores {
+  font-size: 11px;
+  margin-top: 0.35rem;
+}
+.target-card__explanation {
+  font-size: 13px;
+  margin: 0.25rem 0;
+}
+.target-card__signals {
+  font-size: 12px;
+  padding-left: 1.1rem;
+  margin: 0.25rem 0 0;
+}
+.target-card__email {
+  font-size: 12px;
+}
+
+.sales-funnel {
+  margin-bottom: var(--stack-md);
+}
+.sales-funnel > .label-caps {
+  margin-bottom: 0.35rem;
+}
+.sales-funnel__buckets {
+  display: flex;
+  gap: var(--stack-sm);
+  flex-wrap: wrap;
+  margin-bottom: var(--stack-sm);
+}
+.sales-funnel__bucket {
+  border: 1px solid var(--outline);
+  padding: 0.5rem 0.65rem;
+  flex: 1 1 120px;
+  font-size: 13px;
+}
+.sales-funnel__meta {
+  font-size: 11px;
+  margin-top: 2px;
+}
+.sales-funnel__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+  max-width: 360px;
+  font-size: 12px;
+}
+.sales-funnel__cell {
+  display: flex;
+  justify-content: space-between;
+  border: 1px solid var(--outline-variant);
+  padding: 0.4rem 0.5rem;
+}
+
+.account-drawer {
+  margin-top: var(--stack-sm);
+  padding: var(--stack-sm);
+}
+.account-drawer__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.account-drawer__name {
+  font-family: var(--font-display);
+  font-size: 18px;
+  margin: 0;
+}
+.account-drawer__meta {
+  font-size: 12px;
+  margin-top: 0.25rem;
+}
+.account-drawer__section {
+  margin-bottom: var(--stack-sm);
+  font-size: 13px;
+}
+.account-drawer__section .mono {
+  font-size: 12px;
+}
+.account-drawer__signal-type {
+  color: var(--moss);
+}
+.account-drawer__actions {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}

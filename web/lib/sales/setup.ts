@@ -47,7 +47,10 @@ export const SalesSetupInput = z.object({
     })
     .optional(),
   daily_send_cap: z.number().int().min(1).max(500).optional(),
-  allowed_channels: z.array(z.enum(["email", "x"])).min(1).optional(),
+  allowed_channels: z
+    .array(z.enum(["email", "x"]))
+    .min(1)
+    .optional(),
   autonomy: z
     .object({
       auto_followups: z.boolean().optional(),
@@ -57,7 +60,10 @@ export const SalesSetupInput = z.object({
 });
 export type SalesSetupInput = z.output<typeof SalesSetupInput>;
 
-export async function getSalesConfig(db: Db, sessionId: string): Promise<SalesCampaignConfig | null> {
+export async function getSalesConfig(
+  db: Db,
+  sessionId: string,
+): Promise<SalesCampaignConfig | null> {
   const { data, error } = await db
     .from("sales_campaigns")
     .select("*")

@@ -5,12 +5,7 @@ import { normalizeSegments, type SalesSegment } from "@/lib/domain/segments";
 import { badRequest } from "@/lib/http/errors";
 import { researchFromSegments, type ResearchedAccount } from "@/lib/salesResearch";
 import type { Row } from "./rows";
-import {
-  DISCOVERY_SCORE_MODEL,
-  foundContactRow,
-  partitionSignals,
-  primaryChannel,
-} from "./rules";
+import { DISCOVERY_SCORE_MODEL, foundContactRow, partitionSignals, primaryChannel } from "./rules";
 import { assertSalesActive, audit, dbError, loadSalesCampaign, now } from "./shared";
 
 /**
