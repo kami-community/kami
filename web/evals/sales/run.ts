@@ -21,12 +21,13 @@ import {
   dossierToNlPrefill,
 } from "../../lib/salesDossierPrefill";
 import { isSameBrandHost, normalizeDomainInput } from "../../lib/domainIdentity";
-import { validateDossier } from "../../lib/dossierValidation";
-import { segmentsFromDossier, type SalesSegment } from "../../lib/salesSegments";
+import { groundingProblems, identityProblems } from "../../lib/campaigns/dossier";
+import { DossierSchema } from "../../lib/domain/dossier";
+import { segmentsFromDossier, type SalesSegment } from "../../lib/domain/segments";
 import { validateSegmentsForConfirm } from "../../lib/salesSegmentGates";
 import { setupInvalidatesSegments } from "../../lib/salesSetupIntegrity";
 import { ctaFromGoal } from "../../lib/salesSequences";
-import type { DomainIdentity } from "../../lib/domainIdentity";
+import type { DomainIdentity } from "../../lib/domain/research";
 import type { SalesCampaignConfig } from "../../lib/salesTypes";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -487,6 +488,22 @@ function runDomainTruthGates(passed: string[], failed: string[]): void {
     validated_at: new Date().toISOString(),
   };
 
+  const argusEvidence = [
+    argusIdentity.title,
+    argusIdentity.description,
+    argusIdentity.h1,
+    argusIdentity.excerpt,
+  ].join("\n");
+  /** Mirrors the brand-analyst checks: schema, identity lock, grounding. */
+  const checkDossier = (raw: unknown): string[] => {
+    const parsed = DossierSchema.safeParse(raw);
+    if (!parsed.success) return parsed.error.issues.map((i) => i.message);
+    return [
+      ...identityProblems(parsed.data, argusIdentity),
+      ...groundingProblems(parsed.data, argusEvidence),
+    ];
+  };
+
   // Homonym reject: biomedical dossier vs agent-observability site
   const badDossier = {
     company: "Argus Labs",
@@ -511,76 +528,59 @@ function runDomainTruthGates(passed: string[], failed: string[]): void {
         angle: "assay",
       },
     ],
-    opportunities: [{ title: "Lab outreach", playbook: "outbound", detail: "reach clinics" }],
     competitor_analysis: [],
   };
-  const rejected = validateDossier(badDossier, argusIdentity);
-  if (rejected.ok) {
-    errors.push("validateDossier must reject healthcare narrative absent from first-party extract");
+  if (!checkDossier(badDossier).length) {
+    errors.push("dossier checks must reject a narrative the first-party site does not support");
   } else {
-    passed.push("domain/homonym_health_reject");
+    passed.push("domain/homonym_grounding_reject");
   }
 
   // Domain mismatch reject
-  const mismatch = validateDossier(
-    {
-      ...badDossier,
-      positioning:
-        "Argus provides AI agent observability and debugging for production LLM systems.",
-      canonical_domain: "other-company.com",
-      evidence_urls: ["https://other-company.com/"],
-    },
-    argusIdentity,
-  );
-  if (mismatch.ok) {
-    errors.push("validateDossier must reject canonical_domain mismatch");
+  const mismatchProblems = checkDossier({
+    ...badDossier,
+    positioning: "Argus provides AI agent observability and debugging for production LLM systems.",
+    canonical_domain: "other-company.com",
+    evidence_urls: ["https://other-company.com/"],
+  });
+  if (!mismatchProblems.length) {
+    errors.push("dossier checks must reject canonical_domain mismatch");
   } else {
     passed.push("domain/canonical_mismatch_reject");
   }
 
   // Good dossier for argus
-  const good = validateDossier(
-    {
-      company: "Argus",
-      brand_voice: "technical, precise",
-      positioning:
-        "Argus provides AI agent observability and debugging for production LLM and multi-agent systems.",
-      canonical_domain: "arguslabs.in",
-      evidence_urls: ["https://arguslabs.in/"],
-      product_category: "AI agent observability",
-      industries: ["AI infrastructure"],
-      personas: ["AI eng lead"],
-      icp_buckets: [
-        {
-          label: "AI platform teams",
-          where_they_live: "Slack / Discord",
-          trigger_signal: "shipping agents to prod",
-          est_size: "mid-market",
-          angle: "trace failures faster",
-        },
-        {
-          label: "Agent startups",
-          where_they_live: "X / HN",
-          trigger_signal: "launch week",
-          est_size: "seed-A",
-          angle: "eval + debug loop",
-        },
-      ],
-      opportunities: [
-        {
-          title: "Agent observability outreach",
-          playbook: "outbound",
-          detail: "reach AI eng leads",
-        },
-      ],
-      competitor_analysis: [{ name: "LangSmith", insight: "broader LLM ops" }],
-    },
-    argusIdentity,
-  );
-  if (!good.ok) {
-    errors.push(`good argus dossier should pass: ${good.errors.join("; ")}`);
-  } else if (!/observab|agent|debug|llm/i.test(good.dossier!.positioning)) {
-    errors.push("good dossier should keep agent-observability positioning");
+  const goodDossier = {
+    company: "Argus",
+    brand_voice: "technical, precise",
+    positioning:
+      "Argus provides AI agent observability and debugging for production LLM and multi-agent systems.",
+    canonical_domain: "arguslabs.in",
+    evidence_urls: ["https://arguslabs.in/"],
+    product_category: "AI agent observability",
+    industries: ["AI infrastructure"],
+    personas: ["AI eng lead"],
+    icp_buckets: [
+      {
+        label: "AI platform teams",
+        where_they_live: "Slack / Discord",
+        trigger_signal: "shipping agents to prod",
+        est_size: "mid-market",
+        angle: "trace failures faster",
+      },
+      {
+        label: "Agent startups",
+        where_they_live: "X / HN",
+        trigger_signal: "launch week",
+        est_size: "seed-A",
+        angle: "eval + debug loop",
+      },
+    ],
+    competitor_analysis: [{ name: "LangSmith", insight: "broader LLM ops" }],
+  };
+  const goodProblems = checkDossier(goodDossier);
+  if (goodProblems.length) {
+    errors.push(`good argus dossier should pass: ${goodProblems.join("; ")}`);
   } else {
     passed.push("domain/argus_observability_ok");
   }
@@ -593,8 +593,13 @@ function runDomainTruthGates(passed: string[], failed: string[]): void {
       positioning: "AI agent observability for production debugging",
       competitor_analysis: [],
       icp_buckets: [],
-      opportunities: [],
       product_category: "AI observability",
+      canonical_domain: "arguslabs.in",
+      tone: [],
+      industries: [],
+      personas: [],
+      geos: [],
+      evidence_urls: ["https://arguslabs.in/"],
     },
     "arguslabs.in",
   );
@@ -612,7 +617,12 @@ function runDomainTruthGates(passed: string[], failed: string[]): void {
       positioning: "AI agent observability for production debugging of multi-agent systems.",
       competitor_analysis: [],
       icp_buckets: [],
-      opportunities: [],
+      canonical_domain: "arguslabs.in",
+      tone: [],
+      industries: [],
+      personas: [],
+      geos: [],
+      evidence_urls: ["https://arguslabs.in/"],
     },
     "arguslabs.in",
   );

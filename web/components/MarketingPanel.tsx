@@ -68,7 +68,7 @@ export default function MarketingPanel({
 
   const fetchConversations = useCallback(() => {
     if (!sessionDbId) return;
-    fetch(`/api/conversations?session_id=${sessionDbId}`)
+    fetch(`/api/marketing/conversations?session_id=${sessionDbId}`)
       .then((r) => r.json())
       .then((j) => setConversations(j.conversations ?? []))
       .catch(() => {});

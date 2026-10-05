@@ -1,11 +1,17 @@
-// Next.js instrumentation hook — registers the Langfuse OTEL span processor.
-// Runs once per server start. Traces no-op if LANGFUSE_* env vars are absent.
+/**
+ * Next.js server start hook: registers Langfuse tracing (no-op without
+ * LANGFUSE_* keys) and the optional in-process job scheduler.
+ */
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
+
   const { NodeTracerProvider } = await import("@opentelemetry/sdk-trace-node");
   const { langfuseSpanProcessor } = await import("./lib/langfuseProcessor");
-  const provider = new NodeTracerProvider({
-    spanProcessors: [langfuseSpanProcessor],
-  });
-  provider.register();
+  new NodeTracerProvider({ spanProcessors: [langfuseSpanProcessor] }).register();
+
+  const { env } = await import("./lib/config/env");
+  if (env().KAMI_SCHEDULER) {
+    const { startScheduler } = await import("./lib/jobs/scheduler");
+    startScheduler();
+  }
 }

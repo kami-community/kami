@@ -1,8 +1,9 @@
 import { supabaseServer } from "@/lib/supabase";
-import { dossierFromBrandPayload } from "@/lib/guideContext";
+import { getCampaign } from "@/lib/campaigns/sessions";
+import { db } from "@/lib/db/client";
 import { generateSalesStrategy } from "@/lib/salesStrategy";
 import type { SalesCampaignConfig, SalesPlan } from "@/lib/salesTypes";
-import type { SalesSegment } from "@/lib/salesSegments";
+import type { SalesSegment } from "@/lib/domain/segments";
 
 function rowToPlan(row: Record<string, unknown>): SalesPlan {
   return {
@@ -145,21 +146,9 @@ export async function POST(request: Request): Promise<Response> {
   let note: string | undefined;
 
   if (!synthesized) {
-    const [session, brand] = await Promise.all([
-      sb
-        .from("agent_sessions")
-        .select("domain, canonical_domain, goals_list, hermes_session_id")
-        .eq("id", session_id)
-        .maybeSingle(),
-      sb.from("brand_profiles").select("*").eq("session_id", session_id).maybeSingle(),
-    ]);
-
-    const domain = (session?.data?.canonical_domain || session?.data?.domain || "") as string;
-    const goalsRaw = session?.data?.goals_list;
-    const goals = Array.isArray(goalsRaw)
-      ? goalsRaw.filter((g): g is string => typeof g === "string")
-      : [];
-    const dossier = dossierFromBrandPayload(brand.data);
+    const { session, dossier } = await getCampaign(db(), session_id);
+    const domain = session.canonical_domain || session.domain;
+    const goals = session.goals;
 
     const strategist = await generateSalesStrategy({
       domain: domain || "unknown",
@@ -170,10 +159,6 @@ export async function POST(request: Request): Promise<Response> {
       segments,
       goals,
       kamiSessionId: session_id,
-      hermesSessionId:
-        typeof session?.data?.hermes_session_id === "string"
-          ? `kami-sales-plan-${session.data.hermes_session_id}`
-          : undefined,
     });
     synthesized = strategist.plan;
     source = strategist.source;

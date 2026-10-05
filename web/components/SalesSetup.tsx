@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { Dossier } from "@/lib/hermes";
+import type { Dossier } from "@/lib/domain/dossier";
 import {
   configToNlPrefill,
   dossierToNlPrefill,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Dossier } from "@/lib/hermes";
+import type { Dossier } from "@/lib/domain/dossier";
 
 function Section({
   title,

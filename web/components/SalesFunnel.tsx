@@ -1,6 +1,6 @@
 "use client";
 
-import type { SalesSegment } from "@/lib/salesSegments";
+import type { SalesSegment } from "@/lib/domain/segments";
 import type { LeadScoreFactors, SalesAccount, SalesPlan } from "@/lib/salesTypes";
 
 interface AccountWithScore extends SalesAccount {

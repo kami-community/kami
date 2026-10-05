@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { XPost, BoostCampaign } from "@/lib/marketingTypes";
 import StatusChip from "@/components/StatusChip";
+import { useConnections } from "@/components/ConnectSocials";
 
 interface BoostManagerProps {
   sessionDbId: string | null;
@@ -19,7 +20,7 @@ export default function BoostManager({ sessionDbId }: BoostManagerProps) {
   const [boosts, setBoosts] = useState<BoostCampaign[]>([]);
   const [loading, setLoading] = useState(false);
   const [postsError, setPostsError] = useState<string | null>(null);
-  const [adsConnected, setAdsConnected] = useState(false);
+  const adsConnected = Boolean(useConnections(sessionDbId).state?.configured.x_ads);
   const [boostMsg, setBoostMsg] = useState<string | null>(null);
 
   const fetchPosts = useCallback(() => {
@@ -47,10 +48,6 @@ export default function BoostManager({ sessionDbId }: BoostManagerProps) {
   useEffect(() => {
     fetchPosts();
     fetchBoosts();
-    fetch("/api/accounts/status")
-      .then((r) => r.json())
-      .then((j) => setAdsConnected(Boolean(j.x_ads)))
-      .catch(() => {});
   }, [fetchPosts, fetchBoosts]);
 
   async function boost(post: XPost) {

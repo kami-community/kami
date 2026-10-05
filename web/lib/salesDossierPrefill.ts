@@ -1,7 +1,7 @@
-import type { Dossier } from "@/lib/hermes";
+import type { Dossier } from "@/lib/domain/dossier";
 import type { SalesCampaignConfig, SalesIcp } from "@/lib/salesTypes";
-import type { SalesSegment } from "@/lib/salesSegments";
-import { icpFromSegments } from "@/lib/salesSegments";
+import type { SalesSegment } from "@/lib/domain/segments";
+import { icpFromSegments } from "@/lib/domain/segments";
 
 export interface SalesNlPrefill {
   whoSentence: string;

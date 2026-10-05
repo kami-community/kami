@@ -1,8 +1,8 @@
 import { logAgentRunAsync } from "@/lib/agentRunLog";
 import { supabaseServer } from "@/lib/supabase";
 import { researchFromSegments } from "@/lib/salesResearch";
-import type { SalesSegment } from "@/lib/salesSegments";
-import { normalizeSegments } from "@/lib/salesSegments";
+import type { SalesSegment } from "@/lib/domain/segments";
+import { normalizeSegments } from "@/lib/domain/segments";
 
 /** Discover + contact find can exceed default ~300s; keep the route alive for E2E/local. */
 export const maxDuration = 600;

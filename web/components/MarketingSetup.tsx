@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import ConnectSocials, { useConnections } from "@/components/ConnectSocials";
+import { useState } from "react";
 import type { MarketingConfig, MarketingPlatform, OutreachGoal } from "@/lib/marketingTypes";
 
 interface MarketingSetupProps {
@@ -45,30 +46,9 @@ export default function MarketingSetup({
   const [tone, setTone] = useState<string[]>(existingTone ?? []);
   const [useDossierTone, setUseDossierTone] = useState(Boolean(existingTone?.length));
   const [saving, setSaving] = useState(false);
-  const [xConnected, setXConnected] = useState(false);
-  const [igConnected, setIgConnected] = useState(false);
-  const [xHandle, setXHandle] = useState<string | null>(null);
-  const [igHandle, setIgHandle] = useState<string | null>(null);
-
-  useEffect(() => {
-    const qs = sessionDbId ? `?session_id=${encodeURIComponent(sessionDbId)}` : "";
-    fetch(`/api/accounts${qs}`)
-      .then((r) => r.json())
-      .then((json) => {
-        const accounts = (json.accounts ?? []) as {
-          platform: string;
-          handle: string | null;
-          status: string;
-        }[];
-        const x = accounts.find((a) => a.platform === "x" && a.status === "connected");
-        const ig = accounts.find((a) => a.platform === "instagram" && a.status === "connected");
-        setXConnected(Boolean(x));
-        setIgConnected(Boolean(ig));
-        setXHandle(x?.handle ?? null);
-        setIgHandle(ig?.handle ?? null);
-      })
-      .catch(() => {});
-  }, [sessionDbId]);
+  const { handleOf } = useConnections(sessionDbId);
+  const xConnected = Boolean(handleOf("x"));
+  const igConnected = Boolean(handleOf("instagram"));
 
   function togglePlatform(p: MarketingPlatform) {
     if (p === "x" && !xConnected) return;
@@ -132,32 +112,11 @@ export default function MarketingSetup({
         </p>
       )}
 
-      <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>
-        Connected accounts
-      </p>
-      <div
-        style={{
-          display: "flex",
-          gap: "0.5rem",
-          flexWrap: "wrap",
-          marginBottom: "var(--stack-md)",
-        }}
-      >
-        <span
-          className="mono"
-          style={{ fontSize: 12, color: xConnected ? "var(--moss)" : "var(--hanko)" }}
-        >
-          {xConnected ? `✓ X ${xHandle}` : "✗ X not connected — Log in with X on the landing page"}
-        </span>
-        <span
-          className="mono"
-          style={{ fontSize: 12, color: igConnected ? "var(--moss)" : "var(--hanko)" }}
-        >
-          {igConnected
-            ? `✓ Instagram ${igHandle}`
-            : "✗ Instagram not connected — Log in with Instagram on the landing page"}
-        </span>
-      </div>
+      {sessionDbId && (
+        <div style={{ marginBottom: "var(--stack-md)" }}>
+          <ConnectSocials sessionId={sessionDbId} />
+        </div>
+      )}
 
       <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>
         Select platforms

@@ -1,4 +1,4 @@
-import { supabaseServer } from "@/lib/supabase";
+import { dbOrNull } from "@/lib/db/client";
 
 const PREVIEW_CHARS = 4_000;
 const OUTPUT_CHARS = 200_000;
@@ -32,7 +32,7 @@ function truncate(value: string | null | undefined, max: number): string | null 
  * Persist one observable run. Never throws — observability must not break product flows.
  */
 export async function logAgentRun(input: AgentRunLogInput): Promise<string | null> {
-  const sb = supabaseServer();
+  const sb = dbOrNull();
   if (!sb) return null;
 
   try {

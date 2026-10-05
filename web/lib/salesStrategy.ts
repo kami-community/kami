@@ -3,11 +3,12 @@
  * Offline fallback remains synthesizePlanFromConfig (explicitly labeled).
  */
 
-import type { Dossier } from "@/lib/hermes";
-import { buildCompanyContextPack } from "@/lib/guideContext";
-import { hermesChatOnce, hermesGatewayConfigured, parseLastJsonBlock } from "@/lib/hermesServer";
+import type { Dossier } from "@/lib/domain/dossier";
+import { buildCompanyContextPack } from "@/lib/campaigns/contextPack";
+import { completeOrNull, hermesConfigured } from "@/lib/hermes/client";
+import { parseLastJsonBlock } from "@/lib/hermes/json";
 import { synthesizePlanFromConfig } from "@/lib/salesPlan";
-import type { SalesSegment } from "@/lib/salesSegments";
+import type { SalesSegment } from "@/lib/domain/segments";
 import type {
   ApprovalScope,
   EstimatedActivity,
@@ -189,7 +190,7 @@ ${goalLine}
 Offer (from setup): ${params.config.offer}
 
 CRITICAL:
-- Plan ONLY for this product / domain. Never invent healthcare, scheduling, Calendly, or booking narratives unless the company pack supports them.
+- Plan ONLY for this product / domain, using only what the company pack supports.
 - If segments or evidence are thin, say so in risks/prerequisites — do not fabricate industry-specific tactics.
 - Prefer signal-backed outreach; no signal = nurture/hold, not "high intent".
 
@@ -238,7 +239,6 @@ export async function generateSalesStrategy(params: {
   version: number;
   segments?: SalesSegment[] | null;
   goals?: string[];
-  hermesSessionId?: string;
   kamiSessionId?: string | null;
 }): Promise<StrategistResult> {
   const segments = params.segments ?? null;
@@ -249,7 +249,7 @@ export async function generateSalesStrategy(params: {
     (!segments?.length &&
       !(params.config.icp?.titles?.length || params.config.icp?.industries?.length));
 
-  if (!hermesGatewayConfigured()) {
+  if (!hermesConfigured()) {
     const plan = synthesizePlanFromConfig(
       params.config,
       params.campaignId,
@@ -277,18 +277,17 @@ export async function generateSalesStrategy(params: {
     };
   }
 
-  const text = await hermesChatOnce({
-    content: strategistPrompt({
+  const text = await completeOrNull({
+    agent: "sales-strategist",
+    kind: "sales_plan",
+    input: strategistPrompt({
       domain: params.domain,
       dossier: params.dossier,
       config: params.config,
       segments,
       goals,
     }),
-    sessionId: params.hermesSessionId ?? `kami-sales-plan-${params.domain}`,
     kamiSessionId: params.kamiSessionId,
-    kind: "sales_plan",
-    agent: "sales_strategist",
     timeoutMs: 90_000,
   });
 

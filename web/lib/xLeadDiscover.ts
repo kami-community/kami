@@ -1,13 +1,7 @@
-import { resolveXAccess } from "@/lib/xCreds";
+import { getUsers, searchRecent } from "@/lib/adapters/x/api";
+import { requireConnection } from "@/lib/connections/service";
+import { db } from "@/lib/db/client";
 import type { DiscoveredCrmEntry } from "@/lib/marketingDiscoverTypes";
-
-interface XUser {
-  id: string;
-  username: string;
-  name?: string;
-  description?: string;
-  public_metrics?: { followers_count?: number };
-}
 
 function buildSearchQueries(params: {
   domain: string | null;
@@ -36,8 +30,8 @@ function buildSearchQueries(params: {
 }
 
 /**
- * Discover X leads using the connected user's OAuth token + recent search.
- * Never fabricates profiles — returns empty if search fails or no token.
+ * Discover X leads with the connected account's token and recent search.
+ * Never fabricates profiles — returns an explanatory error instead of guesses.
  */
 export async function discoverXLeads(params: {
   sessionId: string;
@@ -47,13 +41,11 @@ export async function discoverXLeads(params: {
   icpLabels: string[];
   limit?: number;
 }): Promise<{ entries: DiscoveredCrmEntry[]; error?: string }> {
-  const access = await resolveXAccess({ sessionId: params.sessionId });
-  if (!access) {
-    return {
-      entries: [],
-      error:
-        "X is not connected for this session — Log in with X on the landing page, then launch the campaign",
-    };
+  let account;
+  try {
+    account = await requireConnection(db(), params.sessionId, "x");
+  } catch (err) {
+    return { entries: [], error: err instanceof Error ? err.message : "X is not connected" };
   }
 
   const queries = buildSearchQueries(params);
@@ -64,94 +56,53 @@ export async function discoverXLeads(params: {
     };
   }
 
-  const authorIds = new Set<string>();
-  const tweetSnippets = new Map<string, string>();
-
+  const snippets = new Map<string, string>();
+  let lastError: string | undefined;
   for (const query of queries) {
-    const qs = new URLSearchParams({
-      query,
-      max_results: "20",
-      "tweet.fields": "author_id,created_at,text",
-      expansions: "author_id",
-    });
     try {
-      const res = await fetch(`https://api.x.com/2/tweets/search/recent?${qs}`, {
-        headers: { Authorization: `Bearer ${access.token}` },
-      });
-      const json = (await res.json().catch(() => ({}))) as {
-        data?: { author_id?: string; text?: string }[];
-        errors?: { message?: string }[];
-        title?: string;
-        detail?: string;
-      };
-      if (!res.ok) {
-        const msg =
-          json.detail ?? json.title ?? json.errors?.[0]?.message ?? `X search ${res.status}`;
-        // Continue other queries; surface last error if nothing found
-        if (!authorIds.size) {
-          return { entries: [], error: msg };
-        }
-        continue;
+      for (const hit of await searchRecent(account.accessToken, query)) {
+        if (!snippets.has(hit.authorId)) snippets.set(hit.authorId, hit.text.slice(0, 160));
       }
-      for (const tw of json.data ?? []) {
-        if (tw.author_id) {
-          authorIds.add(tw.author_id);
-          if (tw.text && !tweetSnippets.has(tw.author_id)) {
-            tweetSnippets.set(tw.author_id, tw.text.slice(0, 160));
-          }
-        }
-      }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "X search failed";
-      if (!authorIds.size) return { entries: [], error: msg };
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : "X search failed";
     }
   }
 
-  // Drop our own account if present
-  const selfHandle = access.handle.replace(/^@/, "").toLowerCase();
-  const ids = [...authorIds].slice(0, params.limit ?? 25);
-  if (!ids.length) {
-    return { entries: [], error: "X search returned no authors for these keywords" };
-  }
+  const ids = [...snippets.keys()].slice(0, params.limit ?? 25);
+  if (!ids.length)
+    return { entries: [], error: lastError ?? "X search returned no authors for these keywords" };
 
-  const userQs = new URLSearchParams({
-    ids: ids.join(","),
-    "user.fields": "description,public_metrics,username,name",
-  });
-  const usersRes = await fetch(`https://api.x.com/2/users?${userQs}`, {
-    headers: { Authorization: `Bearer ${access.token}` },
-  });
-  const usersJson = (await usersRes.json().catch(() => ({}))) as {
-    data?: XUser[];
-    errors?: { message?: string }[];
-  };
-  if (!usersRes.ok || !usersJson.data?.length) {
+  let users;
+  try {
+    users = await getUsers(account.accessToken, ids);
+  } catch (err) {
     return {
       entries: [],
-      error: usersJson.errors?.[0]?.message ?? "Could not resolve X user profiles",
+      error: err instanceof Error ? err.message : "Could not resolve X user profiles",
     };
   }
 
-  const entries: DiscoveredCrmEntry[] = [];
-  for (const u of usersJson.data) {
-    if (u.username.toLowerCase() === selfHandle) continue;
-    const snippet = tweetSnippets.get(u.id);
-    const followers = u.public_metrics?.followers_count ?? 0;
-    entries.push({
-      type: "x_lead",
-      platform: "x",
-      handle: u.username,
-      name: u.name,
-      followers,
-      niche_match_score: Math.min(1, 0.4 + Math.log10(Math.max(followers, 10)) / 10),
-      relevance_reasoning: snippet
-        ? `Matched recent post: “${snippet}${snippet.length >= 160 ? "…" : ""}”`
-        : u.description
-          ? `Bio: ${u.description.slice(0, 140)}`
-          : "Matched niche keyword search",
-      status: "identified",
+  const selfHandle = account.handle.replace(/^@/, "").toLowerCase();
+  const entries: DiscoveredCrmEntry[] = users
+    .filter((u) => u.username.toLowerCase() !== selfHandle)
+    .map((u) => {
+      const snippet = snippets.get(u.id);
+      const followers = u.public_metrics?.followers_count ?? 0;
+      return {
+        type: "x_lead",
+        platform: "x",
+        handle: u.username,
+        name: u.name,
+        followers,
+        niche_match_score: Math.min(1, 0.4 + Math.log10(Math.max(followers, 10)) / 10),
+        relevance_reasoning: snippet
+          ? `Matched recent post: “${snippet}${snippet.length >= 160 ? "…" : ""}”`
+          : u.description
+            ? `Bio: ${u.description.slice(0, 140)}`
+            : "Matched niche keyword search",
+        status: "identified",
+      };
     });
-  }
 
   return { entries: entries.slice(0, params.limit ?? 15) };
 }

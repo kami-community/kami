@@ -36,6 +36,7 @@ export default function ConversationsPanel({
     return (
       <aside>
         <ConversationThread
+          sessionId={selectedEntry.session_id}
           conversation={selected}
           handle={selectedEntry.handle}
           onBack={() => setSelectedId(null)}

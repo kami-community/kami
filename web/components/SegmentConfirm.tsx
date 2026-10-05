@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
-import type { CandidateCompany, SalesSegment } from "@/lib/salesSegments";
+import type { CandidateCompany, SalesSegment } from "@/lib/domain/segments";
 import { validateSegmentsForConfirm } from "@/lib/salesSegmentGates";
 import SalesBusyOverlay from "@/components/SalesBusyOverlay";
 

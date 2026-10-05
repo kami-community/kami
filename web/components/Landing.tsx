@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import GoalChips from "@/components/GoalChips";
-import ConnectSocials from "@/components/ConnectSocials";
 
 export interface LaunchParams {
   domain: string;
@@ -14,7 +13,8 @@ interface LandingProps {
   onLaunch: (params: LaunchParams) => void | Promise<void>;
   busy: boolean;
   error?: string | null;
-  resumePrompt?: { domain: string; dbId: string; hermesId: string } | null;
+  /** Domain of a saved campaign the founder can continue. */
+  resumeDomain?: string | null;
   onResume?: () => void;
   onDismissResume?: () => void;
 }
@@ -50,7 +50,7 @@ export default function Landing({
   onLaunch,
   busy,
   error,
-  resumePrompt,
+  resumeDomain,
   onResume,
   onDismissResume,
 }: LandingProps) {
@@ -81,13 +81,13 @@ export default function Landing({
           right people.
         </p>
 
-        {resumePrompt && (
+        {resumeDomain && (
           <div
             className="kraft-card landing-fade"
             style={{ maxWidth: 420, textAlign: "left", padding: "var(--stack-md)" }}
           >
             <p style={{ marginBottom: "var(--stack-sm)" }}>
-              Continue previous campaign for <strong>{resumePrompt.domain}</strong>?
+              Continue previous campaign for <strong>{resumeDomain}</strong>?
             </p>
             <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
               <button type="button" className="hanko-btn" onClick={onResume} disabled={busy}>
@@ -126,7 +126,7 @@ export default function Landing({
             />
           </div>
           <button className="hanko-btn landing-cta" type="submit" disabled={busy}>
-            {busy ? "Checking…" : "Build my first customer plan"}
+            {busy ? "Researching your site…" : "Build my first customer plan"}
           </button>
         </form>
 
@@ -144,10 +144,6 @@ export default function Landing({
             onStageChange={setStage}
             disabled={busy}
           />
-        </div>
-
-        <div className="landing-fade-delay" style={{ marginTop: "var(--stack-sm)" }}>
-          <ConnectSocials />
         </div>
       </section>
 

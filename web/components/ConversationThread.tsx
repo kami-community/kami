@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Conversation, ConversationMessage } from "@/lib/marketingTypes";
 import EscalationBanner from "@/components/EscalationBanner";
 
 interface ConversationThreadProps {
+  sessionId: string;
   conversation: Conversation;
   handle: string;
   onBack: () => void;
@@ -12,6 +13,7 @@ interface ConversationThreadProps {
 }
 
 export default function ConversationThread({
+  sessionId,
   conversation,
   handle,
   onBack,
@@ -20,13 +22,15 @@ export default function ConversationThread({
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
+  const replyIdRef = useRef<string | null>(null);
 
   const fetchMessages = useCallback(() => {
-    fetch(`/api/conversations/${conversation.id}`)
+    fetch(`/api/marketing/conversations/${conversation.id}?session_id=${sessionId}`)
       .then((r) => r.json())
       .then((j) => setMessages(j.messages ?? []))
       .catch(() => {});
-  }, [conversation.id]);
+  }, [conversation.id, sessionId]);
 
   useEffect(() => {
     fetchMessages();
@@ -35,27 +39,41 @@ export default function ConversationThread({
   async function sendManual() {
     const text = input.trim();
     if (!text || sending) return;
-    setInput("");
+    // One id per composed message: retries of the same text never send twice.
+    replyIdRef.current ??= crypto.randomUUID();
     setSending(true);
+    setSendError(null);
     try {
-      await fetch(`/api/conversations/${conversation.id}`, {
+      const res = await fetch(`/api/marketing/conversations/${conversation.id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "send", content: text }),
+        body: JSON.stringify({
+          action: "reply",
+          session_id: sessionId,
+          content: text,
+          client_message_id: replyIdRef.current,
+        }),
       });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        setSendError(json.error ?? "Message failed");
+        return;
+      }
+      setInput("");
+      replyIdRef.current = null;
       fetchMessages();
     } catch {
-      // noop
+      setSendError("Network error — message not sent");
     } finally {
       setSending(false);
     }
   }
 
   async function handleEscalation(action: "approve" | "counter" | "decline") {
-    await fetch(`/api/conversations/${conversation.id}`, {
+    await fetch(`/api/marketing/conversations/${conversation.id}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action }),
+      body: JSON.stringify({ action: "resolve", session_id: sessionId, decision: action }),
     });
     onRefresh();
   }
@@ -139,8 +157,10 @@ export default function ConversationThread({
           <input
             id="manual-msg"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && sendManual()}
+            onChange={(e) => {
+              setInput(e.target.value);
+              replyIdRef.current = null; // edited text is a new message
+            }}
             placeholder="Type to take over this conversation…"
             disabled={sending}
           />
@@ -148,12 +168,17 @@ export default function ConversationThread({
         <button
           className="hanko-btn"
           onClick={sendManual}
-          disabled={sending}
+          disabled={sending || !input.trim()}
           style={{ alignSelf: "flex-end" }}
         >
-          Send
+          {sending ? "Sending…" : "Send DM"}
         </button>
       </div>
+      {sendError && (
+        <p role="alert" className="mono form-error">
+          {sendError}
+        </p>
+      )}
     </div>
   );
 }

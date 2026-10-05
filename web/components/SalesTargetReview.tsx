@@ -8,7 +8,7 @@ import type {
   SalesAccount,
   SalesPlan,
 } from "@/lib/salesTypes";
-import type { SalesSegment } from "@/lib/salesSegments";
+import type { SalesSegment } from "@/lib/domain/segments";
 import { scoreLabel } from "@/lib/salesMotionLabels";
 import SalesFunnel from "@/components/SalesFunnel";
 import SalesBusyOverlay from "@/components/SalesBusyOverlay";

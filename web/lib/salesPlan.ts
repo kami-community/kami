@@ -7,7 +7,7 @@ import type {
   SalesPlanMotion,
   SalesPlanTier,
 } from "@/lib/salesTypes";
-import type { SalesSegment } from "@/lib/salesSegments";
+import type { SalesSegment } from "@/lib/domain/segments";
 import { cleanPositioningLine } from "@/lib/salesDossierPrefill";
 
 /** Local strategist scaffold — Hermes shapes when available; this is the deterministic fallback. */

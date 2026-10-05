@@ -10,8 +10,9 @@ import type {
   DistributionOpportunity,
   DistributionPlatform,
 } from "@/lib/distributionTypes";
-import type { Dossier } from "@/lib/hermes";
-import { hermesChatOnce, hermesGatewayConfigured, parseLastJsonBlock } from "@/lib/hermesServer";
+import type { Dossier } from "@/lib/domain/dossier";
+import { completeOrNull, hermesConfigured } from "@/lib/hermes/client";
+import { parseLastJsonBlock } from "@/lib/hermes/json";
 
 export type OpportunityDraft = Omit<
   DistributionOpportunity,
@@ -84,12 +85,11 @@ export async function researchDistributionOpportunities(input: {
   angle: string;
   domain: string;
   dossier: Dossier | null;
-  hermesSessionId?: string;
 }): Promise<{ opportunities: OpportunityDraft[]; source: "hermes" | "scaffold"; note?: string }> {
-  const caps = detectCapabilities();
+  const caps = await detectCapabilities();
   const scaffold = scaffoldOpportunities(input.goal, input.angle, input.dossier, input.domain);
 
-  if (!hermesGatewayConfigured()) {
+  if (!hermesConfigured()) {
     return {
       opportunities: scaffold,
       source: "scaffold",
@@ -123,12 +123,11 @@ export async function researchDistributionOpportunities(input: {
   ].join("\n");
 
   try {
-    const text = await hermesChatOnce({
-      content: prompt,
-      sessionId: input.hermesSessionId ?? `kami-dist-${input.sessionId}`,
-      kamiSessionId: input.sessionId,
+    const text = await completeOrNull({
+      agent: "marketing-strategist",
       kind: "distribution_research",
-      agent: "marketing_strategist",
+      input: prompt,
+      kamiSessionId: input.sessionId,
       timeoutMs: 120_000,
       meta: { goal: input.goal, angle: input.angle },
     });

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { SalesPlan } from "@/lib/salesTypes";
-import type { SalesSegment } from "@/lib/salesSegments";
+import type { SalesSegment } from "@/lib/domain/segments";
 import { channelLabel, motionLabel } from "@/lib/salesMotionLabels";
 import SalesFunnel from "@/components/SalesFunnel";
 

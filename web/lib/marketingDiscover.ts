@@ -1,13 +1,13 @@
+import { z } from "zod";
+import { hermesConfigured, runAgentJson } from "@/lib/hermes/client";
 import type { MarketingConfig } from "@/lib/marketingTypes";
 import type { DiscoveredCrmEntry, DiscoverResult } from "@/lib/marketingDiscoverTypes";
 import { discoverXLeads } from "@/lib/xLeadDiscover";
 import { discoverIgCreatorsViaApify, apifyConfigured } from "@/lib/apifyIgDiscover";
-import { getValidIgAccessToken } from "@/lib/igOauth";
+import { requireConnection } from "@/lib/connections/service";
+import { db } from "@/lib/db/client";
 
 export type { DiscoveredCrmEntry, DiscoverResult } from "@/lib/marketingDiscoverTypes";
-
-const GATEWAY = process.env.HERMES_GATEWAY_URL ?? "http://127.0.0.1:8642/v1/chat/completions";
-const KEY = process.env.HERMES_API_KEY;
 
 function dossierBits(dossier: unknown): {
   competitors: string[];
@@ -33,81 +33,64 @@ function dossierBits(dossier: unknown): {
   };
 }
 
-/** Optional Hermes pass: re-score / rewrite reasoning for real candidates only. */
-async function rankWithHermes(
+const RankedSchema = z.object({
+  entries: z.array(
+    z.object({
+      handle: z.string().min(1),
+      platform: z.enum(["x", "instagram"]).optional(),
+      niche_match_score: z.number().min(0).max(1).optional(),
+      relevance_reasoning: z.string().optional(),
+    }),
+  ),
+});
+
+/**
+ * Optional ranking pass by the marketing-researcher agent. It may only re-score
+ * and explain candidates that discovery actually found — never add handles.
+ */
+async function rankCandidates(
   entries: DiscoveredCrmEntry[],
-  hermesSessionId: string,
-  context: { domain: string | null; config: MarketingConfig },
+  context: { sessionId: string; domain: string | null; config: MarketingConfig },
 ): Promise<DiscoveredCrmEntry[]> {
-  if (!KEY || entries.length === 0) return entries;
+  if (!hermesConfigured() || entries.length === 0) return entries;
 
-  const prompt = [
-    "You rank REAL marketing CRM candidates. Do NOT invent new handles.",
-    'Return ONLY a fenced json block: {"entries":[...]} with the same handles,',
-    "updated niche_match_score (0-1) and relevance_reasoning.",
-    `domain: ${context.domain ?? "unknown"}`,
-    `platforms: ${JSON.stringify(context.config.platforms)}`,
-    `ig_niche_keywords: ${JSON.stringify(context.config.ig_niche_keywords ?? [])}`,
-    "```json",
-    JSON.stringify({ entries }, null, 2),
-    "```",
-  ].join("\n");
-
+  let ranked: z.infer<typeof RankedSchema>;
   try {
-    const upstream = await fetch(GATEWAY, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${KEY}`,
-        "Content-Type": "application/json",
-        "X-Hermes-Session-Id": hermesSessionId,
-      },
-      body: JSON.stringify({
-        model: "gpt-5.4",
-        stream: false,
-        messages: [{ role: "user", content: prompt }],
-      }),
-    });
-    const text = await upstream.text();
-    if (!upstream.ok) return entries;
-
-    let assistant = text;
-    try {
-      const json = JSON.parse(text) as {
-        choices?: { message?: { content?: string } }[];
-      };
-      assistant = json.choices?.[0]?.message?.content ?? text;
-    } catch {
-      /* keep */
-    }
-
-    const fence = [...assistant.matchAll(/```json\s*([\s\S]*?)```/gi)].at(-1)?.[1];
-    if (!fence) return entries;
-    const parsed = JSON.parse(fence) as { entries?: DiscoveredCrmEntry[] };
-    if (!Array.isArray(parsed.entries)) return entries;
-
-    const byHandle = new Map(entries.map((e) => [`${e.platform}:${e.handle.toLowerCase()}`, e]));
-    const ranked: DiscoveredCrmEntry[] = [];
-    for (const row of parsed.entries) {
-      if (!row?.handle) continue;
-      const key = `${row.platform ?? "x"}:${String(row.handle).replace(/^@/, "").toLowerCase()}`;
-      const base = byHandle.get(key);
-      if (!base) continue; // never invent
-      ranked.push({
-        ...base,
-        niche_match_score:
-          typeof row.niche_match_score === "number"
-            ? row.niche_match_score
-            : base.niche_match_score,
-        relevance_reasoning:
-          typeof row.relevance_reasoning === "string"
-            ? row.relevance_reasoning
-            : base.relevance_reasoning,
-      });
-    }
-    return ranked.length ? ranked : entries;
+    ({ data: ranked } = await runAgentJson({
+      agent: "marketing-researcher",
+      kind: "marketing_rank",
+      kamiSessionId: context.sessionId,
+      schema: RankedSchema,
+      input: [
+        "Rank these REAL marketing CRM candidates for the campaign. Do NOT add new handles.",
+        'Return one fenced json block: {"entries":[...]} with the same handles,',
+        "an updated niche_match_score (0-1) and relevance_reasoning for each.",
+        `domain: ${context.domain ?? "unknown"}`,
+        `platforms: ${JSON.stringify(context.config.platforms)}`,
+        `niche keywords: ${JSON.stringify(context.config.ig_niche_keywords ?? [])}`,
+        "```json",
+        JSON.stringify({ entries }, null, 2),
+        "```",
+      ].join("\n"),
+    }));
   } catch {
-    return entries;
+    return entries; // ranking is optional; the candidates themselves are real
   }
+
+  const byHandle = new Map(entries.map((e) => [`${e.platform}:${e.handle.toLowerCase()}`, e]));
+  const result: DiscoveredCrmEntry[] = [];
+  for (const row of ranked.entries) {
+    const base = byHandle.get(
+      `${row.platform ?? "x"}:${row.handle.replace(/^@/, "").toLowerCase()}`,
+    );
+    if (!base) continue; // never invent
+    result.push({
+      ...base,
+      niche_match_score: row.niche_match_score ?? base.niche_match_score,
+      relevance_reasoning: row.relevance_reasoning ?? base.relevance_reasoning,
+    });
+  }
+  return result.length ? result : entries;
 }
 
 /**
@@ -118,10 +101,9 @@ export async function runMarketingDiscovery(params: {
   config: MarketingConfig;
   domain: string | null;
   dossier: unknown;
-  hermesSessionId: string;
   sessionId: string;
 }): Promise<DiscoverResult> {
-  const { config, domain, dossier, hermesSessionId, sessionId } = params;
+  const { config, domain, dossier, sessionId } = params;
   const bits = dossierBits(dossier);
   const warnings: string[] = [];
   const entries: DiscoveredCrmEntry[] = [];
@@ -147,10 +129,11 @@ export async function runMarketingDiscovery(params: {
   }
 
   if (config.platforms.includes("instagram")) {
-    const igAccount = await getValidIgAccessToken({ sessionId });
-    if (!igAccount) {
+    try {
+      await requireConnection(db(), sessionId, "instagram");
+    } catch {
       warnings.push(
-        "Instagram not connected for this session — Log in with Instagram on the landing page before launching.",
+        "Instagram is not connected for this campaign — connect it before sending creator DMs.",
       );
     }
     if (!apifyConfigured()) {
@@ -179,7 +162,7 @@ export async function runMarketingDiscovery(params: {
     };
   }
 
-  const ranked = await rankWithHermes(entries, hermesSessionId, { domain, config });
+  const ranked = await rankCandidates(entries, { sessionId, domain, config });
   return {
     entries: ranked,
     warnings: [...warnings, ...(ranked.length ? [] : errors)],

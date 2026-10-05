@@ -10,6 +10,7 @@
   --kraft-light: #f3ede0;
   --outline: #7c766e;
   --crease: rgba(29, 28, 20, 0.15);
+  --error: #9b1c1c;
 
   --font-headline: var(--font-domine), Georgia, serif;
   --font-body: var(--font-source-sans), -apple-system, sans-serif;
@@ -81,7 +82,8 @@ h3 {
 .kami-guide-message {
   font-size: 14px;
   line-height: 1.45;
-  margin: 0;
+  margin: 0.25rem 0 0;
+  white-space: pre-wrap;
 }
 
 .container {
@@ -633,4 +635,416 @@ h3 {
 .sales-busy-ticks li[data-active="true"] {
   color: var(--hanko);
   font-weight: 600;
+}
+
+.brand-accent {
+  color: var(--hanko);
+}
+
+.form-error {
+  color: var(--error);
+  max-width: 420px;
+  font-size: 13px;
+}
+
+.connect-socials {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.connect-chip {
+  border: 1px solid var(--ink);
+  padding: 0.35rem 0.75rem;
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.connect-chip--on {
+  background: var(--moss);
+  border-color: var(--moss);
+  color: var(--paper);
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.connect-chip--off {
+  border-style: dashed;
+  border-color: var(--outline);
+  color: var(--outline);
+}
+
+.connect-chip__action {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.notice {
+  border: 1px solid var(--ink);
+  background: var(--kraft-light);
+  padding: 0.5rem 0.75rem;
+  margin-top: var(--stack-sm);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* --- Primitives -------------------------------------------------------------
+ * One primary (hanko) action per screen; everything else is secondary or outline. */
+
+:where(button, a, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  font-family: var(--font-headline);
+  font-weight: 700;
+  font-size: 15px;
+  padding: 0.8rem 1.6rem;
+  cursor: pointer;
+}
+.btn-secondary:hover:not(:disabled) {
+  background: var(--kraft-light);
+}
+.btn-secondary:disabled {
+  color: var(--outline);
+  border-color: var(--outline);
+  cursor: not-allowed;
+}
+
+.btn-outline {
+  display: inline-block;
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  padding: 0.3rem 0.7rem;
+  font-size: 12px;
+  cursor: pointer;
+}
+.btn-outline:hover:not(:disabled) {
+  background: var(--kraft-light);
+}
+
+.muted {
+  color: var(--ink-soft);
+}
+
+.meta-line {
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-top: var(--stack-sm);
+}
+
+.paused-banner {
+  border: 1px solid var(--hanko);
+  color: var(--hanko);
+  padding: 0.5rem 0.75rem;
+  margin-top: var(--stack-sm);
+  font-size: 13px;
+}
+
+/* --- Dashboard ------------------------------------------------------------ */
+
+.dashboard {
+  padding-top: var(--stack-md);
+  padding-bottom: var(--stack-lg);
+}
+
+.dashboard__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.dashboard__actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.dashboard__body {
+  display: flex;
+  align-items: flex-start;
+  margin-top: var(--stack-sm);
+}
+
+.dashboard__main {
+  flex: 1;
+  min-width: 0;
+}
+.dashboard__main[data-guide-open="true"] {
+  padding-right: var(--stack-md);
+}
+
+.overview-section {
+  margin-top: var(--stack-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack-sm);
+}
+
+.job-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--stack-md);
+  margin-bottom: var(--stack-md);
+}
+
+.job-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+/* --- Confirm dialog -------------------------------------------------------- */
+
+.confirm-dialog {
+  max-width: 480px;
+  margin: auto;
+  color: var(--ink);
+}
+.confirm-dialog::backdrop {
+  background: rgba(29, 28, 20, 0.35);
+}
+.confirm-dialog__body {
+  margin: var(--stack-sm) 0 var(--stack-md);
+  color: var(--ink-soft);
+  white-space: pre-wrap;
+}
+.confirm-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+/* --- Kami Guide ------------------------------------------------------------ */
+
+.kami-guide {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 64px);
+  position: sticky;
+  top: 64px;
+  width: 100%;
+  max-width: 380px;
+  min-width: 300px;
+  background: var(--paper);
+  border-left: 1px solid var(--crease);
+  z-index: 20;
+}
+
+.kami-guide__head {
+  padding: var(--stack-md);
+  border-bottom: 1px solid var(--crease);
+  flex-shrink: 0;
+}
+
+.kami-guide__title {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.kami-guide__messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--stack-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack-sm);
+}
+
+.kami-guide__composer {
+  border-top: 1px solid var(--crease);
+  padding: var(--stack-md);
+  flex-shrink: 0;
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+.kami-guide__composer .form-line {
+  flex: 1;
+}
+
+.kami-guide-fab {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 40;
+  background: var(--paper);
+}
+
+.link-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--ink-soft);
+  padding: 0;
+}
+
+@media (max-width: 900px) {
+  .dashboard__body {
+    flex-direction: column;
+  }
+  .dashboard__main[data-guide-open="true"] {
+    padding-right: 0;
+  }
+  .kami-guide {
+    position: static;
+    height: auto;
+    max-height: 70vh;
+    max-width: none;
+    border-left: none;
+    border-top: 1px solid var(--crease);
+  }
+}
+
+.capability-banner {
+  font-size: 12px;
+  color: var(--ink-soft);
+  border: 1px solid var(--outline);
+  padding: 0.5rem 0.75rem;
+  margin: var(--stack-sm) 0;
+}
+.capability-banner strong {
+  color: var(--ink);
+}
+
+/* --- Lists, tables, status ------------------------------------------------- */
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: var(--stack-sm);
+}
+
+.activity-panel {
+  margin-top: var(--stack-md);
+}
+
+.row-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: var(--stack-sm);
+}
+
+.row {
+  border: 1px solid var(--crease);
+}
+.row--flat {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: baseline;
+  padding: 0.5rem 0.75rem;
+}
+
+.row__summary {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: baseline;
+  padding: 0.5rem 0.75rem;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  color: var(--ink);
+  font: inherit;
+}
+.row__summary:hover {
+  background: var(--kraft-light);
+}
+
+.row__title {
+  flex: 1;
+  min-width: 160px;
+}
+
+.row__detail {
+  padding: 0.5rem 0.75rem 0.75rem;
+  border-top: 1px solid var(--crease);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.row__detail pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 12px;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.status-pill {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  border: 1px solid var(--outline);
+  padding: 0 0.4rem;
+  color: var(--ink-soft);
+}
+.status-pill--sent,
+.status-pill--ok,
+.status-pill--done {
+  border-color: var(--moss);
+  color: var(--moss);
+}
+.status-pill--failed,
+.status-pill--error,
+.status-pill--timeout,
+.status-pill--blocked {
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+  margin: var(--stack-sm) 0;
+}
+
+.checkbox {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+  font-size: 12px;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-top: var(--stack-sm);
+}
+.data-table th,
+.data-table td {
+  text-align: left;
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid var(--crease);
+}
+.data-table th {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
 }

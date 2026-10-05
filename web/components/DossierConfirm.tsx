@@ -1,13 +1,14 @@
 "use client";
 
+import { api, errorMessage } from "@/lib/client/api";
 import { useState } from "react";
-import type { Dossier, IcpBucket } from "@/lib/hermes";
+import type { Dossier, IcpBucket } from "@/lib/domain/dossier";
 import IntelPanel from "@/components/IntelPanel";
 
 interface DossierConfirmProps {
   dossier: Dossier;
   sessionDbId: string | null;
-  onConfirm: () => void;
+  onConfirm: () => Promise<void>;
   onDossierUpdated: (dossier: Dossier) => void;
 }
 
@@ -28,6 +29,7 @@ export default function DossierConfirm({
   const [correction, setCorrection] = useState("");
   const [revising, setRevising] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
 
   function startEdit() {
     setDraft(cloneDossier(dossier));
@@ -40,20 +42,14 @@ export default function DossierConfirm({
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch(`/api/sessions/${sessionDbId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "dossier", payload: draft }),
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json.error ?? "Could not save dossier");
-        return;
-      }
-      onDossierUpdated(draft);
+      const { dossier: saved } = await api.put<{ dossier: Dossier }>(
+        `/api/sessions/${sessionDbId}/dossier`,
+        { dossier: draft },
+      );
+      onDossierUpdated(saved);
       setEditing(false);
-    } catch {
-      setError("Network error while saving");
+    } catch (err) {
+      setError(errorMessage(err, "Could not save the dossier"));
     } finally {
       setSaving(false);
     }
@@ -64,27 +60,17 @@ export default function DossierConfirm({
     setRevising(true);
     setError(null);
     try {
-      const res = await fetch("/api/dossier/revise", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          session_id: sessionDbId,
-          correction: correction.trim(),
-          dossier,
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok || !json.dossier) {
-        setError(json.error ?? "Could not regenerate dossier");
-        return;
-      }
-      onDossierUpdated(json.dossier as Dossier);
-      setDraft(json.dossier as Dossier);
+      const { dossier: revised } = await api.post<{ dossier: Dossier }>(
+        `/api/sessions/${sessionDbId}/dossier/revise`,
+        { correction: correction.trim() },
+      );
+      onDossierUpdated(revised);
+      setDraft(revised);
       setShowRegenerate(false);
       setCorrection("");
       setEditing(false);
-    } catch {
-      setError("Network error while regenerating");
+    } catch (err) {
+      setError(errorMessage(err, "Could not regenerate the dossier"));
     } finally {
       setRevising(false);
     }
@@ -155,7 +141,7 @@ export default function DossierConfirm({
             </button>
             <button
               type="button"
-              className="hanko-btn"
+              className="btn-secondary"
               onClick={() => void saveEdits()}
               disabled={saving || !sessionDbId}
             >
@@ -323,8 +309,23 @@ export default function DossierConfirm({
           marginBottom: "var(--stack-md)",
         }}
       >
-        <button type="button" className="hanko-btn" onClick={onConfirm} disabled={editing}>
-          That&apos;s us — what&apos;s next?
+        <button
+          type="button"
+          className="hanko-btn"
+          disabled={editing || confirming}
+          onClick={async () => {
+            setConfirming(true);
+            setError(null);
+            try {
+              await onConfirm();
+            } catch (err) {
+              setError(errorMessage(err, "Could not confirm the dossier"));
+            } finally {
+              setConfirming(false);
+            }
+          }}
+        >
+          {confirming ? "Saving…" : "That’s us — what’s next?"}
         </button>
         <button
           type="button"
@@ -362,7 +363,7 @@ export default function DossierConfirm({
           <div style={{ marginTop: "0.75rem", display: "flex", gap: "0.5rem" }}>
             <button
               type="button"
-              className="hanko-btn"
+              className="btn-secondary"
               onClick={() => void regenerate()}
               disabled={revising || !correction.trim() || !sessionDbId}
             >

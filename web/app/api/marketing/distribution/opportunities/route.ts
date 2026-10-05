@@ -1,5 +1,6 @@
 import { logAgentRunAsync } from "@/lib/agentRunLog";
-import { dossierFromBrandPayload } from "@/lib/guideContext";
+import { getCampaign } from "@/lib/campaigns/sessions";
+import { db } from "@/lib/db/client";
 import { researchDistributionOpportunities } from "@/lib/distributionResearch";
 import type {
   DistributionActionStatus,
@@ -82,29 +83,14 @@ export async function POST(request: Request): Promise<Response> {
       return Response.json({ error: "paused" }, { status: 423 });
     }
 
-    const [session, brand] = await Promise.all([
-      sb
-        .from("agent_sessions")
-        .select("domain, canonical_domain, hermes_session_id")
-        .eq("id", session_id)
-        .maybeSingle(),
-      sb.from("brand_profiles").select("*").eq("session_id", session_id).maybeSingle(),
-    ]);
-
-    const domain = (session?.data?.canonical_domain ||
-      session?.data?.domain ||
-      "unknown") as string;
-    const dossier = dossierFromBrandPayload(brand.data);
+    const { session, dossier } = await getCampaign(db(), session_id);
+    const domain = session.canonical_domain || session.domain;
     const result = await researchDistributionOpportunities({
       sessionId: session_id,
       goal: campaign.goal,
       angle: campaign.angle || "",
       domain,
       dossier,
-      hermesSessionId:
-        typeof session?.data?.hermes_session_id === "string"
-          ? `kami-dist-${session.data.hermes_session_id}`
-          : undefined,
     });
 
     const rows = result.opportunities.map((o) => ({

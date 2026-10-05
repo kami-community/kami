@@ -1,3 +1,5 @@
+import type { DomainIdentity } from "@/lib/domain/research";
+
 /**
  * Exact-domain identity: normalize, resolve, extract first-party evidence.
  * Never substitutes a search-result domain for the submitted domain.
@@ -9,20 +11,6 @@ export type DomainInvalidReason =
   | "Domain redirected to another site"
   | "Website returned no usable content"
   | "Invalid domain";
-
-export interface DomainIdentity {
-  input: string;
-  canonical_domain: string;
-  final_url: string;
-  company_name: string | null;
-  title: string | null;
-  description: string | null;
-  h1: string | null;
-  excerpt: string;
-  evidence_url: string;
-  confidence: number;
-  validated_at: string;
-}
 
 export type DomainValidationResult =
   | { ok: true; identity: DomainIdentity }

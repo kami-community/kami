@@ -1,218 +1,139 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import ActivityFeed, { type ActivityEvent } from "@/components/ActivityFeed";
+import Link from "next/link";
+import { useState } from "react";
+import CampaignTabs from "@/components/CampaignTabs";
+import CapabilityBanner from "@/components/CapabilityBanner";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import DossierConfirm from "@/components/DossierConfirm";
 import IntelPanel from "@/components/IntelPanel";
 import KamiGuide from "@/components/KamiGuide";
-import CampaignTabs from "@/components/CampaignTabs";
+import KillSwitch from "@/components/KillSwitch";
 import MarketingPanel from "@/components/MarketingPanel";
 import SalesPanel, { type SalesGuidedStep } from "@/components/SalesPanel";
-import CapabilityBanner from "@/components/CapabilityBanner";
-import KillSwitch from "@/components/KillSwitch";
-import DossierConfirm from "@/components/DossierConfirm";
-import type { Dossier } from "@/lib/hermes";
-import type { CampaignTab, MarketingConfig } from "@/lib/marketingTypes";
-import type { SalesCampaignConfig } from "@/lib/salesTypes";
+import { useCampaign } from "@/components/campaign/CampaignProvider";
+import { errorMessage } from "@/lib/client/api";
+import type { CampaignTab } from "@/lib/marketingTypes";
 
-interface DashboardProps {
-  domain: string;
-  events: ActivityEvent[];
-  running: boolean;
-  dossier: Dossier | null;
-  sessionId: string;
-  sessionDbId: string | null;
-  marketingConfig: MarketingConfig | null;
-  salesConfig: SalesCampaignConfig | null;
-  identityMeta?: { company?: string | null; confidence?: number; evidenceCount?: number } | null;
-  sessionGoals?: string[];
-  onNewCampaign: () => void;
-  onMarketingSetup: (config: MarketingConfig) => void;
-  onSalesSetup: (config: SalesCampaignConfig) => void;
-  onDossierUpdated: (dossier: Dossier) => void;
-}
-
-type OverviewPhase = "loading" | "confirm" | "choose";
-
-export default function Dashboard({
-  domain,
-  events,
-  running,
-  dossier,
-  sessionId,
-  sessionDbId,
-  marketingConfig,
-  salesConfig,
-  identityMeta,
-  sessionGoals,
-  onNewCampaign,
-  onMarketingSetup,
-  onSalesSetup,
-  onDossierUpdated,
-}: DashboardProps) {
+/** Campaign workspace: Overview (dossier → choose a job), Sales, Marketing, plus Kami Guide. */
+export default function Dashboard({ onNewCampaign }: { onNewCampaign: () => void }) {
+  const campaign = useCampaign();
+  const { session, sessionId, dossier, dossierJob } = campaign;
   const [tab, setTab] = useState<CampaignTab>("overview");
   const [salesFocusStep, setSalesFocusStep] = useState<SalesGuidedStep | null>(null);
-  const [dossierConfirmed, setDossierConfirmed] = useState(false);
   const [guideCollapsed, setGuideCollapsed] = useState(false);
-  const [globalPaused, setGlobalPaused] = useState(false);
+  const [pauseError, setPauseError] = useState<string | null>(null);
   const [pauseSaving, setPauseSaving] = useState(false);
+  const [confirmingNew, setConfirmingNew] = useState(false);
 
-  useEffect(() => {
-    if (typeof window === "undefined" || !sessionDbId) return;
-    const key = `kami_dossier_confirmed_${sessionDbId}`;
-    setDossierConfirmed(window.localStorage.getItem(key) === "1");
-  }, [sessionDbId]);
+  const confirmed = Boolean(session.dossier_confirmed_at);
+  const identity = session.domain_check;
+  const sourceCount = session.research_snapshot?.sources?.length ?? 0;
 
-  const overviewPhase: OverviewPhase = !dossier
-    ? "loading"
-    : dossierConfirmed
-      ? "choose"
-      : "confirm";
-
-  function confirmDossier() {
-    setDossierConfirmed(true);
-    if (typeof window !== "undefined" && sessionDbId) {
-      window.localStorage.setItem(`kami_dossier_confirmed_${sessionDbId}`, "1");
-    }
-  }
-
-  function findCustomers() {
-    setTab("sales");
-    setSalesFocusStep(salesConfig ? null : "confirm");
-  }
-
-  function createDistribution() {
-    setTab("marketing");
-  }
-
-  async function handleGlobalPause(next: boolean) {
-    setGlobalPaused(next);
-    if (!sessionDbId) return;
+  async function togglePause(next: boolean) {
     setPauseSaving(true);
+    setPauseError(null);
     try {
-      await Promise.all([
-        fetch("/api/sales/setup", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ session_id: sessionDbId, autonomous_paused: next }),
-        }).catch(() => null),
-        fetch("/api/marketing/distribution/setup", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ session_id: sessionDbId, autonomous_paused: next }),
-        }).catch(() => null),
-        fetch("/api/marketing/setup", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ session_id: sessionDbId, autonomous_paused: next }),
-        }).catch(() => null),
-      ]);
+      await campaign.setPaused(next);
+    } catch (err) {
+      setPauseError(errorMessage(err, "Could not change the kill switch"));
     } finally {
       setPauseSaving(false);
     }
   }
 
+  function findCustomers() {
+    setTab("sales");
+    setSalesFocusStep(campaign.salesConfig ? null : "confirm");
+  }
+
   return (
-    <div style={{ paddingTop: "var(--stack-md)", paddingBottom: "var(--stack-lg)" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "baseline",
-          flexWrap: "wrap",
-          gap: "0.75rem",
-        }}
-      >
+    <div className="dashboard">
+      <header className="dashboard__header">
         <h2>
-          {domain} <span style={{ color: "var(--hanko)" }}>· campaigns</span>
+          {session.canonical_domain} <span className="brand-accent">· campaigns</span>
         </h2>
-        <div style={{ display: "flex", gap: "1rem", alignItems: "center", flexWrap: "wrap" }}>
-          <KillSwitch
-            paused={globalPaused}
-            onChange={handleGlobalPause}
-            disabled={pauseSaving || !sessionDbId}
-          />
-          <span className="mono" style={{ color: "var(--ink-soft)" }}>
-            session {sessionId.slice(-8)}
-          </span>
-          <button
-            type="button"
-            className="mono"
-            onClick={onNewCampaign}
-            style={{
-              border: "1px solid var(--ink)",
-              background: "transparent",
-              padding: "0.3rem 0.7rem",
-              cursor: "pointer",
-            }}
-          >
+        <div className="dashboard__actions">
+          <KillSwitch paused={session.paused} onChange={togglePause} disabled={pauseSaving} />
+          <Link className="mono btn-outline" href={`/activity?session_id=${sessionId}`}>
+            Activity
+          </Link>
+          <button type="button" className="mono btn-outline" onClick={() => setConfirmingNew(true)}>
             + new campaign
           </button>
         </div>
-      </div>
+      </header>
+      {pauseError && (
+        <p role="alert" className="mono form-error">
+          {pauseError}
+        </p>
+      )}
+      {session.paused && (
+        <p role="status" className="mono paused-banner">
+          Kami is paused for this campaign — nothing will be sent or posted until you resume.
+        </p>
+      )}
 
       <CapabilityBanner />
       <CampaignTabs active={tab} onChange={setTab} />
 
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          gap: 0,
-          marginTop: "var(--stack-sm)",
-        }}
-      >
-        <div style={{ flex: 1, minWidth: 0, paddingRight: guideCollapsed ? 0 : "var(--stack-md)" }}>
+      <div className="dashboard__body">
+        <div
+          className="dashboard__main"
+          data-guide-open={!guideCollapsed}
+          role="tabpanel"
+          id={`panel-${tab}`}
+          aria-labelledby={`tab-${tab}`}
+        >
           {tab === "overview" && (
             <>
               <hr className="crease" />
-              {identityMeta && (
-                <p
-                  className="mono"
-                  style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: "var(--stack-sm)" }}
-                >
-                  Identity: {identityMeta.company ?? domain}
-                  {typeof identityMeta.confidence === "number"
-                    ? ` · confidence ${(identityMeta.confidence * 100).toFixed(0)}%`
-                    : ""}
-                  {identityMeta.evidenceCount ? ` · ${identityMeta.evidenceCount} sources` : ""}
-                </p>
-              )}
+              <p className="mono meta-line">
+                Identity: {identity.company_name ?? session.canonical_domain} · confidence{" "}
+                {(identity.confidence * 100).toFixed(0)}% · {sourceCount} sources
+              </p>
 
-              {overviewPhase === "loading" && (
-                <div style={{ marginTop: "var(--stack-md)" }}>
+              {!dossier && (
+                <section className="overview-section" aria-live="polite">
                   <p className="label-caps">Understanding your company</p>
-                  <p style={{ color: "var(--ink-soft)", marginTop: "0.5rem" }}>
-                    Kami is folding a dossier from your domain…
-                  </p>
-                  <ActivityFeed events={events} running={running} />
-                </div>
+                  {dossierJob.busy && (
+                    <p className="muted">
+                      The brand analyst is compiling your dossier from your site and research…
+                    </p>
+                  )}
+                  {dossierJob.error && (
+                    <>
+                      <p role="alert" className="mono form-error">
+                        {dossierJob.error}
+                      </p>
+                      <button
+                        type="button"
+                        className="hanko-btn"
+                        onClick={() => void campaign.generateDossier()}
+                      >
+                        Try again
+                      </button>
+                    </>
+                  )}
+                </section>
               )}
 
-              {overviewPhase === "confirm" && dossier && (
+              {dossier && !confirmed && (
                 <DossierConfirm
                   dossier={dossier}
-                  sessionDbId={sessionDbId}
-                  onConfirm={confirmDossier}
-                  onDossierUpdated={onDossierUpdated}
+                  sessionDbId={sessionId}
+                  onConfirm={campaign.confirmDossier}
+                  onDossierUpdated={campaign.setDossier}
                 />
               )}
 
-              {overviewPhase === "choose" && dossier && (
-                <div style={{ marginTop: "var(--stack-md)", width: "100%" }}>
-                  <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>
-                    What should I do next to grow?
-                  </p>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-                      gap: "var(--stack-md)",
-                      marginBottom: "var(--stack-md)",
-                    }}
-                  >
-                    <div className="kraft-card" style={{ padding: "var(--stack-md)" }}>
-                      <h3 style={{ marginBottom: "0.5rem" }}>Find customers</h3>
-                      <p style={{ color: "var(--ink-soft)", marginBottom: "var(--stack-md)" }}>
+              {dossier && confirmed && (
+                <section className="overview-section">
+                  <p className="label-caps">What should I do next to grow?</p>
+                  <div className="job-grid">
+                    <div className="kraft-card job-card">
+                      <h3>Find customers</h3>
+                      <p className="muted">
                         Reach people who could become customers — verify companies, draft emails,
                         approve before send.
                       </p>
@@ -220,64 +141,75 @@ export default function Dashboard({
                         Find customers
                       </button>
                     </div>
-                    <div className="kraft-card" style={{ padding: "var(--stack-md)" }}>
-                      <h3 style={{ marginBottom: "0.5rem" }}>Create distribution</h3>
-                      <p style={{ color: "var(--ink-soft)", marginBottom: "var(--stack-md)" }}>
+                    <div className="kraft-card job-card">
+                      <h3>Create distribution</h3>
+                      <p className="muted">
                         Show up in the right conversations with a useful message — review
                         opportunities, then post.
                       </p>
-                      <button type="button" className="hanko-btn" onClick={createDistribution}>
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={() => setTab("marketing")}
+                      >
                         Create distribution
                       </button>
                     </div>
                   </div>
-
                   <IntelPanel dossier={dossier} defaultAllOpen />
-                  <div style={{ marginTop: "var(--stack-md)" }}>
-                    <ActivityFeed events={events} running={running} />
-                  </div>
-                </div>
+                </section>
               )}
             </>
           )}
 
-          {tab === "marketing" && (
+          {tab !== "overview" && !confirmed && (
+            <p className="muted overview-section">
+              Confirm your company dossier on the Overview tab first — Kami plans from what you
+              confirm.
+            </p>
+          )}
+
+          {tab === "marketing" && confirmed && (
             <MarketingPanel
-              sessionDbId={sessionDbId}
-              config={marketingConfig}
+              sessionDbId={sessionId}
+              config={campaign.marketingConfig}
               dossierTone={dossier?.tone}
-              onSetup={onMarketingSetup}
+              onSetup={campaign.setMarketingConfig}
             />
           )}
 
-          {tab === "sales" && (
+          {tab === "sales" && confirmed && (
             <SalesPanel
-              sessionDbId={sessionDbId}
-              config={salesConfig}
+              sessionDbId={sessionId}
+              config={campaign.salesConfig}
               dossier={dossier}
-              domain={domain}
-              goals={sessionGoals}
+              domain={session.canonical_domain}
+              goals={session.goals}
               focusStep={salesFocusStep}
-              onSetup={onSalesSetup}
-              onCreateDistribution={createDistribution}
+              onSetup={campaign.setSalesConfig}
+              onCreateDistribution={() => setTab("marketing")}
             />
           )}
         </div>
 
-        {(dossier || sessionDbId) && (
-          <KamiGuide
-            sessionId={sessionId}
-            domain={domain}
-            dossier={dossier}
-            sessionDbId={sessionDbId}
-            salesConfig={salesConfig}
-            goals={sessionGoals}
-            activeTab={tab}
-            collapsed={guideCollapsed}
-            onToggle={() => setGuideCollapsed((c) => !c)}
-          />
-        )}
+        <KamiGuide
+          activeTab={tab}
+          collapsed={guideCollapsed}
+          onToggle={() => setGuideCollapsed((c) => !c)}
+        />
       </div>
+
+      <ConfirmDialog
+        open={confirmingNew}
+        title="Start a new campaign?"
+        body="This campaign stays saved in your database, but this browser will stop reopening it."
+        confirmLabel="Start new campaign"
+        onConfirm={() => {
+          setConfirmingNew(false);
+          onNewCampaign();
+        }}
+        onCancel={() => setConfirmingNew(false)}
+      />
     </div>
   );
 }

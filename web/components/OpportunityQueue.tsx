@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import ConnectSocials, { useConnections } from "@/components/ConnectSocials";
+import { useState } from "react";
 import type { DistributionOpportunity, DistributionOutcome } from "@/lib/distributionTypes";
 
 interface OpportunityQueueProps {
@@ -42,40 +43,11 @@ export default function OpportunityQueue({
   const [savingId, setSavingId] = useState<string | null>(null);
   const [flash, setFlash] = useState<Record<string, string>>({});
   const [localOutcomes, setLocalOutcomes] = useState<Record<string, DistributionOutcome>>({});
-  const [xConnected, setXConnected] = useState(false);
-  const [xHandle, setXHandle] = useState<string | null>(null);
+  const { handleOf } = useConnections(sessionDbId);
+  const xHandle = handleOf("x");
+  const xConnected = Boolean(xHandle);
   const [draftEdits, setDraftEdits] = useState<Record<string, string>>({});
   const [confirmPostId, setConfirmPostId] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch(
-          sessionDbId
-            ? `/api/accounts?session_id=${encodeURIComponent(sessionDbId)}`
-            : "/api/accounts",
-        );
-        if (!res.ok) return;
-        const json = await res.json();
-        const accounts = (json.accounts ?? []) as {
-          platform?: string;
-          handle?: string;
-          status?: string;
-        }[];
-        const x = accounts.find((a) => a.platform === "x" && a.status !== "pending");
-        if (!cancelled) {
-          setXConnected(Boolean(x));
-          setXHandle(x?.handle ?? null);
-        }
-      } catch {
-        /* ignore */
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [sessionDbId]);
 
   async function patch(id: string, body: Record<string, unknown>, successMsg?: string) {
     if (!sessionDbId) return false;
@@ -118,39 +90,25 @@ export default function OpportunityQueue({
       return;
     }
     if (
-      !window.confirm(`Post this to X${xHandle ? ` as @${xHandle}` : ""}?\n\n${text.slice(0, 280)}`)
+      !window.confirm(`Post this to X${xHandle ? ` as ${xHandle}` : ""}?\n\n${text.slice(0, 280)}`)
     ) {
       return;
     }
     setSavingId(o.id);
     setConfirmPostId(null);
     try {
-      const res = await fetch("/api/x/post", {
+      const res = await fetch(`/api/marketing/distribution/opportunities/${o.id}/publish`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text,
-          sessionDbId,
-          opportunityId: o.id,
-        }),
+        body: JSON.stringify({ session_id: sessionDbId, text }),
       });
-      const json = await res.json();
+      const json = await res.json().catch(() => ({}));
       if (!res.ok) {
         setFlash((f) => ({ ...f, [o.id]: json.error ?? "X post failed" }));
         return;
       }
-      const url = json.receipt?.url as string | undefined;
-      await patch(
-        o.id,
-        {
-          approval_status: "approved",
-          action_status: "published",
-          outcome: "posted",
-          published_url: url ?? null,
-          draft: text,
-        },
-        url ? `Posted to X — ${url}` : "Posted to X.",
-      );
+      setFlash((f) => ({ ...f, [o.id]: json.url ? `Posted to X — ${json.url}` : "Posted to X." }));
+      onRefresh();
     } catch (e) {
       setFlash((f) => ({
         ...f,
@@ -197,9 +155,13 @@ export default function OpportunityQueue({
         style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: "var(--stack-sm)" }}
       >
         X:{" "}
-        {xConnected
-          ? `connected${xHandle ? ` (@${xHandle})` : ""} — Post to X available on X drafts`
-          : "not connected — Login with X on the landing page to publish"}
+        {xConnected ? (
+          `connected${xHandle ? ` (${xHandle})` : ""} — Post to X available on X drafts`
+        ) : sessionDbId ? (
+          <ConnectSocials sessionId={sessionDbId} platforms={["x"]} />
+        ) : (
+          "not connected"
+        )}
       </p>
 
       {opportunities.length === 0 && (

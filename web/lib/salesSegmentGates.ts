@@ -1,4 +1,4 @@
-import type { SalesSegment } from "@/lib/salesSegments";
+import type { SalesSegment } from "@/lib/domain/segments";
 
 /** B2B segments need at least one candidate company domain. PLG needs a persona. */
 export function validateSegmentsForConfirm(segments: SalesSegment[]): string | null {

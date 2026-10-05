@@ -1,7 +1,8 @@
 import { startObservation } from "@langfuse/tracing";
+import { env } from "@/lib/config/env";
 import { langfuseSpanProcessor } from "@/lib/langfuseProcessor";
 
-const ENABLED = Boolean(process.env.LANGFUSE_PUBLIC_KEY && process.env.LANGFUSE_SECRET_KEY);
+const enabled = () => Boolean(env().LANGFUSE_PUBLIC_KEY && env().LANGFUSE_SECRET_KEY);
 
 type Usage = { [key: string]: number };
 
@@ -19,7 +20,7 @@ export function traceGatewayCall(params: {
   wrap: (upstream: Response) => Response;
   fail: (error: string) => void;
 } {
-  if (!ENABLED) {
+  if (!enabled()) {
     return { wrap: (u) => u, fail: () => {} };
   }
 

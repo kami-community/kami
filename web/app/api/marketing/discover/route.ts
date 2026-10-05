@@ -72,7 +72,6 @@ export async function POST(request: Request): Promise<Response> {
         company: brand?.company ?? null,
         competitor_analysis: brand?.competitor_analysis ?? null,
       },
-      hermesSessionId: `kami-mkt-discover-${session_id}`,
       sessionId: session_id,
     });
   } catch (e) {

@@ -1,88 +1,83 @@
+import { env } from "@/lib/config/env";
+import { OAUTH_PROVIDERS } from "@/lib/connections/providers";
+import { dbConfigured } from "@/lib/db/client";
+import { emailConfigured, searchProviders } from "@/lib/providers";
+
 /**
- * Runtime capability registry for Community Edition.
- * Agents and UI must choose modes only from declared capabilities.
+ * What this Kami install can actually do, derived from configuration and a
+ * live Hermes health probe. Agents and UI choose modes only from these.
  */
 
 export type ResearchMode = "browser" | "provider" | "manual";
 
 export interface KamiCapabilities {
   hermes: boolean;
-  modelConfigured: boolean;
+  hermesReachable: boolean;
   database: boolean;
-  browserConnected: boolean;
-  researchProvider: boolean;
   researchProviders: string[];
-  agentMail: boolean;
-  xConfigured: boolean;
   researchModes: ResearchMode[];
   canSendEmail: boolean;
-  canPublishX: boolean;
+  canConnectX: boolean;
+  canConnectInstagram: boolean;
   notes: string[];
 }
 
-function hasEnv(name: string): boolean {
-  const v = process.env[name];
-  return typeof v === "string" && v.trim().length > 0;
+let probe: { at: number; ok: boolean } | null = null;
+const PROBE_TTL_MS = 30_000;
+
+async function hermesReachable(): Promise<boolean> {
+  if (probe && Date.now() - probe.at < PROBE_TTL_MS) return probe.ok;
+  const health = env().HERMES_GATEWAY_URL.replace(/\/v1\/chat\/completions\/?$/, "/health");
+  let ok = false;
+  try {
+    ok = (await fetch(health, { signal: AbortSignal.timeout(2_000) })).ok;
+  } catch {
+    ok = false;
+  }
+  probe = { at: Date.now(), ok };
+  return ok;
 }
 
-export function detectCapabilities(): KamiCapabilities {
-  const hermes = hasEnv("HERMES_GATEWAY_URL") || hasEnv("HERMES_API_KEY");
-  const modelConfigured = hasEnv("HERMES_API_KEY");
-  const database = hasEnv("NEXT_PUBLIC_SUPABASE_URL") && hasEnv("SUPABASE_SERVICE_ROLE_KEY");
-  const browserConnected = hasEnv("HERMES_BROWSER_CDP_URL");
-  const providers: string[] = [];
-  if (hasEnv("LINKUP_API_KEY")) providers.push("linkup");
-  if (hasEnv("EXA_API_KEY")) providers.push("exa");
-  if (hasEnv("TAVILY_API_KEY")) providers.push("tavily");
-  if (hasEnv("FIRECRAWL_API_KEY")) providers.push("firecrawl");
-  const researchProvider = providers.length > 0;
-  const agentMail = hasEnv("AGENTMAIL_API_KEY");
-  const xConfigured = hasEnv("X_CLIENT_ID") && hasEnv("X_CLIENT_SECRET");
+export async function detectCapabilities(): Promise<KamiCapabilities> {
+  const c = env();
+  const hermes = Boolean(c.HERMES_API_KEY);
+  const reachable = hermes && (await hermesReachable());
+  const providers = searchProviders().map((p) => p.id);
+  const browser = Boolean(c.HERMES_BROWSER_CDP_URL);
 
-  const researchModes: ResearchMode[] = ["manual"];
-  if (browserConnected) researchModes.unshift("browser");
-  if (researchProvider) researchModes.push("provider");
+  const researchModes: ResearchMode[] = [];
+  if (browser) researchModes.push("browser");
+  if (providers.length) researchModes.push("provider");
+  researchModes.push("manual");
 
   const notes: string[] = [];
-  if (!modelConfigured) notes.push("Set HERMES_API_KEY to match your local Hermes API_SERVER_KEY.");
-  if (!database)
-    notes.push("Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY for persistence.");
-  if (!browserConnected && !researchProvider) {
-    notes.push("No browser CDP or research provider — agents will ask for manual domains/URLs.");
-  }
-  if (!agentMail) notes.push("No AgentMail — Sales can draft but Send stays hidden.");
-  if (!xConfigured)
-    notes.push("No X OAuth — Marketing can draft opportunities; Publish stays hidden.");
+  if (!hermes) notes.push("Set HERMES_API_KEY to your Hermes API_SERVER_KEY.");
+  else if (!reachable) notes.push("Hermes is not reachable — start the gateway.");
+  if (!dbConfigured()) notes.push("Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.");
+  if (!browser && !providers.length)
+    notes.push("No browser or search provider — research uses your own site only.");
+  if (!emailConfigured()) notes.push("No AgentMail — Sales drafts emails but cannot send.");
 
   return {
     hermes,
-    modelConfigured,
-    database,
-    browserConnected,
-    researchProvider,
+    hermesReachable: reachable,
+    database: dbConfigured(),
     researchProviders: providers,
-    agentMail,
-    xConfigured,
     researchModes,
-    canSendEmail: agentMail,
-    canPublishX: xConfigured,
+    canSendEmail: emailConfigured(),
+    canConnectX: OAUTH_PROVIDERS.x.configured(),
+    canConnectInstagram: OAUTH_PROVIDERS.instagram.configured(),
     notes,
   };
 }
 
-/** Compact string for Hermes prompts. */
+/** Compact capability summary for agent prompts. */
 export function capabilitiesPromptBlock(caps: KamiCapabilities): string {
   return [
     "CAPABILITY REGISTRY (use only available modes; never pretend a missing tool works)",
-    `Hermes gateway key: ${caps.modelConfigured ? "yes" : "no"}`,
-    `Database: ${caps.database ? "yes" : "no"}`,
-    `Browser CDP: ${caps.browserConnected ? "yes" : "no"}`,
     `Research providers: ${caps.researchProviders.length ? caps.researchProviders.join(", ") : "none"}`,
     `Research modes: ${caps.researchModes.join(", ")}`,
-    `AgentMail send: ${caps.canSendEmail ? "yes" : "no — drafts only"}`,
-    `X publish: ${caps.canPublishX ? "yes" : "no — drafts only"}`,
-    caps.notes.length ? `Notes: ${caps.notes.join(" | ")}` : "",
-  ]
-    .filter(Boolean)
-    .join("\n");
+    `Email send: ${caps.canSendEmail ? "yes" : "no — drafts only"}`,
+    `X posting: ${caps.canConnectX ? "available once the founder connects X" : "no — drafts only"}`,
+  ].join("\n");
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReplyClassificationLabel, SalesConversation } from "@/lib/salesTypes";
 
 interface MessageWithClassification {
@@ -42,9 +42,11 @@ export default function SalesConversationThread({
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [classifying, setClassifying] = useState<string | null>(null);
+  const [sendError, setSendError] = useState<string | null>(null);
+  const replyIdRef = useRef<string | null>(null);
 
   const fetchMessages = useCallback(() => {
-    fetch(`/api/sales/conversations/${conversation.id}`)
+    fetch(`/api/sales/conversations/${conversation.id}?session_id=${conversation.session_id}`)
       .then((r) => r.json())
       .then((j) => setMessages(j.messages ?? []))
       .catch(() => {});
@@ -57,15 +59,31 @@ export default function SalesConversationThread({
   async function sendMessage() {
     const text = input.trim();
     if (!text || sending) return;
-    setInput("");
+    // One id per composed message: retries of the same text never send twice.
+    replyIdRef.current ??= crypto.randomUUID();
     setSending(true);
+    setSendError(null);
     try {
-      await fetch(`/api/sales/conversations/${conversation.id}`, {
+      const res = await fetch(`/api/sales/conversations/${conversation.id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "message", content: text }),
+        body: JSON.stringify({
+          action: "reply",
+          session_id: conversation.session_id,
+          content: text,
+          client_message_id: replyIdRef.current,
+        }),
       });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        setSendError(json.error ?? "Reply failed");
+        return;
+      }
+      setInput("");
+      replyIdRef.current = null;
       fetchMessages();
+    } catch {
+      setSendError("Network error — reply not sent");
     } finally {
       setSending(false);
     }
@@ -77,7 +95,12 @@ export default function SalesConversationThread({
       await fetch(`/api/sales/conversations/${conversation.id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "classify", message_id: messageId, label }),
+        body: JSON.stringify({
+          action: "classify",
+          session_id: conversation.session_id,
+          message_id: messageId,
+          label,
+        }),
       });
       fetchMessages();
       onRefresh();
@@ -90,7 +113,11 @@ export default function SalesConversationThread({
     await fetch(`/api/sales/conversations/${conversation.id}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "escalate", reason: "Manual review requested" }),
+      body: JSON.stringify({
+        action: "escalate",
+        session_id: conversation.session_id,
+        reason: "Manual review requested",
+      }),
     });
     onRefresh();
   }
@@ -217,21 +244,28 @@ export default function SalesConversationThread({
           <input
             id="sales-reply"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-            placeholder="Draft reply…"
+            onChange={(e) => {
+              setInput(e.target.value);
+              replyIdRef.current = null; // edited text is a new message
+            }}
+            placeholder="Write a reply…"
             disabled={sending}
           />
         </div>
         <button
           className="hanko-btn"
           onClick={sendMessage}
-          disabled={sending}
+          disabled={sending || !input.trim()}
           style={{ alignSelf: "flex-end" }}
         >
-          Send
+          {sending ? "Sending…" : "Send email"}
         </button>
       </div>
+      {sendError && (
+        <p role="alert" className="mono form-error">
+          {sendError}
+        </p>
+      )}
 
       <button
         type="button"

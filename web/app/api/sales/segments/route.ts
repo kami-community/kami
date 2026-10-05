@@ -1,13 +1,10 @@
 import { supabaseServer } from "@/lib/supabase";
-import type { Dossier } from "@/lib/hermes";
-import {
-  deriveSalesSegments,
-  icpFromSegments,
-  normalizeSegments,
-  validateSegmentsForConfirm,
-  type SalesSegment,
-} from "@/lib/salesSegments";
-import { dossierFromBrandPayload } from "@/lib/guideContext";
+import type { Dossier } from "@/lib/domain/dossier";
+import { icpFromSegments, normalizeSegments, type SalesSegment } from "@/lib/domain/segments";
+import { deriveSalesSegments } from "@/lib/salesSegments";
+import { validateSegmentsForConfirm } from "@/lib/salesSegmentGates";
+import { getCampaign } from "@/lib/campaigns/sessions";
+import { db } from "@/lib/db/client";
 
 async function loadSessionContext(sessionId: string): Promise<{
   dossier: Dossier | null;
@@ -17,25 +14,8 @@ async function loadSessionContext(sessionId: string): Promise<{
   const sb = supabaseServer();
   if (!sb) return { dossier: null, domain: "", goals: [] };
 
-  const [session, brand] = await Promise.all([
-    sb
-      .from("agent_sessions")
-      .select("domain, canonical_domain, goals_list")
-      .eq("id", sessionId)
-      .maybeSingle(),
-    sb.from("brand_profiles").select("*").eq("session_id", sessionId).maybeSingle(),
-  ]);
-
-  const goalsRaw = session.data?.goals_list;
-  const goals = Array.isArray(goalsRaw)
-    ? goalsRaw.filter((g): g is string => typeof g === "string")
-    : [];
-
-  return {
-    domain: (session.data?.canonical_domain || session.data?.domain || "") as string,
-    dossier: dossierFromBrandPayload(brand.data),
-    goals,
-  };
+  const { session, dossier } = await getCampaign(db(), sessionId);
+  return { domain: session.canonical_domain || session.domain, dossier, goals: session.goals };
 }
 
 export async function GET(request: Request): Promise<Response> {

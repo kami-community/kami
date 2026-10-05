@@ -45,15 +45,18 @@ export type MeetingStatus =
 
 export type SalesPlanStatus = "draft" | "approved" | "superseded";
 
-export type ReplyClassificationLabel =
-  | "positive"
-  | "objection"
-  | "information_request"
-  | "referral"
-  | "not_now"
-  | "unsubscribe"
-  | "negative"
-  | "spam_risk";
+export const REPLY_CLASSIFICATION_LABELS = [
+  "positive",
+  "objection",
+  "information_request",
+  "referral",
+  "not_now",
+  "unsubscribe",
+  "negative",
+  "spam_risk",
+] as const;
+
+export type ReplyClassificationLabel = (typeof REPLY_CLASSIFICATION_LABELS)[number];
 
 export type BuyingGroupRole = "champion" | "economic_buyer" | "evaluator" | "blocker" | "sponsor";
 

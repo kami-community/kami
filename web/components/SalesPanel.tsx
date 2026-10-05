@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Dossier } from "@/lib/hermes";
+import type { Dossier } from "@/lib/domain/dossier";
 import type { SalesCampaignConfig, SalesPlan } from "@/lib/salesTypes";
-import type { SalesSegment } from "@/lib/salesSegments";
+import type { SalesSegment } from "@/lib/domain/segments";
 import SalesSetup from "@/components/SalesSetup";
 import SalesPlanView from "@/components/SalesPlanView";
 import SalesDraftQueue from "@/components/SalesDraftQueue";

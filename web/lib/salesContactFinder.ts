@@ -3,8 +3,9 @@
  * Pipeline: site scrape → Linkup evidence extract → Hermes extract-from-evidence only.
  */
 
-import { hermesChatOnce, hermesGatewayConfigured, parseLastJsonBlock } from "./hermesServer";
-import { linkupConfigured, searchLinkup } from "./linkup";
+import { completeOrNull, hermesConfigured } from "@/lib/hermes/client";
+import { parseLastJsonBlock } from "@/lib/hermes/json";
+import { searchProvider } from "@/lib/providers";
 
 export type EmailVerificationStatus =
   "verified_public" | "role_inbox" | "non_buyer_inbox" | "unverified" | "valid" | "hermes_evidence";
@@ -15,7 +16,7 @@ export interface FoundContact {
   title?: string;
   verification_status: EmailVerificationStatus;
   source_url: string;
-  method?: "site_scrape" | "linkup" | "hermes";
+  method?: "site_scrape" | "web_search" | "hermes";
   /** True only for persona/buyer-shaped locals — never role/shared/malformed. */
   buyer_reachable?: boolean;
 }
@@ -162,7 +163,7 @@ async function findContactViaHermes(
   evidenceBlob: string,
   kamiSessionId?: string | null,
 ): Promise<FoundContact | null> {
-  if (!hermesGatewayConfigured()) return null;
+  if (!hermesConfigured()) return null;
   const host = domain.toLowerCase().replace(/^www\./, "");
 
   const prompt = `You find PUBLIC contact emails for outbound sales. Never invent.
@@ -186,12 +187,11 @@ Output ONLY a fenced json block:
 { "email": "someone@${host}" | null, "source_url": "https://...", "name": null, "title": null, "reason": "quoted from evidence" }
 \`\`\``;
 
-  const text = await hermesChatOnce({
-    content: prompt,
-    sessionId: `kami-contact-${host}`,
-    kamiSessionId,
+  const text = await completeOrNull({
+    agent: "sales-researcher",
     kind: "contact_find",
-    agent: "contact_finder",
+    input: prompt,
+    kamiSessionId,
     timeoutMs: 60_000,
     meta: { domain: host },
   });
@@ -234,9 +234,10 @@ export async function findContactForDomain(
   const scraped = await findPublicContact(host);
   if (scraped) return scraped;
 
-  // Gather Linkup evidence even if no email in snippets — Hermes may extract carefully
+  // Gather search evidence even if no email in snippets — the agent may extract carefully
   let evidenceBlob = "";
-  if (linkupConfigured()) {
+  const search = searchProvider();
+  if (search) {
     const name = companyName?.trim() || host.split(".")[0];
     const queries = [
       `site:${host} (contact OR email OR mailto OR sales OR hello)`,
@@ -248,9 +249,9 @@ export async function findContactForDomain(
     let sourceHit = `https://${host}`;
 
     for (const q of queries) {
-      const results = await searchLinkup(q);
-      for (const r of results.slice(0, 5)) {
-        const blob = `${r.name}\n${r.content}\n${r.url}`;
+      const results = await search.search(q, { limit: 5 });
+      for (const r of results) {
+        const blob = `${r.title}\n${r.content}\n${r.url}`;
         chunks.push(blob.slice(0, 600));
         for (const e of extractEmails(blob, host)) {
           emails.add(e);
@@ -259,21 +260,21 @@ export async function findContactForDomain(
       }
     }
 
-    const linkupEmail = pickBestEmail([...emails]);
-    if (linkupEmail) {
-      const verification_status = classify(linkupEmail, "linkup");
+    const searchEmail = pickBestEmail([...emails]);
+    if (searchEmail) {
+      const verification_status = classify(searchEmail, "web_search");
       return {
-        email: linkupEmail,
+        email: searchEmail,
         verification_status,
         source_url: sourceHit,
-        method: "linkup",
+        method: "web_search",
         title:
           verification_status === "role_inbox"
             ? "Role inbox"
             : verification_status === "non_buyer_inbox"
               ? "Non-buyer mailbox"
               : undefined,
-        buyer_reachable: isBuyerReachableContact({ email: linkupEmail, verification_status }),
+        buyer_reachable: isBuyerReachableContact({ email: searchEmail, verification_status }),
       };
     }
 
@@ -283,7 +284,7 @@ export async function findContactForDomain(
   if (evidenceBlob) {
     const hermesHit = await findContactViaHermes(host, companyName, evidenceBlob, kamiSessionId);
     if (hermesHit) return hermesHit;
-  } else if (hermesGatewayConfigured()) {
+  } else if (hermesConfigured()) {
     // Minimal evidence: homepage text only
     const html = await fetchText(`https://${host}`);
     if (html) {
