@@ -1,8 +1,17 @@
 "use client";
 
 import { useRef, useState } from "react";
-import EscalationBanner from "@/components/EscalationBanner";
+import {
+  ChatBubble,
+  ChatComposer,
+  ChatPanel,
+  ChatSection,
+  ChatThread,
+} from "@/components/bui/Chat";
+import Button from "@/components/ui/Button";
 import Callout from "@/components/ui/Callout";
+import { IconArrowLeft, IconSparkle } from "@/components/ui/icons";
+import { humanize, StatusPill, statusTone } from "@/components/ui/Pills";
 import Skeleton from "@/components/ui/Skeleton";
 import { api, errorMessage, withQuery } from "@/lib/client/api";
 import { useApi } from "@/lib/client/useApi";
@@ -30,16 +39,17 @@ export default function ConversationThread({
   onBack,
   onRefresh,
 }: ConversationThreadProps) {
+  const url = `/api/marketing/conversations/${conversation.id}`;
   const thread = useApi<{ messages: ConversationMessage[] }>(
-    withQuery(`/api/marketing/conversations/${conversation.id}`, { session_id: sessionId }),
+    withQuery(url, { session_id: sessionId }),
   );
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
+  const [resolving, setResolving] = useState<string | null>(null);
   const [note, setNote] = useState<{ tone: "error" | "warn"; text: string } | null>(null);
   const replyIdRef = useRef<string | null>(null);
   const messages = thread.data?.messages ?? [];
-  const url = `/api/marketing/conversations/${conversation.id}`;
 
   async function suggest() {
     setSuggesting(true);
@@ -87,89 +97,143 @@ export default function ConversationThread({
   }
 
   async function resolve(decision: "approve" | "counter" | "decline") {
+    setResolving(decision);
     try {
       await api.post(url, { action: "resolve", session_id: sessionId, decision });
       onRefresh();
     } catch (err) {
       setNote({ tone: "error", text: errorMessage(err, "Could not save your decision") });
+    } finally {
+      setResolving(null);
     }
   }
 
   return (
-    <div className="thread fade-in">
-      <button type="button" className="link-button mono" onClick={onBack}>
-        ← back to conversations
-      </button>
-      <p className="label-caps">
-        @{handle} · {conversation.status.replace(/_/g, " ")}
-      </p>
+    <div className="conversation fade-up">
+      <div className="row row--between conversation__head">
+        <Button size="xs" variant="quiet" icon={<IconArrowLeft size={13} />} onClick={onBack}>
+          Back to conversations
+        </Button>
+        <StatusPill tone={statusTone(conversation.status)}>
+          {humanize(conversation.status)}
+        </StatusPill>
+      </div>
 
       {conversation.status === "escalated" && conversation.escalation_reason && (
-        <EscalationBanner
-          reason={conversation.escalation_reason}
-          onApprove={() => resolve("approve")}
-          onCounter={() => resolve("counter")}
-          onDecline={() => resolve("decline")}
-        />
+        <div className="conversation__head">
+          <Callout
+            tone="warn"
+            title="Needs your decision"
+            actions={
+              <>
+                <Button
+                  size="sm"
+                  variant="accent"
+                  busy={resolving === "approve"}
+                  disabled={resolving !== null}
+                  onClick={() => void resolve("approve")}
+                >
+                  Approve
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  busy={resolving === "counter"}
+                  disabled={resolving !== null}
+                  onClick={() => void resolve("counter")}
+                >
+                  Counter
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  busy={resolving === "decline"}
+                  disabled={resolving !== null}
+                  onClick={() => void resolve("decline")}
+                >
+                  Decline
+                </Button>
+              </>
+            }
+          >
+            {conversation.escalation_reason}
+          </Callout>
+        </div>
       )}
 
-      <div className="thread__messages kraft-card" aria-live="polite">
-        {thread.loading && !thread.data && <Skeleton lines={3} />}
-        {thread.error && <p className="form-error mono">{thread.error}</p>}
-        {!thread.loading && messages.length === 0 && <p className="muted mono">No messages yet.</p>}
-        {messages.map((m) => (
-          <div
-            key={m.id}
-            className={`thread__message thread__message--${m.sender === "kami" ? "out" : "in"}`}
+      <ChatPanel
+        label={`Conversation with @${handle}`}
+        className="conversation__panel"
+        tabs={
+          <span className="chat__tab" aria-pressed="true">
+            @{handle}
+          </span>
+        }
+        actions={
+          <Button
+            size="xs"
+            variant="quiet"
+            icon={<IconSparkle size={12} />}
+            busy={suggesting}
+            disabled={sending}
+            onClick={() => void suggest()}
           >
-            <span className="label-caps">{m.sender === "kami" ? "You" : `@${handle}`}</span>
-            <time className="mono fine-print" dateTime={m.sent_at}>
-              {new Date(m.sent_at).toLocaleString()}
-            </time>
-            <p>{m.content}</p>
-            {m.status === "failed" && <span className="mono form-error">Not delivered</span>}
-          </div>
-        ))}
-      </div>
-
-      {note && <Callout tone={note.tone}>{note.text}</Callout>}
-
-      <div className="thread__composer">
-        <div className="form-line">
-          <label className="mono label-caps" htmlFor="manual-msg">
-            Your reply
-          </label>
-          <textarea
-            id="manual-msg"
-            rows={3}
+            Suggest reply
+          </Button>
+        }
+        composer={
+          <ChatComposer
             value={input}
-            onChange={(e) => {
-              setInput(e.target.value);
+            onChange={(v) => {
+              setInput(v);
               replyIdRef.current = null; // edited text is a new message
             }}
+            onSend={() => void send()}
+            busy={sending}
+            enterToSend={false}
+            sendLabel="Send DM"
             placeholder="Write a reply, or ask Kami to suggest one…"
-            disabled={sending}
+            label="Your reply"
+            footer={<span>Click send to DM @{handle}.</span>}
           />
+        }
+      >
+        <ChatThread>
+          {thread.loading && !thread.data && <Skeleton lines={3} />}
+          {thread.error && (
+            <p className="field__error" role="alert">
+              {thread.error}
+            </p>
+          )}
+          {!thread.loading && messages.length === 0 && (
+            <p className="text-3 text-sm">No messages yet.</p>
+          )}
+          {messages.map((m) =>
+            m.sender === "kami" ? (
+              <div key={m.id}>
+                <ChatBubble>{m.content}</ChatBubble>
+                {m.status === "failed" && (
+                  <p className="field__error conversation__failed">Not delivered</p>
+                )}
+              </div>
+            ) : (
+              <ChatSection
+                key={m.id}
+                label={`@${handle}`}
+                sub={new Date(m.sent_at).toLocaleString()}
+              >
+                <p className="conversation__text">{m.content}</p>
+              </ChatSection>
+            ),
+          )}
+        </ChatThread>
+      </ChatPanel>
+
+      {note && (
+        <div className="dist-note">
+          <Callout tone={note.tone}>{note.text}</Callout>
         </div>
-        <div className="thread__actions">
-          <button
-            type="button"
-            className="btn-outline mono"
-            onClick={suggest}
-            disabled={suggesting || sending}
-          >
-            {suggesting ? "Drafting…" : "Suggest reply"}
-          </button>
-          <button
-            type="button"
-            className="hanko-btn"
-            onClick={send}
-            disabled={sending || !input.trim()}
-          >
-            {sending ? "Sending…" : "Send DM"}
-          </button>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

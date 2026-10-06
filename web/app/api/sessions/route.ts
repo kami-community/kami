@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createCampaign } from "@/lib/campaigns/sessions";
+import { createCampaign, listCampaigns } from "@/lib/campaigns/sessions";
 import { db } from "@/lib/db/client";
 import { parseBody, route } from "@/lib/http/route";
 
@@ -17,3 +17,6 @@ export const POST = route(async (request) => {
   const session = await createCampaign(db(), input);
   return Response.json({ session }, { status: 201 });
 });
+
+/** Every campaign on this install (single-user Community Edition). */
+export const GET = route(async () => Response.json({ campaigns: await listCampaigns(db()) }));

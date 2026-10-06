@@ -83,6 +83,31 @@ export async function loadSession(db: Db, sessionId: string): Promise<CampaignSe
   return data as CampaignSession;
 }
 
+export interface CampaignSummary {
+  id: string;
+  canonical_domain: string;
+  company_name: string | null;
+  dossier_confirmed_at: string | null;
+  created_at: string;
+}
+
+/** Every campaign on this install, newest first (the workspace switcher). */
+export async function listCampaigns(db: Db): Promise<CampaignSummary[]> {
+  const { data, error } = await db
+    .from("agent_sessions")
+    .select("id, canonical_domain, domain_check, dossier_confirmed_at, created_at")
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) throw new AppError("internal", error.message);
+  return (data ?? []).map((row) => ({
+    id: row.id as string,
+    canonical_domain: row.canonical_domain as string,
+    company_name: (row.domain_check as DomainIdentity | null)?.company_name ?? null,
+    dossier_confirmed_at: row.dossier_confirmed_at as string | null,
+    created_at: row.created_at as string,
+  }));
+}
+
 /** The stored dossier, or null when it is missing or predates the current schema. */
 export async function loadDossier(db: Db, sessionId: string): Promise<Dossier | null> {
   const { data, error } = await db

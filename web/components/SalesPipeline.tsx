@@ -1,96 +1,126 @@
 "use client";
 
 import { useState } from "react";
-import type { PipelineView } from "@/lib/sales/pipeline";
-import type { PipelineStage } from "@/lib/salesTypes";
+import AccountDrawer from "@/components/AccountDrawer";
+import Button from "@/components/ui/Button";
+import Callout from "@/components/ui/Callout";
+import EmptyState from "@/components/ui/EmptyState";
+import { IconLayers } from "@/components/ui/icons";
+import { CountBadge, Monogram } from "@/components/ui/Pills";
+import Skeleton from "@/components/ui/Skeleton";
 import { withQuery } from "@/lib/client/api";
 import { useApi } from "@/lib/client/useApi";
-import AccountDrawer from "@/components/AccountDrawer";
+import type { PipelineView } from "@/lib/sales/pipeline";
+import type { PipelineStage } from "@/lib/salesTypes";
 
-const STAGE_LABELS: Record<PipelineStage, string> = {
-  researching: "Researching",
-  ready_for_approval: "Ready",
-  sequencing: "Sequencing",
-  sent: "Sent",
-  engaged: "Engaged",
-  qualified: "Qualified",
-  meeting_proposed: "Meeting",
-  invited: "Invited",
-  accepted: "Accepted",
-  closed_won: "Won",
-  closed_lost: "Lost",
-  invalid: "Invalid",
-  suppressed: "Suppressed",
-};
+type StageTone = "muted" | "orange" | "accent" | "green" | "red";
 
-const VISIBLE_STAGES: PipelineStage[] = [
-  "researching",
-  "ready_for_approval",
-  "sequencing",
-  "sent",
-  "engaged",
-  "qualified",
-  "meeting_proposed",
-  "invited",
-  "accepted",
-  "closed_won",
-  "closed_lost",
-  "suppressed",
+const STAGES: { key: PipelineStage; label: string; tone: StageTone }[] = [
+  { key: "researching", label: "Researching", tone: "muted" },
+  { key: "ready_for_approval", label: "Picked", tone: "orange" },
+  { key: "sequencing", label: "Emails drafted", tone: "accent" },
+  { key: "sent", label: "Emailed", tone: "accent" },
+  { key: "engaged", label: "Replied", tone: "green" },
+  { key: "qualified", label: "Interested", tone: "green" },
+  { key: "meeting_proposed", label: "Meeting asked", tone: "green" },
+  { key: "invited", label: "Invite sent", tone: "green" },
+  { key: "accepted", label: "Meeting booked", tone: "green" },
+  { key: "closed_won", label: "Won", tone: "green" },
+  { key: "closed_lost", label: "Lost", tone: "red" },
+  { key: "suppressed", label: "Do not contact", tone: "red" },
 ];
 
-interface SalesPipelineProps {
-  sessionDbId: string | null;
-}
+/** Columns always shown, even when empty, so the board keeps its shape. */
+const CORE: PipelineStage[] = ["researching", "sequencing", "sent", "engaged"];
 
-export default function SalesPipeline({ sessionDbId }: SalesPipelineProps) {
-  const { data, error, loading, reload } = useApi<PipelineView>(
+/** Every company by stage: a scrollable board; open a card for its details. */
+export default function SalesPipeline({
+  sessionDbId,
+  onFindCompanies,
+}: {
+  sessionDbId: string | null;
+  /** empty-state action: go to the Companies step */
+  onFindCompanies?: () => void;
+}) {
+  const { data, error, reload } = useApi<PipelineView>(
     sessionDbId ? withQuery("/api/sales/pipeline", { session_id: sessionDbId }) : null,
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  return (
-    <section className="panel-section" aria-labelledby="sales-pipeline-title">
-      <p id="sales-pipeline-title" className="label-caps">
-        Pipeline {data ? `(${data.total})` : ""}
-      </p>
-      {error && (
-        <p role="alert" className="form-error">
-          {error}
-        </p>
-      )}
-      {loading && !data && <p className="fine-print">Loading pipeline…</p>}
+  if (error) {
+    return (
+      <Callout
+        tone="error"
+        title="Could not load the pipeline"
+        actions={
+          <Button size="sm" variant="secondary" onClick={reload}>
+            Try again
+          </Button>
+        }
+      >
+        {error}
+      </Callout>
+    );
+  }
+  if (!data) return <Skeleton title lines={6} />;
+  if (data.total === 0) {
+    return (
+      <EmptyState
+        title="No companies yet"
+        icon={<IconLayers size={16} />}
+        action={
+          onFindCompanies ? (
+            <Button size="sm" variant="secondary" onClick={onFindCompanies}>
+              Find companies
+            </Button>
+          ) : undefined
+        }
+      >
+        Companies show up here once Kami has checked them.
+      </EmptyState>
+    );
+  }
 
-      {data && (
-        <div className="pipeline-board">
-          {VISIBLE_STAGES.map((stage) => {
-            const cards = data.pipeline[stage] ?? [];
-            return (
-              <div key={stage} className="pipeline-col">
-                <p className="label-caps pipeline-col__head">
-                  {STAGE_LABELS[stage]} ({cards.length})
-                </p>
-                <div className="card-list card-list--tight">
-                  {cards.map((acc) => (
-                    <button
-                      key={acc.id}
-                      type="button"
-                      className="kraft-card pipeline-card"
-                      aria-pressed={selectedId === acc.id}
-                      onClick={() => setSelectedId(acc.id ?? null)}
-                    >
-                      <span className="pipeline-card__name">{acc.name}</span>
-                      <span className="fine-print">
-                        {acc.tier ? `T${acc.tier}` : "—"}
-                        {acc.score != null ? ` · ${Math.round(acc.score)}` : ""}
-                      </span>
-                    </button>
-                  ))}
-                </div>
+  const columns = STAGES.filter(
+    (s) => (data.pipeline[s.key] ?? []).length > 0 || CORE.includes(s.key),
+  );
+
+  return (
+    <div className="pipeline">
+      <div className="pipeline__board" role="list" aria-label="Pipeline">
+        {columns.map((stage) => {
+          const cards = data.pipeline[stage.key] ?? [];
+          return (
+            <section
+              key={stage.key}
+              className="pipeline__col"
+              role="listitem"
+              aria-label={stage.label}
+            >
+              <header className="pipeline__head">
+                <span className={`pipeline__dot pipeline__dot--${stage.tone}`} />
+                <span className="pipeline__label">{stage.label}</span>
+                <CountBadge>{cards.length}</CountBadge>
+              </header>
+              <div className="pipeline__cards">
+                {cards.map((acc) => (
+                  <button
+                    key={acc.id}
+                    type="button"
+                    className="pipeline__card"
+                    aria-pressed={selectedId === acc.id}
+                    onClick={() => setSelectedId(acc.id ?? null)}
+                  >
+                    <Monogram name={acc.name} shape="square" />
+                    <span className="pipeline__name truncate">{acc.name}</span>
+                    {acc.domain && <span className="pipeline__meta truncate">{acc.domain}</span>}
+                  </button>
+                ))}
               </div>
-            );
-          })}
-        </div>
-      )}
+            </section>
+          );
+        })}
+      </div>
 
       {selectedId && (
         <AccountDrawer
@@ -99,6 +129,6 @@ export default function SalesPipeline({ sessionDbId }: SalesPipelineProps) {
           onUpdated={reload}
         />
       )}
-    </section>
+    </div>
   );
 }

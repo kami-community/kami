@@ -1,8 +1,13 @@
 "use client";
 
+import RecordsTable from "@/components/bui/RecordsTable";
+import TaskRows from "@/components/bui/TaskRows";
+import Callout from "@/components/ui/Callout";
+import Card, { CardBody } from "@/components/ui/Card";
+import { Section } from "@/components/ui/Page";
+import Skeleton from "@/components/ui/Skeleton";
 import { withQuery } from "@/lib/client/api";
 import { useApi } from "@/lib/client/useApi";
-import Skeleton from "@/components/ui/Skeleton";
 
 interface HermesRun {
   id: string;
@@ -38,20 +43,14 @@ export default function HermesState({ sessionId }: { sessionId: string }) {
     withQuery("/api/activity/hermes", { session_id: sessionId }),
   );
 
-  if (loading) return <Skeleton lines={4} />;
-  if (error)
-    return (
-      <p role="alert" className="mono form-error">
-        {error}
-      </p>
-    );
+  if (loading && !data) return <Skeleton title lines={5} />;
+  if (error) return <Callout tone="error">{error}</Callout>;
   if (!data?.available) {
     return (
-      <p className="muted">
-        Hermes&apos; local state isn&apos;t readable from this server. Set <code>HERMES_HOME</code>{" "}
-        if Hermes runs on this machine with a custom home, or use{" "}
+      <Callout tone="info" title="Hermes’ local state isn’t readable from this server">
+        Set <code>HERMES_HOME</code> if Hermes runs on this machine with a custom home, or use{" "}
         <code>hermes sessions export</code>.
-      </p>
+      </Callout>
     );
   }
 
@@ -64,54 +63,88 @@ export default function HermesState({ sessionId }: { sessionId: string }) {
     { tokens: 0, tools: 0, cost: 0 },
   );
 
+  const stats = [
+    { label: "Sessions", value: fmt(data.runs.length) },
+    { label: "Tokens", value: fmt(totals.tokens) },
+    { label: "Tool calls", value: fmt(totals.tools) },
+    { label: "Cost", value: `$${totals.cost.toFixed(2)}` },
+  ];
+
   return (
-    <section>
-      <p className="label-caps">Hermes sessions for this campaign</p>
-      <p className="mono meta-line">
-        {data.runs.length} sessions · {fmt(totals.tokens)} tokens · {fmt(totals.tools)} tool calls ·
-        ${totals.cost.toFixed(2)}
-      </p>
-      <table className="data-table">
-        <thead>
-          <tr>
-            <th scope="col">Session</th>
-            <th scope="col">Started</th>
-            <th scope="col">Duration</th>
-            <th scope="col">Tool calls</th>
-            <th scope="col">Tokens in / out</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.runs.map((r) => (
-            <tr key={r.id}>
-              <td className="mono">{r.id}</td>
-              <td>{r.started_at ? new Date(r.started_at).toLocaleString() : "—"}</td>
-              <td>{r.duration_s != null ? `${r.duration_s}s` : "—"}</td>
-              <td>{fmt(r.tool_calls)}</td>
-              <td>
-                {fmt(r.input_tokens)} / {fmt(r.output_tokens)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <>
+      <div className="stat-grid">
+        {stats.map((s) => (
+          <Card key={s.label}>
+            <CardBody className="stat">
+              <span className="stat__label">{s.label}</span>
+              <span className="stat__value tabular">{s.value}</span>
+            </CardBody>
+          </Card>
+        ))}
+      </div>
+
+      <Section num="01" title="Sessions">
+        <RecordsTable
+          label="Hermes sessions"
+          rows={data.runs}
+          rowId={(r) => r.id}
+          anchor={{ label: "Session", width: 280, name: (r) => r.id, mark: () => null }}
+          countLabel="sessions"
+          columns={[
+            {
+              key: "started",
+              label: "Started",
+              width: 190,
+              render: (r) => (r.started_at ? new Date(r.started_at).toLocaleString() : "—"),
+              sort: (a, b) => (a.started_at ?? "").localeCompare(b.started_at ?? ""),
+            },
+            {
+              key: "duration",
+              label: "Duration",
+              width: 110,
+              render: (r) => (r.duration_s != null ? `${r.duration_s}s` : "—"),
+              sort: (a, b) => (a.duration_s ?? 0) - (b.duration_s ?? 0),
+            },
+            {
+              key: "tools",
+              label: "Tool calls",
+              width: 110,
+              render: (r) => fmt(r.tool_calls),
+              sort: (a, b) => a.tool_calls - b.tool_calls,
+              footer: () => fmt(totals.tools),
+            },
+            {
+              key: "tokens",
+              label: "Tokens in / out",
+              width: 170,
+              render: (r) => `${fmt(r.input_tokens)} / ${fmt(r.output_tokens)}`,
+            },
+            { key: "model", label: "Model", width: 160, render: (r) => r.model ?? "—" },
+          ]}
+        />
+      </Section>
 
       {data.tasks.length > 0 && (
-        <>
-          <p className="label-caps panel-section">Hermes kanban</p>
-          <ul className="row-list">
-            {data.tasks.map((t) => (
-              <li key={t.id} className="row row--flat">
-                <span className={`status-pill status-pill--${t.status}`}>{t.status}</span>
-                <span className="row__title">{t.title}</span>
-                <span className="mono muted">
-                  {[t.assignee, t.priority].filter(Boolean).join(" · ")}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </>
+        <Section num="02" title="Hermes kanban">
+          <TaskRows
+            variant="List"
+            rows={data.tasks.map((t, i) => ({
+              key: String(t.id),
+              label: t.title,
+              amount: [t.assignee, t.priority].filter(Boolean).join(" · ") || undefined,
+              status:
+                t.status === "done"
+                  ? "done"
+                  : t.status === "failed"
+                    ? "failed"
+                    : t.status === "in_progress"
+                      ? "running"
+                      : "pending",
+              step: i + 1,
+            }))}
+          />
+        </Section>
       )}
-    </section>
+    </>
   );
 }

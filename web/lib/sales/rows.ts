@@ -52,7 +52,11 @@ export function rowToConfig(row: Row): SalesCampaignConfig {
   };
 }
 
+/** The strategist prefixes scaffold plans with these markers (lib/salesStrategy.ts). */
+const OFFLINE_PLAN = /^(\[Offline fallback|Sales plan needs research confirmation)/;
+
 export function rowToPlan(row: Row): SalesPlan {
+  const rationale = (row.channel_rationale as string | null) ?? "";
   return {
     id: row.id as string,
     session_id: row.session_id as string,
@@ -60,13 +64,14 @@ export function rowToPlan(row: Row): SalesPlan {
     version: row.version as number,
     motions: (row.motions ?? []) as SalesPlan["motions"],
     tiers: (row.tiers ?? []) as SalesPlan["tiers"],
-    channel_rationale: (row.channel_rationale as string | null) ?? "",
+    channel_rationale: rationale,
     risks: (row.risks as string[] | null) ?? [],
     prerequisites: (row.prerequisites as string[] | null) ?? [],
     estimated_activity: row.estimated_activity as SalesPlan["estimated_activity"],
     approval_scope: (row.approval_scope ?? []) as SalesPlan["approval_scope"],
     status: row.status as SalesPlan["status"],
     revise_note: (row.revise_note as string | null) ?? undefined,
+    source: OFFLINE_PLAN.test(rationale) ? "offline_fallback" : "hermes",
     created_at: row.created_at as string | undefined,
     updated_at: row.updated_at as string | undefined,
   };

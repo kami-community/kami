@@ -178,6 +178,8 @@ export interface SalesPlan {
   approval_scope: ApprovalScope[];
   status: SalesPlanStatus;
   revise_note?: string;
+  /** who wrote it: the strategist agent, or the offline scaffold when Hermes was unavailable */
+  source?: "hermes" | "offline_fallback";
   created_at?: string;
   updated_at?: string;
 }

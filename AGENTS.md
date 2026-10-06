@@ -17,6 +17,8 @@ The product is a gated workflow: *recommend → confirm → act → learn*. The 
 
 ```
 web/
+  app/start/            onboarding: domain → confirm dossier → choose a job
+  app/c/[id]/           the campaign workspace; one URL per view (lib/client/routes.ts)
   app/api/**/route.ts   thin HTTP layer: parse (zod) → call a service → respond
   lib/
     config/env.ts       the only reader of process.env (zod-validated)
@@ -28,6 +30,8 @@ web/
     adapters/           one module per vendor (AgentMail, X, Instagram, Linkup/Exa/Tavily)
     providers.ts        picks adapters from config — services never import vendors
     hermes/             the one Hermes client, agent registry, JSON parsing, SSE
+    guide/              Kami Guide: context pack + typed event stream (domain/guideEvents.ts)
+    drafting/           passage rewrites for stored drafts
     campaigns/          sessions, research, dossier, context pack
     outbound/           send policy, suppressions, receipts, every send/post/DM flow
     inbound/            replies (webhooks + polling)
@@ -36,6 +40,9 @@ web/
     jobs/               optional in-process scheduler
     client/             browser-only helpers (api client, useApi, streaming)
   components/           React UI; campaign state via components/campaign/CampaignProvider
+    shell/              workspace frame: sidebar, top bar, agent activity, view router
+    areas/              one screen per workspace area (Home, Inbox, Find customers, …)
+    ui/ bui/            design-system atoms, Beautiful UI primitives
   supabase/migrations/  numbered SQL, applied in order
 ```
 
@@ -64,8 +71,12 @@ web/
 - Prefer one table per concept: one suppression list (`suppressions`), one outbound ledger (`outbound_receipts`).
 
 ### UI
-- One primary (`hanko-btn`) action per screen; everything else is `btn-secondary` or `btn-outline`.
-- Use the design tokens in `app/globals.css` and the shared primitives (`Tabs`, `ConfirmDialog`, `ConnectSocials`). Avoid new inline styles.
+- The product experience (onboarding, navigation, where things live, how agent work is shown) is [docs/product-experience.md](docs/product-experience.md). New screens go in an existing area; add a sidebar item only for a new top-level job.
+- Every screen has a URL (`/c/<id>/<area>/<tab>`); navigate with `useWorkspace().navigate`, never browser-only state.
+- The design system is [DESIGN.md](DESIGN.md): Beautiful UI tokens in `app/styles/foundation.css`, atoms in `components/ui/`, primitives in `components/bui/`. No UI dependencies — port, don't install.
+- One `accent` `Button` per screen; everything else is `secondary`, `ghost` or `quiet`.
+- Compose screens from the shared primitives (`Button`, `Field`, `Card`, `Segmented`, `Callout`, `ConfirmDialog`, `ConnectSocials`, and the `bui/` components). Avoid new inline styles.
+- Agent waits show `LoadingState` / `ThinkingState`; workflow state (step gates, counts) comes from `GET /api/sessions/:id/progress`, never browser memory.
 - Every fetch shows loading and error states (`useApi`, `ApiError`). Never `catch(() => {})`.
 - Accessible by default: labelled inputs, `role="alert"` for errors, `aria-live` for streaming text, keyboard-operable tabs and dialogs.
 
@@ -78,7 +89,8 @@ Canonical loops live in [docs/product-loops.md](docs/product-loops.md).
 - **Recommend → confirm → act → learn → escalate**, in small batches, with the kill switch always visible.
 - **Never invent emails:** sends are blocked until a real contact email exists.
 - **Marketing CRM / cold DMs** are Advanced; the default Marketing view is the distribution opportunity queue.
-- **Kami Guide** is available on every tab and gets a fresh context pack every turn.
+- **Kami Guide** is available on every screen (top bar → Ask Kami) and gets a fresh context pack every turn.
+- **Agent work is visible:** a Hermes run is shown while it runs (top-bar activity, Team area), not only after.
 
 ## Verify before calling something done
 

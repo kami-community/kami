@@ -14,8 +14,10 @@ export const GET = route<{ params: Promise<{ platform: string }> }>(async (reque
   const url = new URL(request.url);
   const pending = readPendingOAuth(platform, request.headers.get("cookie"));
 
+  // back to the campaign's Connections settings when we know it, else the app root
+  const back = pending ? `/c/${pending.sessionId}/settings/connections` : "/";
   const redirect = (query: Record<string, string>) => {
-    const headers = new Headers({ Location: `/?${new URLSearchParams(query)}` });
+    const headers = new Headers({ Location: `${back}?${new URLSearchParams(query)}` });
     headers.append("Set-Cookie", clearPendingOAuthCookie(platform));
     return new Response(null, { status: 307, headers });
   };

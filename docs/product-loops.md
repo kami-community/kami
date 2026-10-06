@@ -50,7 +50,7 @@ Kami recommends one first customer segment in plain English, helps the founder c
 
 ```text
 1. START      Domain + goals + stage
-2. UNDERSTAND Overview dossier (edit + save, or Regenerate with NL correction)
+2. UNDERSTAND Onboarding dossier (edit + save, or Regenerate with NL correction); later in Settings → Company
 3. CHOOSE     Find customers → Sales  OR  Create distribution → Marketing
 4. CONFIRM    NL: who / what / how many (prefilled)
 5. PLAN       Plain-English next steps → Approve
@@ -121,6 +121,7 @@ Kami recommends one first customer segment in plain English, helps the founder c
 
 ## References
 
+- [product-experience.md](product-experience.md) — onboarding, navigation, agent visibility
 - [DESIGN.md](../DESIGN.md)
 - [AGENTS.md](../AGENTS.md) — Product UX principles
 - [SETUP.md](../SETUP.md) — local Community Edition setup

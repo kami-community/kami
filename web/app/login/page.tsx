@@ -2,6 +2,9 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Button from "@/components/ui/Button";
+import Field, { Input } from "@/components/ui/Field";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 
 function LoginForm() {
   const router = useRouter();
@@ -34,44 +37,49 @@ function LoginForm() {
   }
 
   return (
-    <form className="landing-form" onSubmit={submit}>
-      <div className="form-line form-line--hero">
-        <label className="mono label-caps" htmlFor="admin-token">
-          ADMIN TOKEN
-        </label>
-        <input
-          id="admin-token"
-          type="password"
-          autoComplete="current-password"
-          value={token}
-          onChange={(e) => setToken(e.target.value)}
-          disabled={busy}
-          autoFocus
-        />
+    <form className="card login__card" onSubmit={submit}>
+      <div className="card__body card__body--roomy form-stack">
+        <Field
+          label="Admin token"
+          error={error}
+          hint={
+            <>
+              The <code>KAMI_ADMIN_TOKEN</code> from this instance’s environment.
+            </>
+          }
+        >
+          <Input
+            type="password"
+            autoComplete="current-password"
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            disabled={busy}
+            autoFocus
+          />
+        </Field>
       </div>
-      <button className="hanko-btn landing-cta" type="submit" disabled={busy || !token}>
-        {busy ? "Signing in…" : "Sign in"}
-      </button>
-      {error && (
-        <p role="alert" className="mono form-error">
-          {error}
-        </p>
-      )}
+      <div className="card__footer">
+        <span className="text-3 text-xs">Sessions last 30 days.</span>
+        <Button type="submit" variant="accent" size="sm" busy={busy} disabled={!token}>
+          Sign in
+        </Button>
+      </div>
     </form>
   );
 }
 
 export default function LoginPage() {
   return (
-    <main className="container">
-      <section className="landing-hero">
-        <h1 className="landing-brand">
-          KA<span className="brand-accent">MI</span>
-        </h1>
-        <p className="landing-sub">
-          This Kami instance is protected. Enter the <code>KAMI_ADMIN_TOKEN</code> from its
-          environment.
-        </p>
+    <main className="login">
+      <div className="login__theme">
+        <ThemeToggle />
+      </div>
+      <section className="login__box fade-up">
+        <span className="kami-seal kami-seal--lg" aria-hidden>
+          K
+        </span>
+        <h1 className="landing__title login__title">Sign in to Kami</h1>
+        <p className="landing__sub">This Kami instance is protected.</p>
         <Suspense>
           <LoginForm />
         </Suspense>

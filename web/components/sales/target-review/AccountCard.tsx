@@ -1,120 +1,23 @@
 "use client";
 
+import { useState } from "react";
+import RecordsTable, {
+  RecordLink,
+  RecordTag,
+  Strength,
+  type RecordColumn,
+} from "@/components/bui/RecordsTable";
+import { IconCheck } from "@/components/ui/icons";
+import EmptyState from "@/components/ui/EmptyState";
 import { verificationLabel } from "@/lib/domain/contacts";
 import type { SalesSegment } from "@/lib/domain/segments";
-import { scoreLabel } from "@/lib/salesMotionLabels";
-import { groupAccounts, hasEligibleEmail, isIncluded, type AccountWithMeta } from "./rules";
+import { hasEligibleEmail, isIncluded, type AccountWithMeta } from "./rules";
 
-interface AccountCardProps {
-  account: AccountWithMeta;
-  emailDraft: string;
-  saving: boolean;
-  disabled: boolean;
-  onToggle: (included: boolean) => void;
-  onEmailDraft: (value: string) => void;
-  onSaveEmail: () => void;
+function pctColor(v: number): string {
+  return v >= 0.66 ? "var(--green)" : v >= 0.4 ? "var(--orange)" : "var(--red)";
 }
 
-export function AccountCard({
-  account,
-  emailDraft,
-  saving,
-  disabled,
-  onToggle,
-  onEmailDraft,
-  onSaveEmail,
-}: AccountCardProps) {
-  const selected = isIncluded(account);
-  const factors = account.score?.factors;
-  const emailId = `contact-email-${account.id}`;
-  const verification = verificationLabel(account.contact?.email_verification);
-
-  return (
-    <article className="target-card" data-selected={selected}>
-      <div className="target-card__head">
-        <div>
-          <strong>{account.name}</strong>
-          {account.domain && (
-            <span className="mono muted target-card__domain">{account.domain}</span>
-          )}
-        </div>
-        <label className="checkbox mono">
-          <input
-            type="checkbox"
-            checked={selected}
-            disabled={disabled}
-            onChange={(e) => onToggle(e.target.checked)}
-          />
-          Include
-        </label>
-      </div>
-
-      {factors && (
-        <p className="mono muted target-card__scores">
-          {scoreLabel("fit", factors.fit)} · {scoreLabel("intent", factors.intent)} ·{" "}
-          {scoreLabel("contactability", factors.contactability)}
-        </p>
-      )}
-      {account.score?.explanation && (
-        <p className="muted target-card__explanation">{account.score.explanation}</p>
-      )}
-
-      {account.signals?.length ? (
-        <ul className="target-card__signals">
-          {account.signals.map((sig, i) => (
-            <li key={sig.id ?? `${sig.source_url}-${i}`}>
-              {sig.detail ?? sig.signal_type}
-              {sig.source_url && (
-                <>
-                  {" — "}
-                  <a href={sig.source_url} target="_blank" rel="noopener noreferrer">
-                    source
-                  </a>
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
-      ) : null}
-
-      {selected && (
-        <div className="sales-inline-email">
-          {account.contact?.email && (
-            <span className="mono target-card__email">
-              Email: {account.contact.email}
-              {verification && <span className="muted"> ({verification})</span>}
-            </span>
-          )}
-          {!hasEligibleEmail(account) && (
-            <>
-              <label className="label-caps" htmlFor={emailId}>
-                Contact email
-              </label>
-              <input
-                id={emailId}
-                type="email"
-                autoComplete="off"
-                placeholder="name@company.com"
-                value={emailDraft}
-                onChange={(e) => onEmailDraft(e.target.value)}
-              />
-              <button
-                type="button"
-                className="btn-outline"
-                disabled={saving || !emailDraft.trim()}
-                onClick={onSaveEmail}
-              >
-                {saving ? "Saving…" : "Save"}
-              </button>
-            </>
-          )}
-        </div>
-      )}
-    </article>
-  );
-}
-
-interface AccountGroupsProps {
+interface AccountTableProps {
   accounts: AccountWithMeta[];
   segments?: SalesSegment[] | null;
   emailDrafts: Record<string, string>;
@@ -125,7 +28,12 @@ interface AccountGroupsProps {
   onSaveEmail: (account: AccountWithMeta) => void;
 }
 
-export function AccountGroups({
+/**
+ * Companies as a records grid. Selecting a row includes the company in the
+ * draft cohort (stored server-side); selected companies without an evidenced
+ * email get an inline field — Kami never invents one.
+ */
+export function AccountTable({
   accounts,
   segments,
   emailDrafts,
@@ -134,37 +42,170 @@ export function AccountGroups({
   onToggle,
   onEmailDraft,
   onSaveEmail,
-}: AccountGroupsProps) {
+}: AccountTableProps) {
+  const [pending, setPending] = useState<Set<string>>(new Set());
   if (!accounts.length) {
     return (
-      <p className="mono muted target-empty">
-        No companies yet — click Find companies to verify targets from your confirmed segments.
-      </p>
+      <EmptyState title="No companies yet">
+        Use Find companies to check the companies in your plan.
+      </EmptyState>
     );
   }
-  return (
-    <div className="target-groups">
-      {groupAccounts(accounts).map(([groupKey, groupAccounts]) => (
-        <section key={groupKey}>
-          <p className="label-caps">
-            {segments?.find((s) => s.key === groupKey)?.name ?? groupKey}
-          </p>
-          <div className="target-group">
-            {groupAccounts.map((acc) => (
-              <AccountCard
-                key={acc.id}
-                account={acc}
-                emailDraft={emailDrafts[acc.id ?? ""] ?? ""}
-                saving={savingEmailId === acc.id}
-                disabled={disabled}
-                onToggle={(included) => onToggle(acc, included)}
-                onEmailDraft={(value) => acc.id && onEmailDraft(acc.id, value)}
-                onSaveEmail={() => onSaveEmail(acc)}
+
+  const rows = accounts.filter((a) => a.id);
+  const selected = new Set(rows.filter((a) => isIncluded(a)).map((a) => a.id!));
+  for (const id of pending) {
+    if (selected.has(id)) selected.delete(id);
+    else selected.add(id);
+  }
+
+  const segmentName = (a: AccountWithMeta) =>
+    segments?.find((s) => s.key === a.segment_key)?.name ?? a.industry ?? "Other";
+
+  const columns: RecordColumn<AccountWithMeta>[] = [
+    {
+      key: "segment",
+      label: "Group",
+      width: 170,
+      render: (a) => <RecordTag name={segmentName(a)} />,
+      sort: (x, y) => segmentName(x).localeCompare(segmentName(y)),
+    },
+    {
+      key: "fit",
+      label: "Fit",
+      width: 110,
+      render: (a) =>
+        a.score ? (
+          <Strength color={pctColor(a.score.factors.fit)}>
+            {Math.round(a.score.factors.fit * 100)}%
+          </Strength>
+        ) : (
+          <span className="records-muted">—</span>
+        ),
+      sort: (x, y) => (x.score?.factors.fit ?? 0) - (y.score?.factors.fit ?? 0),
+      footer: (all) => {
+        const scored = all.filter((a) => a.score);
+        if (!scored.length) return "—";
+        return `${Math.round((scored.reduce((n, a) => n + a.score!.factors.fit, 0) / scored.length) * 100)}% avg`;
+      },
+    },
+    {
+      key: "timing",
+      label: "Timing",
+      width: 110,
+      render: (a) =>
+        a.score ? (
+          <Strength color={pctColor(a.score.factors.intent)}>
+            {Math.round(a.score.factors.intent * 100)}%
+          </Strength>
+        ) : (
+          <span className="records-muted">—</span>
+        ),
+      sort: (x, y) => (x.score?.factors.intent ?? 0) - (y.score?.factors.intent ?? 0),
+    },
+    {
+      key: "contact",
+      label: "Contact email",
+      width: 260,
+      minWidth: 200,
+      render: (a) => {
+        if (a.contact?.email) {
+          const v = verificationLabel(a.contact.email_verification);
+          return (
+            <span className="records-strength" title={v ?? undefined}>
+              <span
+                className="records-strength-dot"
+                style={{ background: hasEligibleEmail(a) ? "var(--green)" : "var(--orange)" }}
               />
-            ))}
-          </div>
-        </section>
-      ))}
-    </div>
+              <span className="truncate">{a.contact.email}</span>
+            </span>
+          );
+        }
+        if (!selected.has(a.id!)) return <span className="records-muted">No email yet</span>;
+        return (
+          <form
+            className="records-email"
+            onSubmit={(e) => {
+              e.preventDefault();
+              onSaveEmail(a);
+            }}
+          >
+            <input
+              type="email"
+              autoComplete="off"
+              placeholder="name@company.com"
+              aria-label={`Contact email for ${a.name}`}
+              value={emailDrafts[a.id!] ?? ""}
+              onChange={(e) => onEmailDraft(a.id!, e.target.value)}
+              className="input input--sm"
+            />
+            <button
+              type="submit"
+              className="icon-btn icon-btn--sm"
+              aria-label={`Save email for ${a.name}`}
+              disabled={savingEmailId === a.id || !(emailDrafts[a.id!] ?? "").trim()}
+            >
+              {savingEmailId === a.id ? <span className="spinner" /> : <IconCheck size={13} />}
+            </button>
+          </form>
+        );
+      },
+      footer: (all) => `${all.filter((a) => a.contact?.email).length} with email`,
+    },
+    {
+      key: "signal",
+      label: "Why now",
+      width: 300,
+      render: (a) => {
+        const sig = a.signals?.[0];
+        const text = sig?.detail ?? a.score?.explanation;
+        if (!text) return <span className="records-muted">—</span>;
+        return (
+          <span
+            className="records-signal"
+            title={[text, ...(a.signals ?? []).slice(1).map((s) => s.detail)].join("\n")}
+          >
+            <span className="truncate">{text}</span>
+            {sig?.source_url && <RecordLink href={sig.source_url} label="source" />}
+          </span>
+        );
+      },
+      footer: (all) => `${all.reduce((n, a) => n + (a.signals?.length ?? 0), 0)} signals`,
+    },
+  ];
+
+  return (
+    <RecordsTable
+      label="Companies. Select a row to include it in the email drafts."
+      rows={rows}
+      rowId={(a) => a.id!}
+      anchor={{
+        label: "Company",
+        width: 250,
+        name: (a) => a.name,
+        href: (a) => (a.domain ? `https://${a.domain}` : null),
+        sort: (x, y) => x.name.localeCompare(y.name),
+      }}
+      columns={columns}
+      selected={selected}
+      onSelectedChange={(next) => {
+        if (disabled) return;
+        for (const a of rows) {
+          const was = selected.has(a.id!);
+          const now = next.has(a.id!);
+          if (was !== now) {
+            setPending((p) => new Set(p).add(a.id!));
+            void Promise.resolve(onToggle(a, now)).finally(() =>
+              setPending((p) => {
+                const n = new Set(p);
+                n.delete(a.id!);
+                return n;
+              }),
+            );
+          }
+        }
+      }}
+      countLabel={`companies · ${selected.size} selected`}
+    />
   );
 }

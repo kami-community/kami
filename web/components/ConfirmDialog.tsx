@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import Button, { type ButtonVariant } from "@/components/ui/Button";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -8,6 +9,8 @@ interface ConfirmDialogProps {
   body?: React.ReactNode;
   confirmLabel: string;
   cancelLabel?: string;
+  /** "danger" for irreversible actions */
+  tone?: "default" | "danger";
   busy?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
@@ -20,6 +23,7 @@ export default function ConfirmDialog({
   body,
   confirmLabel,
   cancelLabel = "Cancel",
+  tone = "default",
   busy = false,
   onConfirm,
   onCancel,
@@ -33,25 +37,34 @@ export default function ConfirmDialog({
     if (!open && dialog.open) dialog.close();
   }, [open]);
 
+  const variant: ButtonVariant = tone === "danger" ? "danger" : "accent";
+
   return (
     <dialog
       ref={ref}
-      className="confirm-dialog kraft-card"
+      className="dialog"
       aria-labelledby="confirm-dialog-title"
       onCancel={(e) => {
         e.preventDefault();
         onCancel();
       }}
+      onClick={(e) => {
+        if (e.target === ref.current && !busy) onCancel();
+      }}
     >
-      <h3 id="confirm-dialog-title">{title}</h3>
-      {body && <div className="confirm-dialog__body">{body}</div>}
-      <div className="confirm-dialog__actions">
-        <button type="button" className="btn-secondary" onClick={onCancel} disabled={busy}>
+      <div className="dialog__body">
+        <h2 id="confirm-dialog-title" className="dialog__title">
+          {title}
+        </h2>
+        {body && <div className="dialog__text">{body}</div>}
+      </div>
+      <div className="dialog__footer">
+        <Button variant="ghost" size="sm" onClick={onCancel} disabled={busy}>
           {cancelLabel}
-        </button>
-        <button type="button" className="hanko-btn" onClick={onConfirm} disabled={busy} autoFocus>
-          {busy ? "Working…" : confirmLabel}
-        </button>
+        </Button>
+        <Button variant={variant} size="sm" onClick={onConfirm} busy={busy} autoFocus>
+          {confirmLabel}
+        </Button>
       </div>
     </dialog>
   );

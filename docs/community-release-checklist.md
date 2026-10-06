@@ -7,7 +7,7 @@ Prove each advertised capability with a **real action**, not a 200 response alon
 - [ ] Landing says: **Your AI go-to-market agency for early-stage startups** with Kami logo as brand-first hero
 - [ ] Two-liner matches [product-loops.md](product-loops.md)
 - [ ] No “dry run executed” labels on real sends
-- [ ] Overview asks: confirm dossier → Find customers / Create distribution
+- [ ] Onboarding: domain → confirm dossier ("That's us") → choose Find customers / Create distribution
 - [ ] Ask Kami answers stay concise (≤~120 words default)
 - [ ] Activity is reachable from the campaign header; no maintainer-only pages in nav
 
@@ -26,7 +26,7 @@ Prove each advertised capability with a **real action**, not a 200 response alon
 - [ ] Domain validates before research
 - [ ] Dossier confirms with **That’s us**
 - [ ] Job choice: Find customers / Create distribution
-- [ ] Kami Guide available on Overview, Sales, and Marketing
+- [ ] Kami Guide available on every workspace screen (top bar → Ask Kami)
 
 ## Sales (real outcome)
 

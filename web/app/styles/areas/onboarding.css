@@ -1,0 +1,564 @@
+/* onboarding — see docs/product-experience.md §4
+ * Full-screen, no workspace shell: a minimal top bar over one centred column.
+ * Company → Confirm → Choose. */
+
+/* ── Frame ─────────────────────────────────────────────── */
+
+.onb {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+  background: var(--page);
+}
+
+.onb__bar {
+  position: sticky;
+  z-index: 10;
+  top: 0;
+  display: grid;
+  height: 56px;
+  align-items: center;
+  gap: 16px;
+  grid-template-columns: 1fr auto 1fr;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in oklch, var(--page) 88%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.onb__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.onb__wordmark {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.onb__bar-end {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.onb__back {
+  min-width: 0;
+  max-width: 220px;
+}
+
+.onb__back-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* step indicator: Company · Confirm · Choose */
+.onb__steps {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  list-style: none;
+}
+
+.onb__step {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ink-3);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.onb__step + .onb__step::before {
+  width: 20px;
+  height: 1px;
+  margin-right: 1px;
+  background: var(--line-strong);
+  content: "";
+}
+
+.onb__step-mark {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: var(--shadow-btn);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
+}
+
+.onb__step[data-state="current"] {
+  color: var(--ink);
+}
+
+.onb__step[data-state="current"] .onb__step-mark {
+  background: var(--accent);
+  box-shadow: var(--shadow-filled);
+  color: white;
+}
+
+.onb__step[data-state="done"] {
+  color: var(--ink-2);
+}
+
+.onb__step[data-state="done"] .onb__step-mark {
+  background: var(--accent-tint);
+  box-shadow: none;
+  color: var(--accent-ink);
+}
+
+.onb__main {
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  padding: clamp(32px, 9vh, 96px) 20px 64px;
+}
+
+/* ── Shared step layout ────────────────────────────────── */
+
+.onb__panel {
+  display: flex;
+  width: 100%;
+  max-width: 480px;
+  flex-direction: column;
+  gap: 20px;
+  animation: fade-up 420ms var(--ease-out-strong) both;
+}
+
+.onb__panel--wide {
+  max-width: 680px;
+}
+
+.onb__panel--form {
+  max-width: 640px;
+}
+
+.onb__intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.onb__intro--left {
+  align-items: flex-start;
+  text-align: left;
+}
+
+.onb__mark {
+  margin-bottom: 8px;
+  animation: pop-in 380ms var(--ease-out-strong) both;
+}
+
+.onb__title {
+  color: var(--ink);
+  font-size: clamp(24px, 4vw, 30px);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.onb__title--sm {
+  font-size: clamp(22px, 3.4vw, 26px);
+}
+
+.onb__lede {
+  max-width: 440px;
+  color: var(--ink-2);
+  font-size: 14.5px;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.onb__progress {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: var(--radius-window);
+  background: var(--canvas);
+  box-shadow: var(--shadow-hairline);
+  animation: fade-up 320ms var(--ease-out-strong) both;
+}
+
+.onb__footnote {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.onb__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Step 1: Company ───────────────────────────────────── */
+
+.onb__form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.onb__domain-field .field__hint {
+  text-align: center;
+}
+
+.onb__domain-field .field__error {
+  text-align: center;
+}
+
+.onb__domain {
+  height: 48px;
+  padding: 0 16px;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-btn);
+  font-size: 17px;
+  text-align: center;
+}
+
+.onb__domain:focus-visible {
+  box-shadow:
+    0 0 0 1px var(--accent),
+    0 0 0 4px var(--accent-tint);
+}
+
+.onb__goals {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.onb__goals-label {
+  color: var(--ink-2);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.onb__goals .chip-toggle-group {
+  flex-wrap: nowrap;
+  justify-content: center;
+}
+
+/* ── Step 2: Confirm ───────────────────────────────────── */
+
+.dossier-confirm--onboarding {
+  display: flex;
+  flex-direction: column;
+}
+
+.dossier-confirm__panel {
+  margin-top: 12px;
+}
+
+.dossier-confirm__head {
+  align-items: flex-start;
+}
+
+.dossier-confirm__title {
+  min-width: 0;
+}
+
+.dossier-confirm__actions {
+  gap: 6px;
+}
+
+.onb-dossier__body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.onb-dossier__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.onb-dossier__name {
+  min-width: 0;
+}
+
+.onb-dossier__company {
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.onb-dossier__domain {
+  overflow: hidden;
+  color: var(--ink-3);
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.onb-dossier__positioning {
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.onb-dossier__facts {
+  display: grid;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.onb-dossier__fact {
+  display: grid;
+  align-items: baseline;
+  gap: 4px 16px;
+  grid-template-columns: 130px minmax(0, 1fr);
+  font-size: 13.5px;
+}
+
+.onb-dossier__fact dt {
+  color: var(--ink-3);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.onb-dossier__fact dd {
+  min-width: 0;
+  color: var(--ink-2);
+}
+
+.onb-dossier__list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  list-style: none;
+}
+
+.onb-dossier__item {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.onb-dossier__meta {
+  display: block;
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+
+.onb-dossier__footer {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.onb-dossier__more {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.onb-dossier__sources {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+/* ── Step 3: Choose ────────────────────────────────────── */
+
+.onb__confirmed {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 4px;
+  padding: 3px 9px 3px 7px;
+  border-radius: 999px;
+  background: var(--green-tint);
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.onb-jobs {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.onb-job {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px;
+  border-radius: var(--radius-window);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  transition:
+    box-shadow 200ms ease,
+    transform 150ms ease;
+}
+
+.onb-job:hover {
+  box-shadow: var(--shadow-raised);
+}
+
+.onb-job:active {
+  transform: scale(0.995);
+}
+
+.onb-job[data-selected="true"] {
+  box-shadow:
+    0 0 0 2px var(--accent),
+    var(--shadow-raised);
+}
+
+.onb-job:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.onb-job__top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.onb-job__icon {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-control);
+  background: var(--inset);
+  box-shadow: var(--shadow-hairline);
+  color: var(--ink-2);
+}
+
+.onb-job[data-selected="true"] .onb-job__icon {
+  background: var(--accent-tint);
+  box-shadow: none;
+  color: var(--accent-ink);
+}
+
+.onb-job__radio {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-left: auto;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1.5px var(--line-strong);
+  transition: box-shadow 200ms var(--ease-out-strong);
+}
+
+.onb-job[data-selected="true"] .onb-job__radio {
+  box-shadow: inset 0 0 0 5px var(--accent);
+}
+
+.onb-job__title {
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.onb-job__body {
+  color: var(--ink-2);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.onb-job__steps {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 4px;
+  padding-left: 16px;
+  color: var(--ink-2);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.onb-job__steps li::marker {
+  color: var(--ink-3);
+}
+
+.onb-job__reason {
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  color: var(--accent-ink);
+  font-size: 12.5px;
+}
+
+/* ── Small screens ─────────────────────────────────────── */
+
+@media (max-width: 720px) {
+  .onb__bar {
+    height: auto;
+    grid-template-columns: auto 1fr;
+    padding: 10px 16px;
+  }
+
+  .onb__steps-nav {
+    order: 3;
+    grid-column: 1 / -1;
+  }
+
+  .onb__steps {
+    justify-content: center;
+  }
+
+  .onb__back-label {
+    display: none;
+  }
+
+  .onb-jobs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .onb__goals .chip-toggle-group {
+    flex-wrap: wrap;
+  }
+
+  .onb-dossier__fact {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onb__panel,
+  .onb__progress,
+  .onb__mark {
+    animation: none;
+  }
+
+  .onb-job,
+  .onb-job__radio,
+  .onb__step-mark {
+    transition: none;
+  }
+}

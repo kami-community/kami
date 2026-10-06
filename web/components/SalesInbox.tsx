@@ -1,17 +1,22 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import type { InboxView } from "@/lib/sales/inbox";
-import type { SalesConversation, SalesNotification } from "@/lib/salesTypes";
+import NotificationList from "@/components/sales/NotificationList";
+import SalesConversationThread from "@/components/SalesConversationThread";
+import Callout from "@/components/ui/Callout";
+import EmptyState from "@/components/ui/EmptyState";
+import { IconInbox, IconMail, IconWarning } from "@/components/ui/icons";
+import Skeleton from "@/components/ui/Skeleton";
 import { api, errorMessage, withQuery } from "@/lib/client/api";
 import { useApi } from "@/lib/client/useApi";
-import SalesConversationThread from "@/components/SalesConversationThread";
+import type { InboxView } from "@/lib/sales/inbox";
+import type { SalesConversation, SalesNotification } from "@/lib/salesTypes";
 
 /**
  * The campaign's Sales inbox plus its conversations, and the action that opens
  * a notification's conversation (marking it read). Shared by Inbox and Needs you.
  */
-export function useSalesInbox(sessionId: string | null) {
+export function useSalesInbox(sessionId: string | null, onChanged?: () => void) {
   const inbox = useApi<InboxView>(
     sessionId ? withQuery("/api/sales/inbox", { session_id: sessionId }) : null,
   );
@@ -26,7 +31,8 @@ export function useSalesInbox(sessionId: string | null) {
   const reload = useCallback(() => {
     reloadInbox();
     reloadConversations();
-  }, [reloadInbox, reloadConversations]);
+    onChanged?.();
+  }, [reloadInbox, reloadConversations, onChanged]);
 
   const conversationFor = (n: SalesNotification) =>
     n.entity_type === "sales_conversation" && n.entity_id
@@ -42,6 +48,7 @@ export function useSalesInbox(sessionId: string | null) {
       await api.patch("/api/sales/inbox", { session_id: sessionId, id: n.id, read: true });
       setActionError(null);
       reloadInbox();
+      onChanged?.();
     } catch (err) {
       setActionError(errorMessage(err, "Could not mark the notification read"));
     }
@@ -62,41 +69,32 @@ export function useSalesInbox(sessionId: string | null) {
   };
 }
 
-export function NotificationCard({
-  notification: n,
-  canOpen,
-  onOpen,
+export function notificationItem(
+  n: SalesNotification,
+  canOpen: boolean,
+  onOpen: () => void,
+): Parameters<typeof NotificationList>[0]["items"][number] {
+  const escalation = /escalat/i.test(n.kind);
+  return {
+    key: n.id ?? `${n.kind}-${n.title}`,
+    kind: n.kind,
+    tone: escalation ? "red" : n.read ? "neutral" : "accent",
+    title: n.title,
+    body: n.body,
+    at: n.created_at,
+    icon: escalation ? <IconWarning size={15} /> : <IconMail size={15} />,
+    onOpen: canOpen ? onOpen : undefined,
+  };
+}
+
+export default function SalesInbox({
+  sessionDbId,
+  onChanged,
 }: {
-  notification: SalesNotification;
-  canOpen: boolean;
-  onOpen: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      className="kraft-card notice-card"
-      data-kind={n.kind}
-      onClick={onOpen}
-      disabled={!canOpen}
-    >
-      <span className="notice-card__head">
-        <span className="label-caps notice-card__kind">{n.kind.replace(/_/g, " ")}</span>
-        {n.created_at && (
-          <span className="fine-print">{new Date(n.created_at).toLocaleDateString()}</span>
-        )}
-      </span>
-      <span className="notice-card__title">{n.title}</span>
-      {n.body && <span className="fine-print notice-card__body">{n.body}</span>}
-    </button>
-  );
-}
-
-interface SalesInboxProps {
   sessionDbId: string | null;
-}
-
-export default function SalesInbox({ sessionDbId }: SalesInboxProps) {
-  const inbox = useSalesInbox(sessionDbId);
+  onChanged?: () => void;
+}) {
+  const inbox = useSalesInbox(sessionDbId, onChanged);
 
   if (inbox.active) {
     return (
@@ -111,31 +109,24 @@ export default function SalesInbox({ sessionDbId }: SalesInboxProps) {
   const items = inbox.inbox
     ? [...inbox.inbox.escalations, ...inbox.inbox.notifications.filter((n) => !n.read)]
         .filter((n, i, all) => all.findIndex((m) => m.id === n.id) === i)
-        .slice(0, 20)
+        .slice(0, 30)
     : [];
 
   return (
-    <section className="panel-section" aria-labelledby="sales-inbox-title">
-      <p id="sales-inbox-title" className="label-caps">
-        Inbox
-      </p>
-      {inbox.error && (
-        <p role="alert" className="form-error">
-          {inbox.error}
-        </p>
+    <>
+      {inbox.error && <Callout tone="error">{inbox.error}</Callout>}
+      {inbox.loading && !inbox.inbox && <Skeleton title lines={4} />}
+      {inbox.inbox && items.length === 0 && (
+        <EmptyState title="No pending decisions" icon={<IconInbox size={16} />}>
+          Replies and escalations from your outbound land here.
+        </EmptyState>
       )}
-      {inbox.loading && !inbox.inbox && <p className="fine-print">Loading inbox…</p>}
-      {inbox.inbox && items.length === 0 && <p className="fine-print">No pending decisions.</p>}
-      <div className="card-list card-list--tight">
-        {items.map((n) => (
-          <NotificationCard
-            key={n.id}
-            notification={n}
-            canOpen={inbox.canOpen(n)}
-            onOpen={() => void inbox.open(n)}
-          />
-        ))}
-      </div>
-    </section>
+      {items.length > 0 && (
+        <NotificationList
+          label="Inbox"
+          items={items.map((n) => notificationItem(n, inbox.canOpen(n), () => void inbox.open(n)))}
+        />
+      )}
+    </>
   );
 }

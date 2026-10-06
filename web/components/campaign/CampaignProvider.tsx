@@ -9,6 +9,8 @@ import {
   useRef,
   useState,
 } from "react";
+import type { KamiCapabilities } from "@/lib/capabilities";
+import type { CampaignProgress } from "@/lib/campaigns/progress";
 import type { CampaignSession, CampaignView } from "@/lib/campaigns/sessions";
 import { api, errorMessage, withQuery } from "@/lib/client/api";
 import type { Dossier } from "@/lib/domain/dossier";
@@ -17,9 +19,13 @@ import type { SalesCampaignConfig } from "@/lib/salesTypes";
 
 /**
  * Client state for one campaign: the session, its dossier, Sales and Marketing
- * setup, and the kill switch. Server state is the source of truth; every
- * mutation goes through the API and updates this store from the response.
+ * setup, the kill switch, server-derived progress and install capabilities.
+ * Server state is the source of truth; every mutation goes through the API and
+ * updates this store from the response. Progress is refetched after mutations
+ * (`refreshProgress`) and polled while the tab is visible.
  */
+
+const PROGRESS_POLL_MS = 20_000;
 
 interface DossierJob {
   busy: boolean;
@@ -35,6 +41,12 @@ interface CampaignContextValue {
   marketingConfig: MarketingConfig | null;
   /** Loading Sales/Marketing setup failed (shown by the dashboard). */
   setupError: string | null;
+  /** Where the campaign stands (null until first load). */
+  progress: CampaignProgress | null;
+  progressError: string | null;
+  refreshProgress: () => void;
+  /** What this install can do (null until loaded or if the probe failed). */
+  caps: KamiCapabilities | null;
   generateDossier: () => Promise<void>;
   setDossier: (dossier: Dossier) => void;
   confirmDossier: () => Promise<void>;
@@ -64,7 +76,57 @@ export function CampaignProvider({
   const [salesConfig, setSalesConfig] = useState<SalesCampaignConfig | null>(null);
   const [marketingConfig, setMarketingConfig] = useState<MarketingConfig | null>(null);
   const [setupError, setSetupError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<CampaignProgress | null>(null);
+  const [progressError, setProgressError] = useState<string | null>(null);
+  const [progressVersion, setProgressVersion] = useState(0);
+  const [caps, setCaps] = useState<KamiCapabilities | null>(null);
   const sessionId = session.id;
+
+  const refreshProgress = useCallback(() => setProgressVersion((v) => v + 1), []);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get<CampaignProgress>(`/api/sessions/${sessionId}/progress`)
+      .then((p) => {
+        if (cancelled) return;
+        setProgress(p);
+        setProgressError(null);
+      })
+      .catch((err) => {
+        if (!cancelled) setProgressError(errorMessage(err, "Could not load campaign progress"));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId, progressVersion]);
+
+  useEffect(() => {
+    const tick = () => {
+      if (document.visibilityState === "visible") refreshProgress();
+    };
+    const id = window.setInterval(tick, PROGRESS_POLL_MS);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", tick);
+    };
+  }, [refreshProgress]);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get<KamiCapabilities>("/api/capabilities")
+      .then((c) => {
+        if (!cancelled) setCaps(c);
+      })
+      .catch(() => {
+        /* the capability probe is advisory: the UI works without it */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -117,7 +179,8 @@ export function CampaignProvider({
       `/api/sessions/${sessionId}/dossier/confirm`,
     );
     setSession((s) => ({ ...s, dossier_confirmed_at }));
-  }, [sessionId]);
+    refreshProgress();
+  }, [sessionId, refreshProgress]);
 
   const setPaused = useCallback(
     async (paused: boolean) => {
@@ -150,6 +213,10 @@ export function CampaignProvider({
       salesConfig,
       marketingConfig,
       setupError,
+      progress,
+      progressError,
+      refreshProgress,
+      caps,
       generateDossier,
       setDossier,
       confirmDossier,
@@ -158,6 +225,10 @@ export function CampaignProvider({
       setMarketingConfig,
     }),
     [
+      progress,
+      progressError,
+      refreshProgress,
+      caps,
       session,
       sessionId,
       dossier,

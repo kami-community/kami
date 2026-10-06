@@ -1,0 +1,146 @@
+/* settings — see docs/product-experience.md */
+
+.settings-note {
+  margin-top: 12px;
+}
+
+.settings-wait {
+  display: flex;
+  width: 100%;
+  max-width: 460px;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Company: identity ────────────────────────────────── */
+
+.company-identity {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.company-identity__icon,
+.settings-status__icon {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-control);
+  background: var(--inset);
+  box-shadow: var(--shadow-hairline);
+  color: var(--ink-2);
+}
+
+.company-identity__copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.company-identity__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.company-identity__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.company-identity__desc {
+  max-width: 600px;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.company-identity__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  border-top: 1px solid var(--line);
+}
+
+.company-identity__fact {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.company-identity__label {
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* ── Connections: one described row per account or service ── */
+
+.connect-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.connect-list__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.connect-list__row:first-child {
+  padding-top: 0;
+}
+
+.connect-list__row:last-of-type {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.connect-list__copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.connect-list__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.connect-list__hint {
+  color: var(--ink-3);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.connect-list > .callout {
+  margin-top: 12px;
+}
+
+/* ── Sending ──────────────────────────────────────────── */
+
+.sales-setup__exclusions {
+  margin-top: 12px;
+}

@@ -64,7 +64,7 @@ export function useTargetReview(sessionId: string, enabled: boolean, onContinue?
         result = await targetApi.discover(sessionId);
       } catch (err) {
         if (!mayStillFinish(err)) throw err;
-        setBusyDetail("Request interrupted — checking for saved companies…");
+        setBusyDetail("The request was interrupted. Checking for companies already saved…");
       }
       // Discovery can outlive the request; recover accounts it saved before giving up.
       for (const wait of RECOVERY_WAITS_MS) {
@@ -85,12 +85,12 @@ export function useTargetReview(sessionId: string, enabled: boolean, onContinue?
         }
         if (result) break;
       }
-      if (!result) throw new Error("Discovery did not finish — try Find companies again.");
+      if (!result) throw new Error("Finding companies did not finish. Try again.");
       setNotices({
         ...EMPTY_NOTICES,
         message:
           result.warnings[0] ??
-          "No verifiable companies found — go back to ICP and refine segments or add real company domains.",
+          "No companies could be checked. Go back to Plan, edit who you sell to, and add real company websites.",
         warnings: result.warnings,
       });
     });
@@ -122,7 +122,7 @@ export function useTargetReview(sessionId: string, enabled: boolean, onContinue?
         message: res.message,
         banner:
           res.found === 0
-            ? "Hermes found no public emails on those domains — add them by hand or uncheck those companies."
+            ? "No public emails found on those sites. Add one by hand, or untick those companies."
             : `Found ${res.found} email${res.found === 1 ? "" : "s"}${included ? "; those companies are selected" : ""}. Continue to draft.`,
       });
     });
@@ -172,7 +172,7 @@ export function useTargetReview(sessionId: string, enabled: boolean, onContinue?
     if (missing.length) {
       setNotices({
         ...EMPTY_NOTICES,
-        banner: `${missing.length} of ${companies(selected.length)} selected need a contact email — use “Find emails with Hermes”, add emails, or uncheck them.`,
+        banner: `${missing.length} of ${companies(selected.length)} selected need a contact email. Use Find emails, add one by hand, or untick them.`,
       });
       return;
     }

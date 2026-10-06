@@ -1,7 +1,17 @@
 "use client";
 
-import ConnectSocials, { useConnections } from "@/components/ConnectSocials";
 import { useState } from "react";
+import ConnectSocials, { useConnections } from "@/components/ConnectSocials";
+import { PlatformMark } from "@/components/marketing/platforms";
+import Button from "@/components/ui/Button";
+import Callout from "@/components/ui/Callout";
+import Card, { CardBody, CardFooter } from "@/components/ui/Card";
+import ChipToggle from "@/components/ui/ChipToggle";
+import Field, { Input } from "@/components/ui/Field";
+import { IconCheck } from "@/components/ui/icons";
+import { Section } from "@/components/ui/Page";
+import Segmented from "@/components/ui/Segmented";
+import Toggle from "@/components/ui/Toggle";
 import type { MarketingConfig, MarketingPlatform, OutreachGoal } from "@/lib/marketingTypes";
 import { api, errorMessage } from "@/lib/client/api";
 
@@ -32,25 +42,6 @@ const GOALS: { key: OutreachGoal; label: string }[] = [
 
 const TONES = ["professional", "casual", "witty", "direct"];
 
-function ToggleChip({
-  pressed,
-  onClick,
-  children,
-}: {
-  pressed: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button type="button" className="chip-toggle" aria-pressed={pressed} onClick={onClick}>
-      <span className="chip-toggle__mark" aria-hidden>
-        {pressed ? "✓" : "·"}
-      </span>
-      {children}
-    </button>
-  );
-}
-
 export default function MarketingSetup({
   sessionDbId,
   existingTone,
@@ -77,12 +68,8 @@ export default function MarketingSetup({
     setPlatforms((prev) => (prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]));
   }
 
-  function toggleTone(t: string) {
-    setTone((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
-  }
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+  async function submit(e?: React.FormEvent) {
+    e?.preventDefault();
     if (platforms.length === 0 || !sessionDbId) return;
     const hasX = platforms.includes("x");
     const hasIg = platforms.includes("instagram");
@@ -117,29 +104,26 @@ export default function MarketingSetup({
   const hasIg = platforms.includes("instagram");
 
   return (
-    <form className="setup-form" onSubmit={submit}>
-      <h3>Set up Marketing</h3>
-
+    <form onSubmit={submit}>
       {!sessionDbId && (
-        <p role="alert" className="form-error">
-          Waiting for session — launch a campaign first.
-        </p>
+        <Callout tone="warn">Waiting for the campaign session — launch a campaign first.</Callout>
       )}
 
-      {sessionDbId && (
-        <div className="setup-section">
-          <ConnectSocials sessionId={sessionDbId} />
-          {connectionsError && (
-            <p role="alert" className="form-error">
-              {connectionsError}
-            </p>
-          )}
-        </div>
-      )}
+      <Section
+        num="01"
+        title="Accounts"
+        desc="Connect the accounts Kami may DM from. Nothing sends without your click."
+      >
+        {sessionDbId && <ConnectSocials sessionId={sessionDbId} />}
+        {connectionsError && (
+          <p className="field__error" role="alert">
+            {connectionsError}
+          </p>
+        )}
+      </Section>
 
-      <fieldset className="setup-section">
-        <legend className="label-caps">Select platforms</legend>
-        <div className="choice-grid">
+      <Section num="02" title="Platforms" desc="Pick where the creator CRM works.">
+        <div className="grid-2">
           {PLATFORM_INFO.map((p) => {
             const locked =
               (p.key === "x" && !xConnected) || (p.key === "instagram" && !igConnected);
@@ -148,146 +132,136 @@ export default function MarketingSetup({
               <button
                 key={p.key}
                 type="button"
-                className="kraft-card choice-card"
+                className="choice card card--interactive"
                 aria-pressed={selected}
                 onClick={() => togglePlatform(p.key)}
                 disabled={locked}
               >
-                <span className="choice-card__head">
-                  {p.name}
-                  <span className="choice-card__mark" aria-hidden>
-                    {locked ? "🔒" : selected ? "✓" : "·"}
+                <span className="choice__head">
+                  <PlatformMark platform={p.key} size={20} />
+                  <span className="choice__name">{p.name}</span>
+                  <span className="choice__mark" aria-hidden>
+                    {selected ? <IconCheck size={11} strokeWidth={3} /> : null}
                   </span>
                 </span>
-                <span className="choice-card__blurb">
+                <span className="choice__blurb">
                   {locked ? `Connect ${p.name} first, then select.` : p.blurb}
                 </span>
               </button>
             );
           })}
         </div>
-      </fieldset>
+      </Section>
 
       {hasX && (
-        <div className="setup-section">
-          <p className="label-caps">X — Budget &amp; Goal</p>
-          <div className="field-row">
-            <div className="form-line">
-              <label className="mono label-caps" htmlFor="x-budget">
-                Monthly boost budget ($)
-              </label>
-              <input
-                id="x-budget"
-                type="number"
-                min={0}
-                value={xBudget}
-                onChange={(e) => setXBudget(Number(e.target.value))}
-              />
-            </div>
-            <div>
-              <p className="mono label-caps">Outreach goal</p>
-              <div className="chip-row">
-                {GOALS.map((g) => (
-                  <ToggleChip key={g.key} pressed={xGoal === g.key} onClick={() => setXGoal(g.key)}>
-                    {g.label}
-                  </ToggleChip>
-                ))}
+        <Section num="03" title="X — budget & goal">
+          <Card>
+            <CardBody roomy className="field-grid">
+              <Field label="Monthly boost budget ($)">
+                <Input
+                  type="number"
+                  min={0}
+                  value={xBudget}
+                  onChange={(e) => setXBudget(Number(e.target.value))}
+                />
+              </Field>
+              <div className="field">
+                <span className="field__label">Outreach goal</span>
+                <Segmented
+                  label="Outreach goal"
+                  value={xGoal}
+                  onChange={setXGoal}
+                  options={GOALS.map((g) => ({ value: g.key, label: g.label }))}
+                />
               </div>
-            </div>
-          </div>
-        </div>
+            </CardBody>
+          </Card>
+        </Section>
       )}
 
       {hasIg && (
-        <div className="setup-section">
-          <p className="label-caps">Instagram — Creator Criteria</p>
-          <div className="field-row">
-            <div className="form-line">
-              <label className="mono label-caps" htmlFor="ig-offer-min">
-                Offer min ($)
-              </label>
-              <input
-                id="ig-offer-min"
-                type="number"
-                min={0}
-                value={igOfferMin}
-                onChange={(e) => setIgOfferMin(Number(e.target.value))}
-              />
-            </div>
-            <div className="form-line">
-              <label className="mono label-caps" htmlFor="ig-offer-max">
-                Offer max ($)
-              </label>
-              <input
-                id="ig-offer-max"
-                type="number"
-                min={0}
-                value={igOfferMax}
-                onChange={(e) => setIgOfferMax(Number(e.target.value))}
-              />
-            </div>
-            <div className="form-line">
-              <label className="mono label-caps" htmlFor="ig-min-followers">
-                Min followers
-              </label>
-              <input
-                id="ig-min-followers"
-                type="number"
-                min={0}
-                value={igMinFollowers}
-                onChange={(e) => setIgMinFollowers(Number(e.target.value))}
-              />
-            </div>
-          </div>
-          <div className="form-line">
-            <label className="mono label-caps" htmlFor="ig-keywords">
-              Niche keywords (comma-separated)
-            </label>
-            <input
-              id="ig-keywords"
-              value={igKeywords}
-              onChange={(e) => setIgKeywords(e.target.value)}
-              placeholder="dev tools, productivity, SaaS"
-            />
-          </div>
-        </div>
+        <Section num={hasX ? "04" : "03"} title="Instagram — creator criteria">
+          <Card>
+            <CardBody roomy className="form-stack">
+              <div className="field-grid">
+                <Field label="Offer min ($)">
+                  <Input
+                    type="number"
+                    min={0}
+                    value={igOfferMin}
+                    onChange={(e) => setIgOfferMin(Number(e.target.value))}
+                  />
+                </Field>
+                <Field label="Offer max ($)">
+                  <Input
+                    type="number"
+                    min={0}
+                    value={igOfferMax}
+                    onChange={(e) => setIgOfferMax(Number(e.target.value))}
+                  />
+                </Field>
+                <Field label="Min followers">
+                  <Input
+                    type="number"
+                    min={0}
+                    value={igMinFollowers}
+                    onChange={(e) => setIgMinFollowers(Number(e.target.value))}
+                  />
+                </Field>
+              </div>
+              <Field
+                label="Niche keywords"
+                hint="Comma-separated, e.g. dev tools, productivity, SaaS"
+              >
+                <Input value={igKeywords} onChange={(e) => setIgKeywords(e.target.value)} />
+              </Field>
+            </CardBody>
+          </Card>
+        </Section>
       )}
 
       {platforms.length > 0 && (
-        <div className="setup-section">
-          <p className="label-caps">Tone &amp; Voice</p>
-          {existingTone?.length ? (
-            <div className="chip-row">
-              <ToggleChip pressed={useDossierTone} onClick={() => setUseDossierTone((v) => !v)}>
-                Use brand voice from dossier ({existingTone.join(", ")})
-              </ToggleChip>
-            </div>
-          ) : null}
-          {!useDossierTone && (
-            <div className="chip-row">
-              {TONES.map((t) => (
-                <ToggleChip key={t} pressed={tone.includes(t)} onClick={() => toggleTone(t)}>
-                  {t}
-                </ToggleChip>
-              ))}
-            </div>
-          )}
-        </div>
+        <Section title="Tone & voice">
+          <Card>
+            <CardBody className="stack stack--sm">
+              {existingTone?.length ? (
+                <Toggle
+                  checked={useDossierTone}
+                  onChange={setUseDossierTone}
+                  label="Use the brand voice from your dossier"
+                  hint={existingTone.join(", ")}
+                />
+              ) : null}
+              {!useDossierTone && (
+                <ChipToggle
+                  label="Tone"
+                  value={tone}
+                  onChange={setTone}
+                  options={TONES.map((t) => ({ value: t, label: t }))}
+                />
+              )}
+            </CardBody>
+          </Card>
+        </Section>
       )}
 
-      {error && (
-        <p role="alert" className="form-error">
-          {error}
-        </p>
-      )}
+      {error && <Callout tone="error">{error}</Callout>}
 
-      <button
-        type="submit"
-        className="hanko-btn"
-        disabled={platforms.length === 0 || !sessionDbId || saving}
-      >
-        {saving ? "Saving…" : "Launch Marketing"}
-      </button>
+      <Card tone="flat" className="sticky-actions">
+        <CardFooter plain>
+          <span className="text-3 text-xs">
+            Discovery runs only when you ask; every DM needs your approval.
+          </span>
+          <Button
+            type="submit"
+            variant="accent"
+            busy={saving}
+            disabled={platforms.length === 0 || !sessionDbId}
+          >
+            Save creator CRM
+          </Button>
+        </CardFooter>
+      </Card>
     </form>
   );
 }

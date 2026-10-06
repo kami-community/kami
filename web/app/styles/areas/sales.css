@@ -1,0 +1,533 @@
+/* sales — Find customers. See docs/product-experience.md §3 */
+
+/* ── Setup stepper ────────────────────────────────────── */
+
+.sales-stepper {
+  margin: 0 0 20px;
+}
+
+.sales-stepper__list {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 6px;
+  border-radius: var(--radius-window);
+  background: var(--canvas);
+  box-shadow: var(--shadow-hairline);
+}
+
+.sales-stepper__step {
+  position: relative;
+  min-width: 0;
+}
+
+.sales-stepper__btn {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-card);
+  text-align: left;
+  transition:
+    background 120ms,
+    box-shadow 120ms;
+}
+
+.sales-stepper__btn:hover:not([aria-disabled]) {
+  background: var(--hover);
+}
+
+.sales-stepper__btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.sales-stepper__btn[aria-disabled] {
+  cursor: not-allowed;
+}
+
+.is-current .sales-stepper__btn {
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.sales-stepper__mark {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--field);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.is-done .sales-stepper__mark {
+  background: var(--green-tint);
+  color: var(--green);
+}
+
+.is-current .sales-stepper__mark {
+  background: var(--accent);
+  color: var(--surface);
+}
+
+.is-locked .sales-stepper__mark {
+  color: var(--ink-3);
+}
+
+.sales-stepper__text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.sales-stepper__label {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.is-locked .sales-stepper__label {
+  color: var(--ink-3);
+}
+
+.sales-stepper__sub {
+  overflow: hidden;
+  color: var(--ink-3);
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.is-current .sales-stepper__sub {
+  color: var(--accent-ink);
+}
+
+@media (max-width: 720px) {
+  .sales-stepper__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sales-stepper__sub {
+    white-space: normal;
+  }
+}
+
+/* after the first send: one line of progress */
+.sales-progress {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 16px;
+  color: var(--ink-2);
+  font-size: 12.5px;
+}
+
+.sales-progress__done {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--green);
+  font-weight: 500;
+}
+
+.sales-progress__sep {
+  color: var(--ink-3);
+}
+
+.sales-progress__link {
+  color: var(--accent-ink);
+  font-weight: 500;
+}
+
+.sales-progress__link:hover {
+  text-decoration: underline;
+}
+
+.sales-progress__link:focus-visible {
+  border-radius: 4px;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.sales-area__alert {
+  margin-bottom: 12px;
+}
+
+/* ── Inline agent waits ───────────────────────────────── */
+
+.sales-wait {
+  margin-bottom: 16px;
+}
+
+.sales-wait__inner {
+  width: 100%;
+  max-width: 460px;
+}
+
+/* ── Plan tab ─────────────────────────────────────────── */
+
+.sales-who__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sales-who__item {
+  display: grid;
+  align-items: center;
+  gap: 8px;
+  grid-template-columns: auto minmax(0, max-content) minmax(0, 1fr);
+  font-size: 13px;
+}
+
+.sales-who__name {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.sales-who__meta {
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+
+.sales-plan__reco {
+  max-width: 560px;
+}
+
+.sales-plan__risk-icon {
+  color: var(--orange);
+}
+
+.sales-plan__details {
+  padding: 4px 0 8px;
+}
+
+.sales-plan__order {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-left: 18px;
+  list-style: decimal;
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+.segments__error {
+  margin-top: 16px;
+}
+
+/* ── Companies tab ────────────────────────────────────── */
+
+.sales-companies {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sales-companies .sticky-actions {
+  margin-top: 8px;
+}
+
+.sales-companies .sales-wait {
+  margin-bottom: 0;
+}
+
+/* ── Emails tab ───────────────────────────────────────── */
+
+.draft-queue__item {
+  animation: fade-up 380ms var(--ease-out-strong) both;
+}
+
+.draft-queue__item:nth-child(2) {
+  animation-delay: 60ms;
+}
+
+.draft-queue__item:nth-child(3) {
+  animation-delay: 120ms;
+}
+
+.draft-queue__item:nth-child(n + 4) {
+  animation-delay: 180ms;
+}
+
+.draft-card__to {
+  min-width: 0;
+  gap: 4px;
+}
+
+.draft-card__verdict-head {
+  gap: 6px;
+}
+
+/* ── Account sheet ────────────────────────────────────── */
+
+.sheet__who,
+.sheet__who-text {
+  min-width: 0;
+}
+
+.sheet__moves {
+  gap: 4px;
+}
+
+/* ── Sales: funnel ────────────────────────────────────── */
+
+.funnel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.funnel__budgets {
+  display: flex;
+  flex-direction: column;
+}
+
+.funnel__row {
+  display: grid;
+  align-items: center;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1.4fr) minmax(80px, 1fr) 40px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.funnel__row:last-child {
+  border-bottom: 0;
+}
+
+.funnel__name {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.funnel__bar {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--field);
+}
+
+.funnel__bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  animation: bar-grow 700ms var(--ease-out-strong) both;
+  transform-origin: left center;
+}
+
+@keyframes bar-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.funnel__count {
+  color: var(--ink-2);
+  font-size: 12.5px;
+  text-align: right;
+}
+
+.funnel__grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 720px) {
+  .funnel__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.funnel__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.funnel__cell-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.funnel__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+}
+
+.funnel__cell-count {
+  color: var(--ink);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.funnel__cell-hint {
+  color: var(--ink-3);
+  font-size: 11.5px;
+}
+
+/* ── Sales: Find (records extras) ─────────────────────── */
+
+.records-email {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 4px;
+}
+
+.records-email .input {
+  height: 26px;
+  border-radius: 6px;
+}
+
+.records-signal {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-2);
+  font-weight: 400;
+}
+
+/* ── Sales: pipeline board ────────────────────────────── */
+
+.pipeline__board {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+.pipeline__col {
+  display: flex;
+  width: 220px;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-radius: var(--radius-card);
+  background: var(--canvas);
+  box-shadow: var(--shadow-hairline);
+}
+
+.pipeline__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px 4px;
+}
+
+.pipeline__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+}
+
+.pipeline__label {
+  flex: 1;
+  color: var(--ink-2);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.pipeline__cards {
+  display: flex;
+  min-height: 40px;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pipeline__card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  text-align: left;
+  transition:
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.pipeline__card:hover {
+  box-shadow: var(--shadow-raised);
+}
+
+.pipeline__card:active {
+  transform: scale(0.98);
+}
+
+.pipeline__card[aria-pressed="true"] {
+  box-shadow:
+    0 0 0 2px var(--accent),
+    var(--shadow-card);
+}
+
+.pipeline__name {
+  min-width: 0;
+  flex: 1;
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.pipeline__meta {
+  color: var(--ink-3);
+  font-size: 11px;
+}
+
+.funnel__dot--green,
+.pipeline__dot--green {
+  background: var(--green);
+}
+
+.funnel__dot--accent,
+.pipeline__dot--accent {
+  background: var(--accent);
+}
+
+.funnel__dot--orange,
+.pipeline__dot--orange {
+  background: var(--orange);
+}
+
+.funnel__dot--red,
+.pipeline__dot--red {
+  background: var(--red);
+}
+
+.funnel__dot--muted,
+.pipeline__dot--muted {
+  background: var(--ink-3);
+}

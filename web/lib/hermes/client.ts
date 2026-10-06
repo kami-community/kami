@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import type { ZodType, z } from "zod";
-import { logAgentRunAsync } from "@/lib/agentRunLog";
+import { trackAgentRun } from "@/lib/agentRunLog";
 import { env } from "@/lib/config/env";
 import { AppError, notConfigured, upstreamFailed } from "@/lib/http/errors";
 import { traceGatewayCall } from "@/lib/tracing";
@@ -13,7 +13,8 @@ import { createSseTextParser } from "./sse";
  * - runs a named agent (role prompt from agents/*.md as the system message),
  * - uses a Hermes session id `kami-<campaign>-<agent>-<run>` so runs stay
  *   isolated yet traceable per campaign in Hermes' own state,
- * - is logged to agent_run_logs and traced (Langfuse, when configured),
+ * - is logged to agent_run_logs as `running` when it starts and updated when
+ *   it ends (the Team indicator shows live runs), and traced (Langfuse),
  * - throws a typed AppError on failure instead of returning null.
  */
 
@@ -77,6 +78,7 @@ function logBase(
   call: HermesCall,
   hermesSessionId: string,
   source: "hermes_once" | "hermes_stream",
+  timeoutMs: number,
 ) {
   return {
     sessionId: call.kamiSessionId,
@@ -86,7 +88,7 @@ function logBase(
     agent: call.agent,
     model: env().HERMES_MODEL,
     input: call.input,
-    meta: call.meta,
+    meta: { ...(call.meta ?? {}), timeout_ms: timeoutMs },
   } as const;
 }
 
@@ -94,9 +96,11 @@ function logBase(
 export async function complete(call: HermesCall): Promise<HermesCompletion> {
   const hermesSessionId = hermesSessionIdFor(call);
   const started = Date.now();
-  const log = logBase(call, hermesSessionId, "hermes_once");
+  const timeoutMs = call.timeoutMs ?? env().HERMES_TIMEOUT_MS;
+  const log = logBase(call, hermesSessionId, "hermes_once", timeoutMs);
+  const run = trackAgentRun(log);
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), call.timeoutMs ?? env().HERMES_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   const trace = traceGatewayCall({
     name: call.kind,
     sessionId: hermesSessionId,
@@ -119,7 +123,7 @@ export async function complete(call: HermesCall): Promise<HermesCompletion> {
     if (!text) throw upstreamFailed(`the ${call.agent} agent returned an empty answer`);
 
     const durationMs = Date.now() - started;
-    logAgentRunAsync({ ...log, status: "ok", outputText: text, durationMs });
+    run.finish({ status: "ok", outputText: text, durationMs });
     return { text, hermesSessionId, durationMs };
   } catch (err) {
     const aborted = err instanceof Error && err.name === "AbortError";
@@ -131,8 +135,7 @@ export async function complete(call: HermesCall): Promise<HermesCompletion> {
             `could not reach Hermes: ${err instanceof Error ? err.message : "unknown error"}`,
           );
     trace.fail(error.message);
-    logAgentRunAsync({
-      ...log,
+    run.finish({
       status: aborted ? "timeout" : "error",
       error: error.message,
       durationMs: Date.now() - started,
@@ -173,9 +176,11 @@ export async function runAgentJson<S extends ZodType>(
 export async function streamResponse(call: HermesCall): Promise<Response> {
   const hermesSessionId = hermesSessionIdFor(call);
   const started = Date.now();
-  const log = logBase(call, hermesSessionId, "hermes_stream");
+  const timeoutMs = call.timeoutMs ?? env().HERMES_TIMEOUT_MS * 3;
+  const log = logBase(call, hermesSessionId, "hermes_stream", timeoutMs);
+  const run = trackAgentRun(log);
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), call.timeoutMs ?? env().HERMES_TIMEOUT_MS * 3);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   const trace = traceGatewayCall({
     name: call.kind,
     sessionId: hermesSessionId,
@@ -190,7 +195,7 @@ export async function streamResponse(call: HermesCall): Promise<Response> {
     clearTimeout(timer);
     const message = err instanceof AppError ? err.message : "could not reach Hermes";
     trace.fail(message);
-    logAgentRunAsync({ ...log, status: "error", error: message, durationMs: Date.now() - started });
+    run.finish({ status: "error", error: message, durationMs: Date.now() - started });
     if (err instanceof AppError) throw err;
     throw upstreamFailed(message);
   }
@@ -198,8 +203,7 @@ export async function streamResponse(call: HermesCall): Promise<Response> {
     clearTimeout(timer);
     const body = await upstream.text().catch(() => "");
     trace.fail(`HTTP ${upstream.status}`);
-    logAgentRunAsync({
-      ...log,
+    run.finish({
       status: "error",
       error: `HTTP ${upstream.status}: ${body.slice(0, 300)}`,
       durationMs: Date.now() - started,
@@ -222,16 +226,14 @@ export async function streamResponse(call: HermesCall): Promise<Response> {
         full += parser.push(decoder.decode(value, { stream: true }));
       }
       full += parser.end();
-      logAgentRunAsync({
-        ...log,
+      run.finish({
         status: full.trim() ? "ok" : "error",
         outputText: full.trim() || null,
         error: full.trim() ? null : "empty stream",
         durationMs: Date.now() - started,
       });
     } catch (err) {
-      logAgentRunAsync({
-        ...log,
+      run.finish({
         status: "error",
         error: err instanceof Error ? err.message : "stream failed",
         durationMs: Date.now() - started,

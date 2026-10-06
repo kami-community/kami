@@ -153,10 +153,16 @@ export async function generateDossier(db: Db, sessionId: string): Promise<Dossie
   return dossier;
 }
 
+/**
+ * Revise the dossier from the founder's correction. With `preview`, nothing is
+ * stored: the founder reviews the proposed changes field by field and saves
+ * the ones they keep through `updateDossier`.
+ */
 export async function reviseDossier(
   db: Db,
   sessionId: string,
   correction: string,
+  options: { preview?: boolean } = {},
 ): Promise<Dossier> {
   const session = await loadSession(db, sessionId);
   const current = await loadDossier(db, sessionId);
@@ -170,6 +176,7 @@ export async function reviseDossier(
       `Current dossier:\n\`\`\`json\n${JSON.stringify(current, null, 2)}\n\`\`\``,
     ].join("\n\n"),
   );
+  if (options.preview) return dossier;
   await saveDossier(db, sessionId, dossier);
   await db.from("agent_sessions").update({ dossier_confirmed_at: null }).eq("id", sessionId);
   return dossier;

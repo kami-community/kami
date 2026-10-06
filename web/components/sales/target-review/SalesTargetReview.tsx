@@ -1,11 +1,15 @@
 "use client";
 
+import AgentWait, { type SalesAgent } from "@/components/sales/AgentWait";
+import SalesFunnel from "@/components/SalesFunnel";
+import Callout from "@/components/ui/Callout";
+import Disclosure from "@/components/ui/Disclosure";
+import Skeleton from "@/components/ui/Skeleton";
 import type { SalesSegment } from "@/lib/domain/segments";
 import type { SalesPlan } from "@/lib/salesTypes";
-import SalesBusyOverlay from "@/components/SalesBusyOverlay";
-import SalesFunnel from "@/components/SalesFunnel";
-import { AccountGroups } from "./AccountCard";
+import { AccountTable } from "./AccountCard";
 import {
+  companies,
   hasB2bSeeds,
   hasEligibleEmail,
   isIncluded,
@@ -27,22 +31,57 @@ interface SalesTargetReviewProps {
   onCreateDistribution?: () => void;
 }
 
-const BUSY_COPY: Record<Exclude<BusyMode, null>, { title: string; stages?: string[] }> = {
-  discover: { title: "Finding companies" },
-  emails: {
-    title: "Finding contact emails",
-    stages: [
-      "Scraping company contact pages…",
-      "Searching the web for @domain emails…",
-      "Asking Hermes to extract only evidenced addresses…",
-      "Saving verified contacts…",
-    ],
-  },
-  continue: {
-    title: "Building sequences",
-    stages: ["Saving emails…", "Enrolling sequences…", "Queueing drafts…"],
-  },
-};
+interface Wait {
+  agent: SalesAgent;
+  doing: string;
+  stages: string[];
+}
+
+/** Which agent is working, and on what, for each long step of Companies. */
+function waitFor(
+  mode: Exclude<BusyMode, null>,
+  plannedCount: number | null,
+  selectedCount: number,
+): Wait {
+  switch (mode) {
+    case "discover":
+      return {
+        agent: "sales-researcher",
+        doing: plannedCount
+          ? `is checking about ${companies(plannedCount)}`
+          : "is finding and checking companies",
+        stages: [
+          "Checking each company’s website",
+          "Looking for recent signals",
+          "Looking up public contact emails",
+          "Reading sites that hide their email",
+          "Scoring fit and timing",
+        ],
+      };
+    case "emails":
+      return {
+        agent: "sales-researcher",
+        doing: "is looking for public contact emails",
+        stages: [
+          "Reading company contact pages",
+          "Searching the web for addresses on each domain",
+          "Keeping only emails with evidence",
+          "Saving the contacts it found",
+        ],
+      };
+    case "continue":
+      return {
+        agent: "outreach",
+        doing: `is drafting emails for ${companies(selectedCount)}`,
+        stages: [
+          "Saving contacts",
+          "Setting up each email sequence",
+          "Writing first drafts",
+          "Checking each draft",
+        ],
+      };
+  }
+}
 
 /** Find step: verify target companies, find or add contact emails, pick who gets drafts. */
 export default function SalesTargetReview({
@@ -57,23 +96,15 @@ export default function SalesTargetReview({
   const planApproved = plan?.status === "approved";
   const review = useTargetReview(sessionDbId, planApproved, onContinue);
   const { accounts, notices, busyMode } = review;
-
-  if (!planApproved) {
-    return (
-      <div className="kraft-card target-review">
-        <p className="label-caps">Find companies</p>
-        <p className="mono muted">
-          Approve your plan first, then we&apos;ll research companies that match your confirmed
-          segments.
-        </p>
-      </div>
-    );
-  }
-
   const seeds = hasB2bSeeds(segments);
   const distributionPath =
     isPlgOnly(segments) || onlyPlgWarnings(accounts.length, notices.warnings);
   const included = accounts.filter((a) => a.id && isIncluded(a));
+  const planned =
+    plan?.estimated_activity?.accounts_to_research ??
+    ((segments ?? []).reduce((n, seg) => n + (seg.target_count || 0), 0) || null);
+  const wait = busyMode ? waitFor(busyMode, planned, included.length) : null;
+  const scored = accounts.some((a) => a.score);
   const primary = primaryAction({
     distributionPath,
     canCreateDistribution: Boolean(onCreateDistribution),
@@ -83,40 +114,59 @@ export default function SalesTargetReview({
     missingEmailSelected: included.filter((a) => !hasEligibleEmail(a)).length,
     missingEmailAny: accounts.filter((a) => !a.contact?.email).length,
   });
-  const busy = busyMode ? BUSY_COPY[busyMode] : null;
 
   return (
-    <div className="kraft-card target-review">
-      {busy && (
-        <SalesBusyOverlay title={busy.title} stages={busy.stages} detail={review.busyDetail} />
+    <div className="sales-companies">
+      {distributionPath && (
+        <Callout tone="info" title="These buyers are individuals, not companies to email">
+          Kami won’t guess personal emails. Create distribution so the right people find you
+          instead. If you also sell to companies, add real ones under Plan → Who you sell to.
+        </Callout>
       )}
 
-      {offer && (
-        <p className="mono muted target-offer">
-          Selling: {offer.slice(0, 160)}
-          {offer.length > 160 ? "…" : ""}
-        </p>
+      {wait && (
+        <AgentWait
+          agent={wait.agent}
+          doing={wait.doing}
+          stages={wait.stages}
+          detail={review.busyDetail}
+          stepMs={4000}
+          note="Websites are checked live, so this can take a minute or two."
+        />
       )}
 
-      <SalesFunnel segments={segments} plan={plan} accounts={accounts} />
+      <TargetNotices {...notices} />
 
-      {distributionPath ? (
-        <div className="target-intro">
-          <p className="sales-intro">
-            These segments are individual buyers/users, not companies to email-blast. Company Find
-            does not apply — we will not invent consumer emails.
-          </p>
-          <p className="mono muted">
-            Next step: create a distribution campaign (X, Reddit, etc.) so the right people find
-            you. If you also have B2B seed companies, add them under Confirm ICP and use Find
-            companies.
-          </p>
-        </div>
+      {review.loadError && (
+        <Callout tone="error">Could not load companies: {review.loadError}</Callout>
+      )}
+      {review.loading && !accounts.length ? (
+        <Skeleton title lines={5} />
       ) : (
-        <p className="sales-intro target-intro">
-          We verify named companies from your segments, look up public emails (site → web search →
-          Hermes), and score Fit × Timing. Check Include, then continue.
-        </p>
+        <AccountTable
+          accounts={accounts}
+          segments={segments}
+          emailDrafts={review.emailDrafts}
+          savingEmailId={review.savingEmailId}
+          disabled={busyMode !== null}
+          onToggle={review.toggle}
+          onEmailDraft={review.setEmailDraft}
+          onSaveEmail={(acc) => void review.saveEmail(acc)}
+        />
+      )}
+
+      {scored && (
+        <Disclosure label="How these companies score">
+          <div className="stack stack--sm">
+            {offer && (
+              <p className="text-3 text-xs">
+                Scored against: {offer.slice(0, 160)}
+                {offer.length > 160 ? "…" : ""}
+              </p>
+            )}
+            <SalesFunnel segments={segments} plan={plan} accounts={accounts} show="scores" />
+          </div>
+        </Disclosure>
       )}
 
       <TargetActions
@@ -133,28 +183,6 @@ export default function SalesTargetReview({
         onDraft={review.draftEmails}
         onCreateDistribution={onCreateDistribution}
       />
-      <hr className="crease" />
-
-      <TargetNotices {...notices} />
-      {review.loadError && (
-        <p className="form-error" role="alert">
-          Could not load companies: {review.loadError}
-        </p>
-      )}
-      {review.loading && !accounts.length ? (
-        <p className="mono muted">Loading companies…</p>
-      ) : (
-        <AccountGroups
-          accounts={accounts}
-          segments={segments}
-          emailDrafts={review.emailDrafts}
-          savingEmailId={review.savingEmailId}
-          disabled={busyMode !== null}
-          onToggle={review.toggle}
-          onEmailDraft={review.setEmailDraft}
-          onSaveEmail={(acc) => void review.saveEmail(acc)}
-        />
-      )}
     </div>
   );
 }

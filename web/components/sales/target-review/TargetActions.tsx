@@ -1,5 +1,8 @@
 "use client";
 
+import Button from "@/components/ui/Button";
+import Card, { CardFooter } from "@/components/ui/Card";
+import { IconBuilding, IconMail, IconMegaphone, IconSearch } from "@/components/ui/icons";
 import { companies, type PrimaryAction } from "./rules";
 
 export type BusyMode = "discover" | "emails" | "continue" | null;
@@ -19,7 +22,7 @@ interface TargetActionsProps {
   onCreateDistribution?: () => void;
 }
 
-/** The Find step's action bar. Exactly one button is primary (hanko) at a time. */
+/** The Find step's action bar. Exactly one action is the accent at a time. */
 export default function TargetActions({
   primary,
   distributionPath,
@@ -35,58 +38,74 @@ export default function TargetActions({
   onCreateDistribution,
 }: TargetActionsProps) {
   const busy = busyMode !== null;
-  const cls = (action: PrimaryAction) => (primary === action ? "hanko-btn" : "btn-secondary");
+  const variant = (action: PrimaryAction) => (primary === action ? "accent" : "secondary");
 
   return (
-    <div className="target-actions">
-      <p className="label-caps">{distributionPath ? "Find people to reach" : "Find companies"}</p>
-      <div className="target-actions__buttons">
-        {showDiscover && (
-          <button
-            type="button"
-            className={cls("discover")}
-            onClick={onDiscover}
-            disabled={busy || paused}
-          >
-            {busyMode === "discover" ? "Finding…" : "Find companies"}
-          </button>
-        )}
-        {showDistribution && onCreateDistribution && (
-          <button type="button" className={cls("distribution")} onClick={onCreateDistribution}>
-            Create distribution
-          </button>
-        )}
-        {!distributionPath && (
-          <button
-            type="button"
-            className={cls("find_emails")}
-            onClick={onFindEmails}
-            disabled={busy || paused || !accountCount}
-            title={
-              accountCount
-                ? "Site scrape + web search + Hermes — never invents emails"
-                : "Available after companies are listed"
-            }
-          >
-            {busyMode === "emails" ? "Looking up…" : "Find emails with Hermes"}
-          </button>
-        )}
-        {includedCount > 0 && (
-          <button type="button" className={cls("draft")} onClick={onDraft} disabled={busy}>
-            {busyMode === "continue" ? "Building…" : `Draft emails for ${companies(includedCount)}`}
-          </button>
-        )}
-      </div>
-      {paused && (
-        <p className="paused-banner" role="status">
-          Sales is paused — resume to find companies or emails.
-        </p>
-      )}
-      {!distributionPath && !accountCount && (
-        <p className="mono muted target-hint">
-          Find emails with Hermes is available after companies are listed.
-        </p>
-      )}
-    </div>
+    <Card tone="flat" className="sticky-actions">
+      <CardFooter plain>
+        <span className="text-3 text-xs">
+          {paused
+            ? "Sales is paused. Resume it to find companies or emails."
+            : distributionPath
+              ? "These buyers are individuals. Reach them through distribution."
+              : accountCount
+                ? `${companies(accountCount)} · ${includedCount} selected for drafts`
+                : "Start by finding companies from your plan."}
+        </span>
+        <span className="row row--wrap">
+          {showDiscover && (
+            <Button
+              size="sm"
+              variant={variant("discover")}
+              icon={<IconSearch size={13} />}
+              onClick={onDiscover}
+              busy={busyMode === "discover"}
+              disabled={busy || paused}
+            >
+              Find companies
+            </Button>
+          )}
+          {showDistribution && onCreateDistribution && (
+            <Button
+              size="sm"
+              variant={variant("distribution")}
+              icon={<IconMegaphone size={13} />}
+              onClick={onCreateDistribution}
+            >
+              Create distribution
+            </Button>
+          )}
+          {!distributionPath && (
+            <Button
+              size="sm"
+              variant={variant("find_emails")}
+              icon={<IconBuilding size={13} />}
+              onClick={onFindEmails}
+              busy={busyMode === "emails"}
+              disabled={busy || paused || !accountCount}
+              title={
+                accountCount
+                  ? "Checks each company’s site and the web. Never guesses an email."
+                  : "Available once companies are listed"
+              }
+            >
+              Find emails
+            </Button>
+          )}
+          {includedCount > 0 && (
+            <Button
+              size="sm"
+              variant={variant("draft")}
+              icon={<IconMail size={13} />}
+              onClick={onDraft}
+              busy={busyMode === "continue"}
+              disabled={busy}
+            >
+              Draft emails for {companies(includedCount)}
+            </Button>
+          )}
+        </span>
+      </CardFooter>
+    </Card>
   );
 }

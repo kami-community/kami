@@ -1,98 +1,126 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useState } from "react";
+import Card, { CardBar, CardBody } from "@/components/ui/Card";
+import Segmented from "@/components/ui/Segmented";
+import { IconCompass, IconLines, IconUsers } from "@/components/ui/icons";
+import { Monogram, Tag } from "@/components/ui/Pills";
 import type { Dossier } from "@/lib/domain/dossier";
 
-function Section({
-  title,
-  children,
-  defaultOpen = false,
-}: {
-  title: string;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  const bodyId = useId();
+type Tab = "brand" | "icp" | "competitors";
+
+/** The dossier as tabbed cards: brand, customers (ICP buckets), competitors. */
+export default function IntelPanel({ dossier }: { dossier: Dossier }) {
+  const [tab, setTab] = useState<Tab>("brand");
+
   return (
-    <section className="intel-section">
-      <button
-        type="button"
-        className="intel-section__toggle label-caps"
-        aria-expanded={open}
-        aria-controls={bodyId}
-        onClick={() => setOpen(!open)}
-      >
-        {title}
-        <span className="intel-section__mark" aria-hidden="true">
-          {open ? "−" : "+"}
-        </span>
-      </button>
-      {open && (
-        <div id={bodyId} className="intel-section__body unfold">
-          {children}
+    <div className="intel">
+      <Segmented<Tab>
+        label="Dossier section"
+        value={tab}
+        onChange={setTab}
+        options={[
+          { value: "brand", label: "Brand" },
+          { value: "icp", label: "Customers", count: dossier.icp_buckets.length },
+          { value: "competitors", label: "Competitors", count: dossier.competitor_analysis.length },
+        ]}
+      />
+
+      {tab === "brand" && (
+        <div className="grid-2 fade-up">
+          <Card>
+            <CardBar title="Positioning" icon={<IconCompass size={13} />} />
+            <CardBody className="intel__prose">{dossier.positioning}</CardBody>
+          </Card>
+          <Card>
+            <CardBar title="Brand voice" icon={<IconLines size={13} />} />
+            <CardBody className="stack stack--sm">
+              <p className="intel__prose">{dossier.brand_voice}</p>
+              {dossier.tone?.length > 0 && (
+                <div className="tag-list">
+                  {dossier.tone.map((t) => (
+                    <Tag key={t}>{t}</Tag>
+                  ))}
+                </div>
+              )}
+            </CardBody>
+          </Card>
+          {(dossier.industries.length > 0 ||
+            dossier.personas.length > 0 ||
+            dossier.geos.length > 0) && (
+            <Card className="intel__wide">
+              <CardBar title="Market" icon={<IconUsers size={13} />} />
+              <CardBody className="intel__facts">
+                {[
+                  ["Industries", dossier.industries],
+                  ["Personas", dossier.personas],
+                  ["Geographies", dossier.geos],
+                ].map(([label, items]) =>
+                  (items as string[]).length ? (
+                    <div key={label as string} className="intel__fact">
+                      <span className="intel__fact-label">{label as string}</span>
+                      <span className="tag-list">
+                        {(items as string[]).map((i) => (
+                          <Tag key={i}>{i}</Tag>
+                        ))}
+                      </span>
+                    </div>
+                  ) : null,
+                )}
+              </CardBody>
+            </Card>
+          )}
         </div>
       )}
-    </section>
-  );
-}
 
-interface IntelPanelProps {
-  dossier: Dossier;
-  /** When true, open every section (confirm overview). */
-  defaultAllOpen?: boolean;
-}
-
-/** The dossier, folded into sections the founder can open. */
-export default function IntelPanel({ dossier, defaultAllOpen = false }: IntelPanelProps) {
-  return (
-    <aside className="intel-panel">
-      <p className="label-caps">Intelligence — {dossier.company}</p>
-
-      <Section title="Brand Analysis" defaultOpen>
-        <p>{dossier.brand_voice}</p>
-      </Section>
-
-      <Section title="Positioning" defaultOpen={defaultAllOpen}>
-        <p>{dossier.positioning}</p>
-      </Section>
-
-      {dossier.tone && dossier.tone.length > 0 && (
-        <Section title="Tone" defaultOpen={defaultAllOpen}>
-          <div className="chip-row">
-            {dossier.tone.map((t) => (
-              <span key={t} className="tag">
-                {t}
-              </span>
-            ))}
-          </div>
-        </Section>
+      {tab === "icp" && (
+        <div className="grid-2 fade-up">
+          {dossier.icp_buckets.map((b) => (
+            <Card key={b.label}>
+              <CardBar title={b.label} icon={<Monogram name={b.label} shape="square" />}>
+                {b.est_size && <span className="card__meta">{b.est_size}</span>}
+              </CardBar>
+              <CardBody className="stack stack--sm">
+                {b.angle && <p className="intel__prose">{b.angle}</p>}
+                <dl className="intel__dl">
+                  {b.where_they_live && (
+                    <>
+                      <dt>Where</dt>
+                      <dd>{b.where_they_live}</dd>
+                    </>
+                  )}
+                  {b.trigger_signal && (
+                    <>
+                      <dt>Signal</dt>
+                      <dd>{b.trigger_signal}</dd>
+                    </>
+                  )}
+                </dl>
+              </CardBody>
+            </Card>
+          ))}
+        </div>
       )}
 
-      <Section title="Competitors" defaultOpen={defaultAllOpen}>
-        {dossier.competitor_analysis.map((c) => (
-          <p key={c.name}>
-            <strong>{c.name}</strong> — {c.insight}
-          </p>
-        ))}
-      </Section>
-
-      <Section title={`ICP Buckets (${dossier.icp_buckets.length})`} defaultOpen>
-        {dossier.icp_buckets.map((b) => (
-          <details key={b.label} className="intel-bucket">
-            <summary>{b.label}</summary>
-            <dl className="intel-bucket__facts mono">
-              <dt>Where</dt>
-              <dd>{b.where_they_live}</dd>
-              <dt>Signal</dt>
-              <dd>{b.trigger_signal}</dd>
-              <dt>Size</dt>
-              <dd>{b.est_size}</dd>
-            </dl>
-            <p>{b.angle}</p>
-          </details>
-        ))}
-      </Section>
-    </aside>
+      {tab === "competitors" && (
+        <Card className="fade-up">
+          {dossier.competitor_analysis.length === 0 ? (
+            <CardBody className="text-3 text-sm">No competitors identified yet.</CardBody>
+          ) : (
+            <ul className="intel__list">
+              {dossier.competitor_analysis.map((c) => (
+                <li key={c.name} className="intel__competitor">
+                  <Monogram name={c.name} shape="square" size="lg" />
+                  <div>
+                    <p className="intel__competitor-name">{c.name}</p>
+                    <p className="intel__prose">{c.insight}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      )}
+    </div>
   );
 }

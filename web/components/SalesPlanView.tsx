@@ -1,211 +1,293 @@
 "use client";
 
 import { useState } from "react";
+import RecommendationCard from "@/components/bui/RecommendationCard";
+import TaskRows from "@/components/bui/TaskRows";
+import AgentWait from "@/components/sales/AgentWait";
+import SalesFunnel from "@/components/SalesFunnel";
+import Button from "@/components/ui/Button";
+import Callout from "@/components/ui/Callout";
+import Card from "@/components/ui/Card";
+import Disclosure from "@/components/ui/Disclosure";
+import EmptyState from "@/components/ui/EmptyState";
+import Field, { Input } from "@/components/ui/Field";
+import { IconDoc, IconWarning } from "@/components/ui/icons";
+import { Section } from "@/components/ui/Page";
+import { ValuePill } from "@/components/ui/Pills";
+import Skeleton from "@/components/ui/Skeleton";
 import { api, errorMessage } from "@/lib/client/api";
-import type { SalesPlan } from "@/lib/salesTypes";
 import type { SalesSegment } from "@/lib/domain/segments";
 import { channelLabel, motionLabel } from "@/lib/salesMotionLabels";
-import SalesFunnel from "@/components/SalesFunnel";
-import Callout from "@/components/ui/Callout";
-import Seal from "@/components/ui/Seal";
-import Skeleton from "@/components/ui/Skeleton";
+import type { SalesPlan } from "@/lib/salesTypes";
+
+export type PlanSource = "hermes" | "offline_fallback" | "client";
 
 interface SalesPlanViewProps {
-  sessionDbId: string | null;
+  sessionDbId: string;
   plan: SalesPlan | null;
+  /** the stored plan is still loading */
+  loading: boolean;
+  /** the sales strategist is writing a new plan (started by the parent) */
+  generating: boolean;
+  error: string | null;
   offer?: string;
   segments?: SalesSegment[] | null;
-  planSource?: "hermes" | "offline_fallback" | "client" | null;
+  planSource?: PlanSource | null;
   planNote?: string | null;
   onApproved: (plan: SalesPlan) => void;
-  onRevised: (
-    plan: SalesPlan,
-    meta?: { source?: "hermes" | "offline_fallback" | "client"; note?: string | null },
-  ) => void;
+  onRevised: (plan: SalesPlan, meta?: { source?: PlanSource; note?: string | null }) => void;
+  /** write a plan when none exists */
+  onGenerate: () => void;
+  /** after an error: reload or write again, whichever failed */
+  onRetry: () => void;
 }
 
+const PLAN_STAGES = [
+  "Reading who you sell to",
+  "Choosing how to reach them",
+  "Sizing a small first batch",
+  "Listing what could go wrong",
+];
+
+type PlanResponse = { plan: SalesPlan; source?: PlanSource; note?: string | null };
+
+/** Plan: one decision (approve the plan), with the detail behind a disclosure. */
 export default function SalesPlanView({
   sessionDbId,
   plan,
+  loading,
+  generating,
+  error,
   offer,
   segments,
   planSource = null,
   planNote = null,
   onApproved,
   onRevised,
+  onGenerate,
+  onRetry,
 }: SalesPlanViewProps) {
   const [reviseNote, setReviseNote] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [revising, setRevising] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
-  if (!plan) {
+  if (generating || revising) {
     return (
-      <div className="kraft-card sales-plan" role="status" aria-busy="true">
-        <p className="mono meta-line">
-          Building your plan… if this persists, confirm ICP segments again.
-        </p>
-        <Skeleton lines={3} title />
-      </div>
+      <AgentWait
+        agent="sales-strategist"
+        doing={revising ? "is rewriting your plan" : "is writing your plan"}
+        stages={PLAN_STAGES}
+        note="Usually under a minute."
+      />
     );
   }
 
-  const currentPlan = plan;
+  if (!plan) {
+    if (loading) return <Skeleton title lines={5} />;
+    if (error) {
+      return (
+        <Callout
+          tone="error"
+          title="The plan didn’t come back"
+          actions={
+            <Button size="sm" variant="secondary" onClick={onRetry}>
+              Try again
+            </Button>
+          }
+        >
+          {error}
+        </Callout>
+      );
+    }
+    return (
+      <EmptyState
+        title="No plan yet"
+        icon={<IconDoc size={16} />}
+        action={
+          <Button variant="accent" size="sm" onClick={onGenerate}>
+            Write my plan
+          </Button>
+        }
+      >
+        The sales strategist turns who you sell to into a small first batch for you to approve.
+      </EmptyState>
+    );
+  }
+
+  const current = plan;
   const accounts = plan.estimated_activity?.accounts_to_research ?? null;
   const sends = plan.estimated_activity?.sends_per_week ?? null;
-  const motionCount = plan.motions?.length ?? 0;
-  const summaryParts = [
-    accounts != null ? `~${accounts} companies` : null,
-    sends != null ? `~${sends} emails/week` : null,
-    motionCount ? `${motionCount} motion${motionCount === 1 ? "" : "s"}` : null,
-  ].filter(Boolean);
-
-  type PlanResponse = {
-    plan: SalesPlan;
-    source?: "hermes" | "offline_fallback" | "client";
-    note?: string | null;
-  };
+  const approved = plan.status === "approved";
+  const offline = (planSource ?? plan.source) === "offline_fallback";
+  const risks = plan.risks ?? [];
 
   async function approve() {
-    if (!sessionDbId || !currentPlan.id) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const { plan: approved } = await api.post<PlanResponse>("/api/sales/plan", {
-        session_id: sessionDbId,
-        action: "approve",
-        plan_id: currentPlan.id,
-      });
-      onApproved(approved);
-    } catch (err) {
-      setError(errorMessage(err, "Could not approve the plan"));
-    } finally {
-      setBusy(false);
-    }
+    if (!current.id)
+      throw new Error("This plan has no id yet. Ask for changes to write a new one.");
+    const { plan: next } = await api.post<PlanResponse>("/api/sales/plan", {
+      session_id: sessionDbId,
+      action: "approve",
+      plan_id: current.id,
+    });
+    onApproved(next);
   }
 
   async function revise() {
-    if (!sessionDbId) return;
-    setBusy(true);
-    setError(null);
+    if (!reviseNote.trim()) return;
+    setRevising(true);
+    setActionError(null);
     try {
       const json = await api.post<PlanResponse>("/api/sales/plan", {
         session_id: sessionDbId,
         action: "generate",
-        revise_note: reviseNote.trim() || undefined,
+        revise_note: reviseNote.trim(),
       });
       setReviseNote("");
       onRevised(json.plan, { source: json.source, note: json.note ?? null });
     } catch (err) {
-      setError(errorMessage(err, "Could not regenerate the plan"));
+      setActionError(errorMessage(err, "Could not rewrite the plan"));
     } finally {
-      setBusy(false);
+      setRevising(false);
     }
   }
 
+  const offlineNote = planNote ?? plan.revise_note;
+
   return (
-    <div className="kraft-card sales-plan unfold">
-      <div className="section-head">
-        <p className="label-caps">Your outbound plan</p>
-        {plan.status === "approved" ? (
-          <Seal tone="moss">Approved</Seal>
-        ) : (
-          <span className="tag">Draft</span>
-        )}
-      </div>
-
-      <p className="sales-intro">
-        Research matching companies, draft emails, pause for your OK before anything sends.
-      </p>
-
-      {summaryParts.length > 0 && (
-        <p className="sales-plan__summary">
-          <strong>{summaryParts.join(" · ")}</strong>
-        </p>
-      )}
-
-      {planSource === "offline_fallback" && (
-        <Callout tone="warn">
-          Hermes unavailable — offline template plan.
-          {planNote ? ` ${planNote}` : ""} Start Hermes and regenerate.
+    <div className="stack stack--lg">
+      {offline && (
+        <Callout tone="warn" title="This is a starter plan">
+          {offlineNote ? `${offlineNote}. ` : ""}Kami’s agents were offline, so this plan wasn’t
+          researched. Start Hermes, then ask for changes to get a researched plan.
         </Callout>
       )}
 
-      {offer && (
-        <p className="mono meta-line">
-          Selling: {offer.slice(0, 160)}
-          {offer.length > 160 ? "…" : ""}
+      <RecommendationCard
+        className="sales-plan__reco"
+        title={approved ? "Plan approved" : "Approve this plan?"}
+        options={[
+          {
+            key: "plan",
+            short: "This plan",
+            body: (
+              <>
+                Kami will research{" "}
+                {accounts != null ? (
+                  <ValuePill tone="accent">about {accounts} companies</ValuePill>
+                ) : (
+                  "matching companies"
+                )}
+                , then draft up to{" "}
+                {sends != null ? (
+                  <ValuePill>{sends} emails a week</ValuePill>
+                ) : (
+                  "a small weekly batch"
+                )}
+                . Nothing sends until you approve each email.
+              </>
+            ),
+            confidence: offline
+              ? { signal: 1, label: "Starter plan" }
+              : {
+                  signal: risks.length ? 2 : 3,
+                  label: risks.length
+                    ? `${risks.length} thing${risks.length === 1 ? "" : "s"} to know`
+                    : "Looks solid",
+                },
+            cta: approved ? "Find companies" : "Approve plan",
+            onAccept: approved ? async () => onApproved(current) : approve,
+          },
+        ]}
+        labels={{ accepted: approved ? "Opening…" : "Approved" }}
+        footer={
+          !approved ? (
+            <div className="reco__revise">
+              <Field label="Ask for changes" optional hideLabel>
+                <Input
+                  size="sm"
+                  value={reviseNote}
+                  onChange={(e) => setReviseNote(e.target.value)}
+                  placeholder="Want changes? e.g. fintech only, fewer companies…"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && reviseNote.trim()) void revise();
+                  }}
+                />
+              </Field>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => void revise()}
+                disabled={!reviseNote.trim()}
+              >
+                Rewrite
+              </Button>
+            </div>
+          ) : null
+        }
+      />
+      {actionError && (
+        <p className="field__error" role="alert">
+          {actionError}
         </p>
       )}
 
-      <SalesFunnel segments={segments} plan={plan} />
-
-      <details className="sales-plan__details">
-        <summary className="mono">Motions, tiers &amp; risks</summary>
-        <div className="flow">
-          <p>{plan.channel_rationale}</p>
-          <ul className="sales-plan__list">
-            {plan.motions.map((m, i) => (
-              <li key={i}>
-                <strong>{motionLabel(m.motion)}</strong> via {channelLabel(m.primary_channel)} —{" "}
-                {m.rationale}
-              </li>
-            ))}
-          </ul>
-          <div className="sales-plan__tiers">
-            {plan.tiers.map((t) => (
-              <div key={t.tier} className="subcard sales-plan__tier">
-                <strong>{t.label}</strong>
-                <p>{t.criteria}</p>
-                <p className="mono">
-                  {t.target_count} · {t.channels.map(channelLabel).join(", ")}
-                </p>
-              </div>
-            ))}
-          </div>
-          {plan.risks?.length ? (
-            <ul className="sales-plan__list sales-plan__list--fine">
-              {plan.risks.map((r, i) => (
-                <li key={i}>{r}</li>
+      {risks.length > 0 && (
+        <Section title="Worth knowing" desc="So you can decide with eyes open.">
+          <Card>
+            <ul className="risk-list">
+              {risks.map((r, i) => (
+                <li key={i}>
+                  <IconWarning size={13} className="sales-plan__risk-icon" />
+                  <span>{r}</span>
+                </li>
               ))}
             </ul>
-          ) : null}
-        </div>
-      </details>
-
-      {plan.status === "draft" && (
-        <div className="form-stack">
-          <div className="form-line">
-            <label className="mono label-caps" htmlFor="revise-note">
-              Want changes? (optional)
-            </label>
-            <input
-              id="revise-note"
-              value={reviseNote}
-              onChange={(e) => setReviseNote(e.target.value)}
-              placeholder="Focus on fintech only, fewer companies…"
-            />
-          </div>
-          <div className="actions">
-            <button
-              type="button"
-              className="hanko-btn"
-              onClick={approve}
-              disabled={busy || !plan.id}
-            >
-              {busy ? "Saving…" : "Approve plan"}
-            </button>
-            <button type="button" className="btn-secondary" onClick={revise} disabled={busy}>
-              Regenerate with note
-            </button>
-          </div>
-        </div>
+          </Card>
+        </Section>
       )}
 
-      {error && <Callout tone="error">{error}</Callout>}
-
-      {plan.status === "approved" && (
-        <p className="mono meta-line">Plan approved — continue to Find companies.</p>
-      )}
+      <Disclosure label="How Kami will work">
+        <div className="stack stack--lg sales-plan__details">
+          {offer && (
+            <p className="text-2 text-sm">
+              <span className="text-ink">Selling:</span> {offer}
+            </p>
+          )}
+          <SalesFunnel segments={segments} plan={plan} show="budgets" />
+          {plan.motions.length > 0 && (
+            <div className="stack stack--sm">
+              <p className="group-label">How Kami reaches them</p>
+              {plan.channel_rationale && <p className="text-2 text-sm">{plan.channel_rationale}</p>}
+              <TaskRows
+                variant="List"
+                rows={plan.motions.map((m, i) => ({
+                  key: `${m.motion}-${i}`,
+                  label: motionLabel(m.motion),
+                  amount: channelLabel(m.primary_channel),
+                  status: approved ? "done" : "pending",
+                  step: i + 1,
+                  pill: null,
+                  details: [{ label: m.rationale }],
+                }))}
+              />
+            </div>
+          )}
+          {plan.tiers.length > 0 && (
+            <div className="stack stack--sm">
+              <p className="group-label">Who comes first</p>
+              <ol className="sales-plan__order">
+                {plan.tiers.map((t) => (
+                  <li key={t.tier}>
+                    <span className="text-ink">{t.label}</span>
+                    <span className="text-3 tabular"> · about {t.target_count}</span>
+                    <p className="text-2 text-sm">{t.criteria}</p>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+        </div>
+      </Disclosure>
     </div>
   );
 }

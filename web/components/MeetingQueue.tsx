@@ -1,6 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Button from "@/components/ui/Button";
+import Callout from "@/components/ui/Callout";
+import Card, { CardBody, CardFooter } from "@/components/ui/Card";
+import EmptyState from "@/components/ui/EmptyState";
+import Field, { Input, Select } from "@/components/ui/Field";
+import { IconArrowUpRight, IconCalendar } from "@/components/ui/icons";
+import { humanize, StatusPill, statusTone } from "@/components/ui/Pills";
+import Segmented from "@/components/ui/Segmented";
+import Skeleton from "@/components/ui/Skeleton";
 import { api, errorMessage, withQuery } from "@/lib/client/api";
 import { useApi } from "@/lib/client/useApi";
 import type { MeetingContact } from "@/lib/sales/meetings";
@@ -24,6 +33,9 @@ const DURATIONS = [15, 30, 45, 60];
 
 interface MeetingQueueProps {
   sessionDbId: string | null;
+  /** When set (Inbox), show only this meeting instead of every meeting on the campaign. */
+  focusId?: string;
+  onChanged?: () => void;
 }
 
 interface MeetingsResponse {
@@ -58,7 +70,7 @@ function contactLabel(c: MeetingContact): string {
   return `${who}${c.email}${c.title ? ` (${c.title})` : ""}`;
 }
 
-export default function MeetingQueue({ sessionDbId }: MeetingQueueProps) {
+export default function MeetingQueue({ sessionDbId, focusId, onChanged }: MeetingQueueProps) {
   const { data, error, loading, reload } = useApi<MeetingsResponse>(
     sessionDbId ? withQuery("/api/sales/meetings", { session_id: sessionDbId }) : null,
   );
@@ -72,7 +84,7 @@ export default function MeetingQueue({ sessionDbId }: MeetingQueueProps) {
 
   if (!sessionDbId) return null;
 
-  const meetings = data?.meetings ?? [];
+  const meetings = (data?.meetings ?? []).filter((m) => !focusId || m.id === focusId);
   const contacts = data?.contacts ?? [];
   const calendarReady = data?.calendar_configured ?? false;
 
@@ -114,6 +126,7 @@ export default function MeetingQueue({ sessionDbId }: MeetingQueueProps) {
       });
       setInviteId(null);
       reload();
+      onChanged?.();
     } catch (err) {
       setFormError(errorMessage(err, "Could not send the invite"));
       reload();
@@ -126,80 +139,91 @@ export default function MeetingQueue({ sessionDbId }: MeetingQueueProps) {
   for (const m of meetings) grouped.set(m.status, [...(grouped.get(m.status) ?? []), m]);
 
   return (
-    <section className="meeting-queue">
-      {loading && <p className="muted">Loading meetings…</p>}
-      {error && (
-        <p role="alert" className="mono form-error">
-          {error}
-        </p>
-      )}
+    <div className="stack">
+      {loading && !data && <Skeleton title lines={4} />}
+      {error && <Callout tone="error">{error}</Callout>}
       {data && !calendarReady && (
-        <p className="capability-banner">
-          <strong>Calendar invites are off.</strong> Set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and
-          GOOGLE_REFRESH_TOKEN to send real invites.
-        </p>
+        <Callout tone="info" title="Calendar invites are off">
+          Set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and GOOGLE_REFRESH_TOKEN to send real invites.
+        </Callout>
       )}
 
       {STATUS_ORDER.map((status) => {
         const list = grouped.get(status) ?? [];
         if (!list.length) return null;
         return (
-          <div key={status} className="meeting-queue__group">
-            <p className="label-caps">
-              {status.replace(/_/g, " ")} ({list.length})
+          <section key={status} className="stack stack--sm">
+            <p className="group-label">
+              {humanize(status)} <span className="tabular">{list.length}</span>
             </p>
-            <ul className="row-list">
-              {list.map((m) => {
-                const options = contacts.filter(
-                  (c) => !m.account_id || !c.account_id || c.account_id === m.account_id,
-                );
-                return (
-                  <li key={m.id} className="row meeting-queue__item">
-                    <div className="row--flat">
-                      <span className="row__title">{m.title ?? "Meeting"}</span>
-                      <span className="mono muted">{formatSlot(m.scheduled_at, m.time_zone)}</span>
-                      {m.attendee_email && <span className="mono muted">{m.attendee_email}</span>}
+            {list.map((m) => {
+              const options = contacts.filter(
+                (c) => !m.account_id || !c.account_id || c.account_id === m.account_id,
+              );
+              const htmlLink =
+                typeof m.provider_receipt?.html_link === "string"
+                  ? m.provider_receipt.html_link
+                  : null;
+              return (
+                <Card key={m.id}>
+                  <CardBody className="meeting">
+                    <span className="meeting__icon">
+                      <IconCalendar size={16} />
+                    </span>
+                    <span className="meeting__copy">
+                      <span className="meeting__title">{m.title ?? "Meeting"}</span>
+                      <span className="text-3 text-xs">
+                        {formatSlot(m.scheduled_at, m.time_zone)}
+                        {m.attendee_email ? ` · ${m.attendee_email}` : ""}
+                      </span>
+                    </span>
+                    <span className="row row--wrap" style={{ gap: 6 }}>
+                      <StatusPill tone={statusTone(m.status)}>{humanize(m.status)}</StatusPill>
                       {m.meeting_link && (
-                        <a className="mono" href={m.meeting_link} target="_blank" rel="noreferrer">
-                          video link
+                        <a
+                          className="records-link"
+                          href={m.meeting_link}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Video <IconArrowUpRight size={11} />
                         </a>
                       )}
-                      {typeof m.provider_receipt?.html_link === "string" &&
-                        m.provider_receipt.html_link && (
-                          <a
-                            className="mono"
-                            href={m.provider_receipt.html_link}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            calendar event
-                          </a>
-                        )}
-                      {m.status === "proposed" && calendarReady && inviteId !== m.id && (
-                        <button type="button" className="btn-outline" onClick={() => openInvite(m)}>
-                          Invite…
-                        </button>
+                      {htmlLink && (
+                        <a
+                          className="records-link"
+                          href={htmlLink}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Calendar <IconArrowUpRight size={11} />
+                        </a>
                       )}
-                    </div>
-                    {m.last_error && m.status === "proposed" && (
-                      <p className="mono form-error meeting-queue__note">
-                        Last attempt failed: {m.last_error}
-                      </p>
-                    )}
-
-                    {inviteId === m.id && (
-                      <form className="meeting-queue__form" onSubmit={(e) => sendInvite(e, m)}>
+                      {m.status === "proposed" && calendarReady && inviteId !== m.id && (
+                        <Button size="xs" variant="accent" onClick={() => openInvite(m)}>
+                          Invite…
+                        </Button>
+                      )}
+                    </span>
+                  </CardBody>
+                  {m.last_error && m.status === "proposed" && (
+                    <CardBody>
+                      <p className="field__error">Last attempt failed: {m.last_error}</p>
+                    </CardBody>
+                  )}
+                  {inviteId === m.id && (
+                    <form onSubmit={(e) => sendInvite(e, m)}>
+                      <CardBody
+                        className="field-grid"
+                        style={{ borderTop: "1px solid var(--line)" }}
+                      >
                         {options.length === 0 ? (
-                          <p className="muted">
+                          <p className="text-3 text-sm">
                             No contact with an email on this account yet — find or add one first.
                           </p>
                         ) : (
-                          <div className="form-line">
-                            <label className="mono label-caps" htmlFor={`attendee-${m.id}`}>
-                              Attendee
-                            </label>
-                            <select
-                              id={`attendee-${m.id}`}
+                          <Field label="Attendee">
+                            <Select
                               value={contactId}
                               onChange={(e) => setContactId(e.target.value)}
                               required
@@ -212,69 +236,68 @@ export default function MeetingQueue({ sessionDbId }: MeetingQueueProps) {
                                   {contactLabel(c)}
                                 </option>
                               ))}
-                            </select>
-                          </div>
+                            </Select>
+                          </Field>
                         )}
-                        <div className="form-line">
-                          <label className="mono label-caps" htmlFor={`slot-${m.id}`}>
-                            Start ({timeZone})
-                          </label>
-                          <input
-                            id={`slot-${m.id}`}
+                        <Field label={`Start (${timeZone})`}>
+                          <Input
                             type="datetime-local"
                             value={slot}
                             min={toLocalInput(new Date())}
                             onChange={(e) => setSlot(e.target.value)}
                             required
                           />
+                        </Field>
+                        <div className="field">
+                          <span className="field__label">Length</span>
+                          <Segmented
+                            label="Meeting length"
+                            value={String(duration)}
+                            onChange={(v) => setDuration(Number(v))}
+                            options={DURATIONS.map((d) => ({ value: String(d), label: `${d}m` }))}
+                          />
                         </div>
-                        <div className="form-line">
-                          <label className="mono label-caps" htmlFor={`duration-${m.id}`}>
-                            Length
-                          </label>
-                          <select
-                            id={`duration-${m.id}`}
-                            value={duration}
-                            onChange={(e) => setDuration(Number(e.target.value))}
-                          >
-                            {DURATIONS.map((d) => (
-                              <option key={d} value={d}>
-                                {d} min
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="meeting-queue__actions">
-                          <button
-                            type="submit"
-                            className="btn-secondary"
-                            disabled={sending || options.length === 0}
-                          >
-                            {sending ? "Sending…" : "Send invite"}
-                          </button>
-                          <button
-                            type="button"
-                            className="mono link-button"
-                            onClick={() => setInviteId(null)}
-                          >
-                            cancel
-                          </button>
-                        </div>
-                        {formError && (
-                          <p role="alert" className="mono form-error">
+                      </CardBody>
+                      {formError && (
+                        <CardBody>
+                          <p role="alert" className="field__error">
                             {formError}
                           </p>
-                        )}
-                      </form>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
+                        </CardBody>
+                      )}
+                      <CardFooter>
+                        <Button size="sm" variant="quiet" onClick={() => setInviteId(null)}>
+                          Cancel
+                        </Button>
+                        <Button
+                          type="submit"
+                          size="sm"
+                          variant="accent"
+                          busy={sending}
+                          disabled={options.length === 0}
+                        >
+                          Send invite
+                        </Button>
+                      </CardFooter>
+                    </form>
+                  )}
+                </Card>
+              );
+            })}
+          </section>
         );
       })}
-      {data && meetings.length === 0 && <p className="muted">No meetings queued.</p>}
-    </section>
+      {data &&
+        meetings.length === 0 &&
+        (focusId ? (
+          <EmptyState title="This meeting is no longer waiting" icon={<IconCalendar size={16} />}>
+            It has left your inbox.
+          </EmptyState>
+        ) : (
+          <EmptyState title="No meetings queued" icon={<IconCalendar size={16} />}>
+            Meeting requests from replies show up here.
+          </EmptyState>
+        ))}
+    </div>
   );
 }

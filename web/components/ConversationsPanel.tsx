@@ -1,25 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import type { Conversation, MarketingCrmEntry } from "@/lib/marketingTypes";
-import StatusChip from "@/components/StatusChip";
 import ConversationThread from "@/components/ConversationThread";
+import { PlatformMark } from "@/components/marketing/platforms";
+import NotificationList from "@/components/sales/NotificationList";
+import EmptyState from "@/components/ui/EmptyState";
+import { IconChat } from "@/components/ui/icons";
+import Segmented from "@/components/ui/Segmented";
+import { statusTone } from "@/components/ui/Pills";
+import type { Conversation, MarketingCrmEntry } from "@/lib/marketingTypes";
 
 type PlatformFilter = "all" | "x" | "instagram";
 
-const FILTER_LABEL: Record<PlatformFilter, string> = { all: "All", x: "X", instagram: "IG" };
-
-interface ConversationsPanelProps {
-  conversations: Conversation[];
-  entries: MarketingCrmEntry[];
-  onRefresh: () => void;
-}
-
+/** DM conversations, escalations first; open one to read and reply. */
 export default function ConversationsPanel({
   conversations,
   entries,
   onRefresh,
-}: ConversationsPanelProps) {
+}: {
+  conversations: Conversation[];
+  entries: MarketingCrmEntry[];
+  onRefresh: () => void;
+}) {
   const [filter, setFilter] = useState<PlatformFilter>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -36,63 +38,51 @@ export default function ConversationsPanel({
 
   if (selected && selectedEntry) {
     return (
-      <aside>
-        <ConversationThread
-          sessionId={selectedEntry.session_id}
-          conversation={selected}
-          handle={selectedEntry.handle}
-          onBack={() => setSelectedId(null)}
-          onRefresh={onRefresh}
-        />
-      </aside>
+      <ConversationThread
+        sessionId={selectedEntry.session_id}
+        conversation={selected}
+        handle={selectedEntry.handle}
+        onBack={() => setSelectedId(null)}
+        onRefresh={onRefresh}
+      />
     );
   }
 
   return (
-    <aside aria-labelledby="conversations-title">
-      <p id="conversations-title" className="label-caps">
-        Conversations
-      </p>
-      <div className="chip-row" role="group" aria-label="Filter by platform">
-        {(Object.keys(FILTER_LABEL) as PlatformFilter[]).map((f) => (
-          <button
-            key={f}
-            type="button"
-            className="chip-toggle chip-toggle--small"
-            aria-pressed={filter === f}
-            onClick={() => setFilter(f)}
-          >
-            {FILTER_LABEL[f]}
-          </button>
-        ))}
-      </div>
-      <div className="card-list panel-section">
-        {actionFirst.length === 0 && <p className="fine-print">No active conversations.</p>}
-        {actionFirst.map((conv) => {
-          const entry = entries.find((e) => e.id === conv.crm_entry_id);
-          return (
-            <button
-              key={conv.id}
-              type="button"
-              className="kraft-card entity-card"
-              onClick={() => setSelectedId(conv.id)}
-            >
-              <span className="entity-card__row">
-                <strong className="entity-card__name">@{entry?.handle ?? "unknown"}</strong>
-                <StatusChip label={conv.status} />
-              </span>
-              {conv.escalation_reason && (
-                <span className="fine-print fine-print--alert notice-card__body">
-                  ⚠ {conv.escalation_reason}
-                </span>
-              )}
-              <span className="fine-print notice-card__body">
-                {conv.platform} · updated {new Date(conv.updated_at).toLocaleDateString()}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </aside>
+    <div className="stack">
+      <Segmented<PlatformFilter>
+        label="Filter by platform"
+        value={filter}
+        onChange={setFilter}
+        options={[
+          { value: "all", label: "All" },
+          { value: "x", label: "X" },
+          { value: "instagram", label: "Instagram" },
+        ]}
+      />
+      {actionFirst.length === 0 ? (
+        <EmptyState title="No active conversations" icon={<IconChat size={16} />}>
+          DMs you send from the CRM show up here with replies.
+        </EmptyState>
+      ) : (
+        <NotificationList
+          label="Conversations"
+          items={actionFirst.map((conv) => {
+            const entry = entries.find((e) => e.id === conv.crm_entry_id);
+            return {
+              key: conv.id,
+              kind: conv.status,
+              tone: conv.status === "escalated" ? "red" : statusTone(conv.status),
+              title: `@${entry?.handle ?? "unknown"}`,
+              body:
+                conv.escalation_reason ??
+                `Updated ${new Date(conv.updated_at).toLocaleDateString()}`,
+              icon: <PlatformMark platform={conv.platform} size={18} />,
+              onOpen: () => setSelectedId(conv.id),
+            };
+          })}
+        />
+      )}
+    </div>
   );
 }

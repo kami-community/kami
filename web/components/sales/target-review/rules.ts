@@ -79,7 +79,7 @@ export function groupAccounts(accounts: AccountWithMeta[]): [string, AccountWith
 
 export type PrimaryAction = "distribution" | "discover" | "find_emails" | "draft" | null;
 
-/** The one primary (hanko) action for the current state of the Find step. */
+/** The one primary (accent) action for the current state of the Find step. */
 export function primaryAction(state: {
   distributionPath: boolean;
   canCreateDistribution: boolean;

@@ -1,17 +1,25 @@
 "use client";
 
-import type { Meeting, SalesTask } from "@/lib/salesTypes";
+import NotificationList, { type NotificationItem } from "@/components/sales/NotificationList";
+import SalesConversationThread from "@/components/SalesConversationThread";
+import { notificationItem, useSalesInbox } from "@/components/SalesInbox";
+import Callout from "@/components/ui/Callout";
+import EmptyState from "@/components/ui/EmptyState";
+import { IconCalendar, IconCheckCircle, IconList } from "@/components/ui/icons";
+import Skeleton from "@/components/ui/Skeleton";
 import { withQuery } from "@/lib/client/api";
 import { useApi } from "@/lib/client/useApi";
-import SalesConversationThread from "@/components/SalesConversationThread";
-import { NotificationCard, useSalesInbox } from "@/components/SalesInbox";
-
-interface SalesNeedsYouProps {
-  sessionDbId: string | null;
-}
+import type { Meeting, SalesTask } from "@/lib/salesTypes";
 
 /** Replies, meeting requests and tasks waiting on the founder. */
-export default function SalesNeedsYou({ sessionDbId }: SalesNeedsYouProps) {
+export default function SalesNeedsYou({
+  sessionDbId,
+  onNavigate,
+}: {
+  sessionDbId: string | null;
+  /** open the full list for a kind of item */
+  onNavigate: (target: "meetings" | "tasks") => void;
+}) {
   const inbox = useSalesInbox(sessionDbId);
   const meetings = useApi<{ meetings: Meeting[] }>(
     sessionDbId ? withQuery("/api/sales/meetings", { session_id: sessionDbId }) : null,
@@ -44,54 +52,44 @@ export default function SalesNeedsYou({ sessionDbId }: SalesNeedsYouProps) {
     (t) => t.status === "open" || t.status === "in_progress",
   );
   const loading = inbox.loading || meetings.loading || tasks.loading;
-  const errors = [inbox.error, meetings.error, tasks.error].filter(Boolean);
-  const hasItems = unread.length > 0 || proposed.length > 0 || openTasks.length > 0;
+  const errors = [inbox.error, meetings.error, tasks.error].filter((e): e is string => Boolean(e));
+
+  const items: NotificationItem[] = [
+    ...unread.map((n) => notificationItem(n, inbox.canOpen(n), () => void inbox.open(n))),
+    ...proposed.map((m) => ({
+      key: `meeting-${m.id}`,
+      kind: "meeting_request",
+      tone: "green" as const,
+      title: m.title ?? "New meeting request",
+      body: "Accept with a calendar invite, or decline.",
+      icon: <IconCalendar size={15} />,
+      onOpen: () => onNavigate("meetings"),
+    })),
+    ...openTasks.map((t) => ({
+      key: `task-${t.id}`,
+      kind: `${t.priority}_priority_task`,
+      tone: (t.priority === "high" ? "orange" : "neutral") as NotificationItem["tone"],
+      title: t.title,
+      body: t.due_at ? `Due ${new Date(t.due_at).toLocaleDateString()}` : undefined,
+      icon: <IconList size={15} />,
+      onOpen: () => onNavigate("tasks"),
+    })),
+  ];
 
   return (
-    <div className="sales-panel">
-      <p className="sales-intro">Replies, meeting requests, and tasks that need your decision.</p>
-
-      {!sessionDbId && (
-        <p className="fine-print">Complete setup and send outreach to see items here.</p>
-      )}
+    <>
       {errors.map((e) => (
-        <p key={e} role="alert" className="form-error">
+        <Callout key={e} tone="error">
           {e}
-        </p>
+        </Callout>
       ))}
-      {sessionDbId && loading && !hasItems && <p className="fine-print">Loading…</p>}
-      {sessionDbId && !loading && !hasItems && errors.length === 0 && (
-        <p className="fine-print">
-          Nothing needs you right now — Kami will surface replies and meeting requests here.
-        </p>
+      {loading && !items.length && <Skeleton title lines={4} />}
+      {!loading && !items.length && !errors.length && (
+        <EmptyState title="Nothing needs you right now" icon={<IconCheckCircle size={16} />}>
+          Kami will surface replies, meeting requests and follow-ups here.
+        </EmptyState>
       )}
-
-      <div className="card-list">
-        {unread.map((n) => (
-          <NotificationCard
-            key={n.id}
-            notification={n}
-            canOpen={inbox.canOpen(n)}
-            onOpen={() => void inbox.open(n)}
-          />
-        ))}
-
-        {proposed.map((m) => (
-          <div key={m.id} className="kraft-card compact-card">
-            <p className="label-caps">Meeting proposed</p>
-            <p className="notice-card__title">
-              {m.title ?? "New meeting"} — review in More → Meetings
-            </p>
-          </div>
-        ))}
-
-        {openTasks.map((t) => (
-          <div key={t.id} className="kraft-card compact-card">
-            <p className="label-caps">Task</p>
-            <p className="notice-card__title">{t.title}</p>
-          </div>
-        ))}
-      </div>
-    </div>
+      {items.length > 0 && <NotificationList label="Needs you" items={items} />}
+    </>
   );
 }

@@ -19,6 +19,8 @@ export interface KamiCapabilities {
   canSendEmail: boolean;
   canConnectX: boolean;
   canConnectInstagram: boolean;
+  /** sign-in is enabled (KAMI_ADMIN_TOKEN set) */
+  authRequired: boolean;
   notes: string[];
 }
 
@@ -67,6 +69,7 @@ export async function detectCapabilities(): Promise<KamiCapabilities> {
     canSendEmail: emailConfigured(),
     canConnectX: OAUTH_PROVIDERS.x.configured(),
     canConnectInstagram: OAUTH_PROVIDERS.instagram.configured(),
+    authRequired: Boolean(c.KAMI_ADMIN_TOKEN),
     notes,
   };
 }

@@ -1,0 +1,472 @@
+/* ──────────────────────────────────────────────────────────
+ * Kami foundation — the Beautiful UI token system
+ * (https://www.beautifului.dev), ported to plain CSS.
+ *
+ * Cool near-white canvas, white cards, hairline borders, layered
+ * single-digit-opacity shadows, a neutral ink ramp, and semantic
+ * color used sparingly as a condiment. `.dark` on <html> swaps every
+ * token at once (see components/ui/ThemeToggle).
+ * ────────────────────────────────────────────────────────── */
+
+:root {
+  /* surfaces — cool, blue-tinted neutrals */
+  --page: oklch(0.985 0.001 286.376);
+  --canvas: oklch(0.961 0.002 247.84);
+  --surface: oklch(1 0 0);
+  --inset: oklch(0.979 0.002 247.839);
+  --hover: oklch(0.97 0.002 247.839);
+  --hover-2: oklch(0.933 0.003 247.86);
+
+  /* ink ramp */
+  --ink: oklch(0.247 0.006 258.361);
+  --ink-2: oklch(0.506 0.01 264.477);
+  --ink-3: oklch(0.695 0.009 264.505);
+
+  /* borders — solid and crisp, not alpha */
+  --line: oklch(0.946 0.003 264.542);
+  --line-strong: oklch(0.912 0.005 258.326);
+  --line-soft: oklch(0.966 0.002 264.542);
+  --grid-line: color-mix(in srgb, var(--line) 78%, transparent);
+  --field: oklch(0.961 0.001 286.375);
+  --stripe: oklch(0.405 0 0 / 0.075);
+  --stripe-bg: oklch(0.97 0 0);
+
+  /* accent */
+  --accent: oklch(0.626 0.205 254.947);
+  --accent-ink: oklch(0.556 0.187 255.617);
+  --accent-tint: oklch(0.96 0.019 252.878);
+
+  /* semantic */
+  --green: oklch(0.603 0.155 150.883);
+  --green-tint: oklch(0.958 0.017 159.118);
+  --orange: oklch(0.689 0.179 49.902);
+  --orange-tint: oklch(0.964 0.021 67.581);
+  --red: oklch(0.621 0.192 23.042);
+  --red-tint: oklch(0.956 0.017 17.462);
+
+  /* the Kami seal — brand mark only, never a UI state */
+  --seal: oklch(0.556 0.157 36.5);
+
+  /* overlays */
+  --tooltip-bg: oklch(0.272 0.008 264.435);
+  --tooltip-fg: oklch(0.976 0.002 247.839);
+  --tooltip-muted: oklch(0.731 0.008 260.731);
+  --tooltip-border: oklch(0.356 0.007 264.474);
+  --scrim: oklch(0.2 0.01 264 / 0.32);
+
+  /* smooth layered shadow stacks */
+  --shadow-xs: 0 0 4px 0 #0000000a;
+  --shadow-sm:
+    0 18px 47px 0 #00000008, 0 7.5px 19px 0 #00000005, 0 4px 10.5px 0 #00000005,
+    0 2.3px 5.8px 0 #00000003, 0 1.2px 3.1px 0 #00000003, 0 0.5px 1.3px 0 #00000003;
+  --shadow-md:
+    0 17.54px 23.39px 0 #0000000a, 0 9.4px 12.5px 0 #00000008, 0 5.25px 7px 0 #00000005,
+    0 2.79px 3.72px -2px #00000003, 0 1.16px 1.5px 0 #00000003;
+  --shadow-lg:
+    0 25px 50px 0 #0000000d, 0 12px 24px 0 #0000000a, 0 6px 12px 0 #00000008, 0 3px 6px 0 #00000005,
+    0 1.5px 3px 0 #00000005;
+
+  --shadow-hairline: 0 0 0 1px var(--line);
+  --shadow-btn: 0 0 0 1px var(--line-strong), var(--shadow-xs);
+  --shadow-card: 0 0 0 1px var(--line), var(--shadow-sm);
+  --shadow-raised: 0 0 0 1px var(--line), var(--shadow-md);
+  --shadow-overlay: 0 0 0 1px var(--line), var(--shadow-lg);
+  --shadow-inset-field: inset 0 1px 2px oklch(0 0 0 / 0.12);
+  --shadow-filled: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+
+  /* type */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono-face), ui-monospace, "SF Mono", monospace;
+
+  /* radii — chips 6, controls 8, cards 10, windows 14, pills 999 */
+  --radius-chip: 6px;
+  --radius-control: 8px;
+  --radius-card: 10px;
+  --radius-window: 14px;
+
+  /* easing — strong curves; built-ins are too weak */
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-link: cubic-bezier(0.16, 1, 0.3, 1);
+
+  color-scheme: light;
+}
+
+.dark {
+  --page: oklch(0.209 0.004 264.477);
+  --canvas: oklch(0.231 0.004 264.487);
+  --surface: oklch(0.26 0.006 271.191);
+  --inset: oklch(0.243 0.004 264.492);
+  --hover: oklch(0.289 0.006 271.22);
+  --hover-2: oklch(0.318 0.007 274.747);
+
+  --ink: oklch(0.964 0.002 247.839);
+  --ink-2: oklch(0.731 0.008 260.731);
+  --ink-3: oklch(0.541 0.01 264.484);
+
+  --line: oklch(0.308 0.006 258.354);
+  --line-strong: oklch(0.356 0.007 264.474);
+  --line-soft: oklch(0.278 0.006 258.354);
+  --field: oklch(0.293 0.006 271.223);
+  --stripe: oklch(1 0 0 / 0.055);
+  --stripe-bg: oklch(0.226 0.004 264.485);
+
+  --accent: oklch(0.68 0.173 253.301);
+  --accent-ink: oklch(0.788 0.113 248.33);
+  --accent-tint: oklch(0.68 0.173 253.301 / 0.16);
+
+  --green: oklch(0.705 0.154 153.814);
+  --green-tint: oklch(0.705 0.154 153.814 / 0.14);
+  --orange: oklch(0.746 0.156 55.642);
+  --orange-tint: oklch(0.746 0.156 55.642 / 0.14);
+  --red: oklch(0.666 0.18 21.433);
+  --red-tint: oklch(0.666 0.18 21.433 / 0.14);
+
+  --seal: oklch(0.66 0.15 38);
+
+  --tooltip-bg: oklch(0.182 0.004 264.459);
+  --tooltip-fg: oklch(0.964 0.002 247.839);
+  --tooltip-muted: oklch(0.731 0.008 260.731);
+  --tooltip-border: oklch(0.308 0.006 258.354);
+  --scrim: oklch(0 0 0 / 0.5);
+
+  --shadow-hairline: 0 0 0 1px var(--line);
+  /* Elevation rings go to a subtle light hairline in dark mode, graduated
+   * by how far the surface floats. */
+  --shadow-btn: 0 0 0 1px oklch(1 0 0 / 0.1), 0 1px 2px oklch(0 0 0 / 0.3);
+  --shadow-card:
+    0 0 0 1px oklch(1 0 0 / 0.11), 0 1px 2px oklch(0 0 0 / 0.2), 0 2px 6px oklch(0 0 0 / 0.2);
+  --shadow-raised: 0 0 0 1px oklch(1 0 0 / 0.13), 0 2px 10px oklch(0 0 0 / 0.22);
+  --shadow-overlay: 0 0 0 1px oklch(1 0 0 / 0.15), 0 8px 28px oklch(0 0 0 / 0.34);
+  --shadow-inset-field: inset 0 1px 2px oklch(0 0 0 / 0.4);
+
+  color-scheme: dark;
+}
+
+/* ── base ─────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: 0 solid;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100dvh;
+  background-color: var(--stripe-bg);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0,
+    transparent 7px,
+    var(--stripe) 7px,
+    var(--stripe) 8px
+  );
+  background-attachment: fixed;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv11", "ss01";
+  font-size: 14px;
+  letter-spacing: -0.01em;
+  line-height: 1.5;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  background: transparent;
+}
+
+img,
+svg,
+video {
+  display: block;
+  max-width: 100%;
+}
+
+svg {
+  flex-shrink: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  text-underline-position: from-font;
+  text-decoration-skip-ink: auto;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+::selection {
+  background: var(--accent-tint);
+  color: var(--ink);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+/* theme switches swap every token at once — freeze transitions so the flip
+ * is one clean repaint instead of hundreds of mismatched color fades */
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition: none !important;
+}
+
+/* anything clickable must invite the click */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+label:has(input),
+summary,
+a {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[contenteditable]:focus-visible {
+  outline: none;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.animated-underline {
+  position: relative;
+  display: inline-block;
+}
+
+.animated-underline::after {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 1px;
+  content: "";
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 280ms var(--ease-link);
+}
+
+a:hover .animated-underline::after,
+a:focus-visible .animated-underline::after,
+a.animated-underline:hover::after {
+  transform: scaleX(1);
+}
+
+/* favicon avatars for cited sources */
+.source-avatar {
+  box-shadow: 0 0 0 1px oklch(0.21 0.034 263.436 / 0.1);
+}
+
+.dark .source-avatar {
+  box-shadow: 0 0 0 1px oklch(1 0 0 / 0.08);
+}
+
+/* ── shared spacing ───────────────────────────────────── */
+
+.primitive-card-pad {
+  padding: 12px;
+}
+
+.primitive-card-bar {
+  padding: 10px 12px;
+}
+
+.primitive-card-footer {
+  padding: 10px;
+}
+
+.primitive-table-cell {
+  padding: 10px 12px;
+}
+
+.primitive-icon-button {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-control);
+  color: var(--ink-3);
+  transition:
+    background-color 100ms ease,
+    color 100ms ease;
+}
+
+.primitive-icon-button:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+
+/* ── shared keyframes ─────────────────────────────────── */
+
+@keyframes shimmer-text {
+  from {
+    background-position: 150% center;
+  }
+  to {
+    background-position: -50% center;
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes eq-bounce {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+/* pixel-grid loader — brighten plateau, staggered per cell */
+@keyframes pixel-on {
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+  18%,
+  42% {
+    opacity: 1;
+  }
+  62% {
+    opacity: 0.15;
+  }
+}
+
+@keyframes caret-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+/* shimmering label — signals the agent is processing */
+.shimmer {
+  display: inline-block;
+  background-image: linear-gradient(90deg, var(--ink-3) 35%, var(--ink) 50%, var(--ink-3) 65%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer-text 1.8s linear infinite;
+}
+
+.shimmer--fast {
+  animation-duration: 1.4s;
+}
+
+.fade-up {
+  animation: fade-up 380ms var(--ease-out-strong) both;
+}
+
+.pop-in {
+  animation: pop-in 220ms var(--ease-out-strong) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

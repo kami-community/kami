@@ -1,7 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import Seal from "@/components/ui/Seal";
+import SelectionActions from "@/components/bui/SelectionActions";
+import { PlatformMark, PLATFORM_LABELS } from "@/components/marketing/platforms";
+import Button from "@/components/ui/Button";
+import Card, { CardBar, CardBody, CardFooter } from "@/components/ui/Card";
+import Field, { Textarea } from "@/components/ui/Field";
+import {
+  IconArrowUpRight,
+  IconCheck,
+  IconCopy,
+  IconEdit,
+  IconSend,
+  IconWarning,
+} from "@/components/ui/icons";
+import { StatusPill } from "@/components/ui/Pills";
+import { api } from "@/lib/client/api";
 import type { DistributionOpportunity, DistributionOutcome } from "@/lib/distributionTypes";
 
 export const OUTCOMES: { key: DistributionOutcome; label: string; next: string }[] = [
@@ -20,6 +34,7 @@ export function isTemplate(o: DistributionOpportunity): boolean {
 
 interface OpportunityCardProps {
   opportunity: DistributionOpportunity;
+  sessionId: string;
   canPostToX: boolean;
   saving: boolean;
   flash?: string;
@@ -29,6 +44,7 @@ interface OpportunityCardProps {
 
 export default function OpportunityCard({
   opportunity: o,
+  sessionId,
   canPostToX,
   saving,
   flash,
@@ -36,147 +52,229 @@ export default function OpportunityCard({
   onPostToX,
 }: OpportunityCardProps) {
   const [draft, setDraft] = useState(o.draft);
-  const [copied, setCopied] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [copied, setCopied] = useState<"yes" | "failed" | null>(null);
   const template = isTemplate(o);
   const published = o.action_status === "published";
+  const postedManually = o.action_status === "posted_manual";
   const outcome = OUTCOMES.find((x) => x.key === o.outcome);
-  const editable = o.platform === "x" && canPostToX && !published;
+  const xPostable = o.platform === "x" && canPostToX && !published;
+  const done = published || postedManually;
 
   async function copy() {
     try {
       await navigator.clipboard.writeText(draft);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      setCopied("yes");
     } catch {
-      /* clipboard unavailable: the draft is still selectable */
+      // Clipboard blocked (permissions, insecure origin): say so — the draft is still selectable.
+      setCopied("failed");
     }
+    setTimeout(() => setCopied(null), 2000);
   }
 
   return (
-    <article className={`kraft-card opportunity${template ? " opportunity--template" : ""}`}>
-      <header className="opportunity__head">
-        <p className="label-caps">{o.platform}</p>
-        {template && <span className="tag tag--muted">Template — not researched</span>}
-        {published && <Seal tone="moss">Posted</Seal>}
-        {!published && o.action_status === "posted_manual" && (
-          <span className="tag">Posted by you</span>
+    <Card as="article" className={`opp${template ? " opp--template" : ""}`}>
+      <CardBar
+        title={PLATFORM_LABELS[o.platform] ?? o.platform}
+        icon={<PlatformMark platform={o.platform} size={18} />}
+      >
+        {template && <StatusPill tone="orange">Template — not researched</StatusPill>}
+        {published && <StatusPill tone="green">Posted</StatusPill>}
+        {postedManually && <StatusPill tone="green">Posted by you</StatusPill>}
+        {!done && !template && o.approval_status === "needs_review" && (
+          <StatusPill tone="accent">Needs review</StatusPill>
         )}
-      </header>
+      </CardBar>
 
-      <p>
-        <strong>Why now:</strong> {o.why_now}
-      </p>
-      <p className="muted">
-        <strong>Action:</strong> {o.suggested_action}
-      </p>
-      {(o.format_used || o.format_why) && !template && (
-        <p className="mono fine-print">
-          Format: {o.format_used || "—"}
-          {o.format_why ? ` — ${o.format_why}` : ""}
-        </p>
-      )}
-      {o.risks && <p className="mono fine-print opportunity__risk">Rules and risks: {o.risks}</p>}
+      <CardBody roomy className="stack stack--sm">
+        <dl className="opp__brief">
+          <dt>Why now</dt>
+          <dd>{o.why_now}</dd>
+          <dt>Do</dt>
+          <dd>{o.suggested_action}</dd>
+        </dl>
 
-      {editable ? (
-        <div className="form-line opportunity__draft">
-          <label className="mono label-caps" htmlFor={`draft-${o.id}`}>
-            Draft ({draft.trim().length}/280)
-          </label>
-          <textarea
-            id={`draft-${o.id}`}
-            value={draft}
-            rows={4}
-            onChange={(e) => setDraft(e.target.value)}
-          />
+        <div className="opp__draft">
+          {editing ? (
+            <Field
+              label="Draft"
+              aside={
+                <span className="field__optional tabular">
+                  {draft.trim().length}
+                  {o.platform === "x" ? "/280" : ""}
+                </span>
+              }
+            >
+              <Textarea rows={5} value={draft} onChange={(e) => setDraft(e.target.value)} />
+            </Field>
+          ) : (
+            <SelectionActions
+              text={draft}
+              disabled={done || saving}
+              onRewrite={async ({ selection, instruction }) => {
+                const { replacement } = await api.post<{ replacement: string }>(
+                  "/api/drafts/rewrite",
+                  {
+                    session_id: sessionId,
+                    subject: { type: "distribution_opportunity", id: o.id },
+                    selection,
+                    instruction,
+                  },
+                );
+                return replacement;
+              }}
+              onCommit={(next) => {
+                setDraft(next);
+                onSave({ draft: next }, "Draft updated.");
+              }}
+            />
+          )}
         </div>
-      ) : (
-        <pre className="opportunity__draft opportunity__draft--read">{o.draft}</pre>
-      )}
 
-      <p className="mono fine-print">
-        Source:{" "}
-        {o.source_url.startsWith("http") ? (
-          <a href={o.source_url} target="_blank" rel="noreferrer">
-            {o.source_url}
-          </a>
-        ) : (
-          "paste the thread you choose when you post"
+        {o.risks && (
+          <p className="opp__risk">
+            <IconWarning size={12} /> {o.risks}
+          </p>
         )}
-        {o.published_url && (
-          <>
-            {" · "}
-            <a href={o.published_url} target="_blank" rel="noreferrer">
-              live post
+
+        <p className="opp__meta">
+          {o.source_url.startsWith("http") ? (
+            <a className="records-link" href={o.source_url} target="_blank" rel="noreferrer">
+              Source thread <IconArrowUpRight size={11} />
             </a>
-          </>
-        )}
-      </p>
-
-      <div className="opportunity__actions">
-        {editable && (
-          <button
-            type="button"
-            className="btn-secondary"
-            disabled={saving}
-            onClick={() => onPostToX(draft)}
-          >
-            Post to X…
-          </button>
-        )}
-        <button type="button" className="btn-outline mono" onClick={copy}>
-          {copied ? "Copied" : "Copy draft"}
-        </button>
-        {!published && (
-          <button
-            type="button"
-            className="btn-outline mono"
-            disabled={saving}
-            onClick={() =>
-              onSave(
-                { approval_status: "approved", action_status: "posted_manual", outcome: "posted" },
-                "Marked as posted.",
-              )
-            }
-          >
-            I posted this
-          </button>
-        )}
-        <button
-          type="button"
-          className="link-button mono"
-          disabled={saving}
-          onClick={() =>
-            onSave(
-              { approval_status: "skipped", outcome: "skipped", action_status: "draft" },
-              "Skipped.",
-            )
-          }
-        >
-          Skip
-        </button>
-      </div>
-
-      <fieldset className="opportunity__outcomes">
-        <legend className="mono label-caps">What happened?</legend>
-        {OUTCOMES.map((out) => (
-          <button
-            key={out.key}
-            type="button"
-            className="chip mono"
-            aria-pressed={o.outcome === out.key}
-            disabled={saving}
-            onClick={() => onSave({ outcome: out.key }, out.next)}
-          >
-            {out.label}
-          </button>
-        ))}
-      </fieldset>
-
-      {(flash || (o.outcome !== "none" && outcome)) && (
-        <p className="mono fine-print" role="status">
-          {flash ?? outcome?.next}
+          ) : (
+            <span>Paste the thread you choose when you post.</span>
+          )}
+          {o.published_url && (
+            <a className="records-link" href={o.published_url} target="_blank" rel="noreferrer">
+              Live post <IconArrowUpRight size={11} />
+            </a>
+          )}
+          {!template && o.format_used && (
+            <span title={o.format_why ?? undefined}>Format: {o.format_used}</span>
+          )}
         </p>
-      )}
-    </article>
+
+        {done && (
+          <div className="opp__outcomes" role="group" aria-label="What happened?">
+            <span className="opp__label">What happened?</span>
+            {OUTCOMES.filter((x) => x.key !== "skipped").map((out) => (
+              <button
+                key={out.key}
+                type="button"
+                className="filter-chip"
+                aria-pressed={o.outcome === out.key}
+                disabled={saving}
+                onClick={() => onSave({ outcome: out.key }, out.next)}
+              >
+                {out.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {(flash || (o.outcome !== "none" && outcome)) && (
+          <p className="text-3 text-xs" role="status">
+            {flash ?? outcome?.next}
+          </p>
+        )}
+      </CardBody>
+
+      <CardFooter>
+        <span className="row opp__tools">
+          {!done && (
+            <Button
+              size="sm"
+              variant="quiet"
+              icon={<IconEdit size={13} />}
+              onClick={() => {
+                if (editing && draft !== o.draft) onSave({ draft }, "Draft saved.");
+                setEditing((e) => !e);
+              }}
+              disabled={saving}
+            >
+              {editing ? "Save draft" : "Edit"}
+            </Button>
+          )}
+          <Button
+            size="sm"
+            variant="quiet"
+            icon={copied === "yes" ? <IconCheck size={13} /> : <IconCopy size={13} />}
+            onClick={() => void copy()}
+          >
+            {copied === "yes"
+              ? "Copied"
+              : copied === "failed"
+                ? "Copy blocked — select the text"
+                : "Copy"}
+          </Button>
+          {!done && (
+            <Button
+              size="sm"
+              variant="quiet"
+              disabled={saving}
+              onClick={() =>
+                onSave(
+                  { approval_status: "skipped", outcome: "skipped", action_status: "draft" },
+                  "Skipped.",
+                )
+              }
+            >
+              Skip
+            </Button>
+          )}
+          {!done && xPostable && (
+            <Button
+              size="sm"
+              variant="quiet"
+              disabled={saving}
+              onClick={() =>
+                onSave(
+                  {
+                    approval_status: "approved",
+                    action_status: "posted_manual",
+                    outcome: "posted",
+                  },
+                  "Marked as posted.",
+                )
+              }
+            >
+              I posted it myself
+            </Button>
+          )}
+        </span>
+        {!done &&
+          (xPostable ? (
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={<IconSend size={13} />}
+              busy={saving}
+              onClick={() => onPostToX(draft)}
+            >
+              Post to X…
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={<IconCheck size={13} />}
+              busy={saving}
+              onClick={() =>
+                onSave(
+                  {
+                    approval_status: "approved",
+                    action_status: "posted_manual",
+                    outcome: "posted",
+                  },
+                  "Marked as posted.",
+                )
+              }
+            >
+              I posted this
+            </Button>
+          ))}
+      </CardFooter>
+    </Card>
   );
 }

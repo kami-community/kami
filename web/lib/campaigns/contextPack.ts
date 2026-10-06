@@ -46,7 +46,7 @@ export function buildCompanyContextPack(input: ContextPackInput): string {
       `Domain: ${host}`,
       `Company: ${company}`,
       `No dossier is available yet — research may still be running, or the user has not started a campaign.`,
-      `If asked about positioning, ICPs, or opportunities: say clearly that company research is missing and they should wait for Overview research to finish (or start a campaign). Do not invent facts.`,
+      `If asked about positioning, ICPs, or opportunities: say clearly that company research is missing and they should wait for company research to finish (or start a campaign). Do not invent facts.`,
       "",
       `PLATFORM`,
       PLATFORM_BLURB,
