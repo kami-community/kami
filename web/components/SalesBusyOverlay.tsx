@@ -55,13 +55,9 @@ export default function SalesBusyOverlay({
   return (
     <div className="sales-busy" role="status" aria-live="polite" aria-busy="true">
       <div className="sales-busy-bar" aria-hidden />
-      <p className="label-caps" style={{ marginBottom: "0.75rem" }}>
-        {title}
-      </p>
+      <p className="label-caps sales-busy-title">{title}</p>
       <p className="sales-busy-stage">{detail?.trim() || stage}</p>
-      <p className="mono" style={{ fontSize: 11, color: "var(--ink-soft)", marginTop: "0.75rem" }}>
-        {timeHint}
-      </p>
+      <p className="mono sales-busy-hint">{timeHint}</p>
       <ul className="sales-busy-ticks mono">
         {stages.map((s, i) => (
           <li key={s} data-active={i === index}>

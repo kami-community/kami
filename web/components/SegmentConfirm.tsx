@@ -304,20 +304,17 @@ function SegmentEditor({
         : null;
 
   return (
-    <div className="sales-panel" style={{ position: "relative", paddingTop: "var(--stack-md)" }}>
+    <div className="sales-panel segment-confirm-panel">
       {busy && <SalesBusyOverlay title={busyTitle} stages={busyStages} detail={busyDetail} />}
 
-      <h3 style={{ marginBottom: "var(--stack-sm)" }}>Confirm who you&apos;re selling to</h3>
+      <h3>Confirm who you&apos;re selling to</h3>
       <p className="sales-intro">
         Edit anything that looks wrong. B2B needs seed company domains for Find. PLG needs an
         example user (who would try the product themselves — not a company email list).
       </p>
 
       {source && (
-        <p
-          className="mono"
-          style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: "var(--stack-md)" }}
-        >
+        <p className="mono fine-print segment-confirm-panel__source">
           Source: {source}
           {confirmedAt
             ? ` · confirmed ${new Date(confirmedAt).toLocaleString()}`
@@ -332,10 +329,7 @@ function SegmentEditor({
       )}
 
       {!segments.length && !busy && (
-        <p
-          className="mono"
-          style={{ color: "var(--ink-soft)", fontSize: 13, marginBottom: "var(--stack-md)" }}
-        >
+        <p className="mono muted segment-confirm-panel__empty">
           No segments yet — click Refresh from dossier.
         </p>
       )}
@@ -344,7 +338,7 @@ function SegmentEditor({
         {segments.map((seg, i) => (
           <section key={seg.key} className="sales-segment">
             <div className="sales-segment-head">
-              <div className="form-line" style={{ flex: 1, minWidth: 200, marginBottom: 0 }}>
+              <div className="form-line sales-segment-head__name">
                 <label className="mono label-caps" htmlFor={`seg-name-${seg.key}`}>
                   Segment {i + 1}
                 </label>
@@ -354,7 +348,7 @@ function SegmentEditor({
                   onChange={(e) => updateSegment(i, { name: e.target.value })}
                 />
               </div>
-              <div className="form-line" style={{ width: 200, marginBottom: 0 }}>
+              <div className="form-line sales-segment-head__motion">
                 <label className="mono label-caps" htmlFor={`seg-motion-${seg.key}`}>
                   Motion
                 </label>
@@ -377,7 +371,7 @@ function SegmentEditor({
               </button>
             </div>
 
-            <div className="form-line" style={{ marginTop: "var(--stack-sm)" }}>
+            <div className="form-line sales-segment__field">
               <label className="mono label-caps" htmlFor={`seg-why-${seg.key}`}>
                 Why they&apos;d buy
               </label>
@@ -401,7 +395,7 @@ function SegmentEditor({
                   onChange={(e) => updateSegment(i, { target_persona: e.target.value })}
                 />
               </div>
-              <div className="form-line" style={{ maxWidth: 100 }}>
+              <div className="form-line sales-segment__budget">
                 <label className="mono label-caps" htmlFor={`seg-budget-${seg.key}`}>
                   Budget
                 </label>
@@ -428,18 +422,9 @@ function SegmentEditor({
             </div>
 
             {seg.motion === "b2b_sales_assisted" && (
-              <div style={{ marginTop: "var(--stack-sm)" }}>
-                <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>
-                  Seed companies
-                </p>
-                <p
-                  className="mono"
-                  style={{
-                    fontSize: 12,
-                    color: "var(--ink-soft)",
-                    marginBottom: "var(--stack-sm)",
-                  }}
-                >
+              <div className="sales-segment__group">
+                <p className="label-caps">Seed companies</p>
+                <p className="mono fine-print">
                   Real domains Kami will verify in Find. Required for B2B.
                 </p>
                 {(seg.candidate_companies ?? []).map((c, ci) => (
@@ -479,18 +464,9 @@ function SegmentEditor({
             )}
 
             {seg.motion === "plg_self_serve" && (
-              <div style={{ marginTop: "var(--stack-sm)" }}>
-                <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>
-                  Example users
-                </p>
-                <p
-                  className="mono"
-                  style={{
-                    fontSize: 12,
-                    color: "var(--ink-soft)",
-                    marginBottom: "var(--stack-sm)",
-                  }}
-                >
+              <div className="sales-segment__group">
+                <p className="label-caps">Example users</p>
+                <p className="mono fine-print">
                   Who would try this themselves? One short description is enough — not a company,
                   not an email.
                 </p>
@@ -531,15 +507,7 @@ function SegmentEditor({
         ))}
       </div>
 
-      <div
-        style={{
-          display: "flex",
-          gap: "var(--stack-sm)",
-          marginTop: "var(--stack-lg)",
-          flexWrap: "wrap",
-          alignItems: "center",
-        }}
-      >
+      <div className="actions segment-confirm-panel__actions">
         <button type="button" className="btn-outline" onClick={addSegment} disabled={busy}>
           + Add segment
         </button>

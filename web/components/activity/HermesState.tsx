@@ -98,9 +98,7 @@ export default function HermesState({ sessionId }: { sessionId: string }) {
 
       {data.tasks.length > 0 && (
         <>
-          <p className="label-caps" style={{ marginTop: "var(--stack-md)" }}>
-            Hermes kanban
-          </p>
+          <p className="label-caps panel-section">Hermes kanban</p>
           <ul className="row-list">
             {data.tasks.map((t) => (
               <li key={t.id} className="row row--flat">

@@ -4,6 +4,16 @@ import { api, errorMessage } from "@/lib/client/api";
 import { useState } from "react";
 import type { Dossier, IcpBucket } from "@/lib/domain/dossier";
 import IntelPanel from "@/components/IntelPanel";
+import Callout from "@/components/ui/Callout";
+
+/** Editable ICP bucket fields, in display order. */
+const BUCKET_FIELDS = [
+  ["label", "Label"],
+  ["where_they_live", "Where they live"],
+  ["trigger_signal", "Trigger signal"],
+  ["est_size", "Size"],
+  ["angle", "Angle"],
+] as const satisfies ReadonlyArray<readonly [keyof IcpBucket, string]>;
 
 interface DossierConfirmProps {
   dossier: Dossier;
@@ -95,46 +105,21 @@ export default function DossierConfirm({
   const view = editing ? draft : dossier;
 
   return (
-    <div style={{ marginTop: "var(--stack-md)", width: "100%" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "baseline",
-          marginBottom: "var(--stack-sm)",
-          gap: "1rem",
-          flexWrap: "wrap",
-        }}
-      >
+    <div className="dossier-confirm flow-md">
+      <div className="section-head">
         <p className="label-caps">Confirm what Kami understood</p>
         {!editing ? (
-          <button
-            type="button"
-            className="mono"
-            onClick={startEdit}
-            style={{
-              border: "1px solid var(--ink)",
-              background: "transparent",
-              padding: "0.3rem 0.7rem",
-              cursor: "pointer",
-            }}
-          >
+          <button type="button" className="btn-outline mono" onClick={startEdit}>
             Edit
           </button>
         ) : (
-          <div style={{ display: "flex", gap: "0.5rem" }}>
+          <div className="actions">
             <button
               type="button"
-              className="mono"
+              className="link-button mono"
               onClick={() => {
                 setEditing(false);
                 setDraft(cloneDossier(dossier));
-              }}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: "var(--ink-soft)",
               }}
             >
               Cancel
@@ -151,13 +136,10 @@ export default function DossierConfirm({
         )}
       </div>
 
-      <div
-        className="kraft-card"
-        style={{ padding: "var(--stack-md)", marginBottom: "var(--stack-md)" }}
-      >
+      <div className="kraft-card">
         {editing ? (
-          <>
-            <div className="form-line" style={{ marginBottom: "var(--stack-sm)" }}>
+          <div className="form-stack">
+            <div className="form-line">
               <label className="mono label-caps" htmlFor="dossier-company">
                 Company
               </label>
@@ -167,7 +149,7 @@ export default function DossierConfirm({
                 onChange={(e) => setDraft({ ...draft, company: e.target.value })}
               />
             </div>
-            <div className="form-line" style={{ marginBottom: "var(--stack-sm)" }}>
+            <div className="form-line">
               <label className="mono label-caps" htmlFor="dossier-positioning">
                 Positioning
               </label>
@@ -179,7 +161,7 @@ export default function DossierConfirm({
                 onChange={(e) => setDraft({ ...draft, positioning: e.target.value })}
               />
             </div>
-            <div className="form-line" style={{ marginBottom: "var(--stack-sm)" }}>
+            <div className="form-line">
               <label className="mono label-caps" htmlFor="dossier-voice">
                 Brand voice
               </label>
@@ -191,7 +173,7 @@ export default function DossierConfirm({
                 onChange={(e) => setDraft({ ...draft, brand_voice: e.target.value })}
               />
             </div>
-            <div className="form-line" style={{ marginBottom: "var(--stack-sm)" }}>
+            <div className="form-line">
               <label className="mono label-caps" htmlFor="dossier-tone">
                 Tone (comma-separated)
               </label>
@@ -210,105 +192,71 @@ export default function DossierConfirm({
               />
             </div>
 
-            <p className="label-caps" style={{ marginBottom: "0.5rem" }}>
-              Competitors
-            </p>
+            <p className="label-caps">Competitors</p>
             {draft.competitor_analysis.map((c, i) => (
-              <div
-                key={i}
-                style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem", flexWrap: "wrap" }}
-              >
-                <input
-                  style={{ flex: "1 1 140px" }}
-                  value={c.name}
-                  onChange={(e) => updateCompetitor(i, { name: e.target.value })}
-                  placeholder="Name"
-                />
-                <input
-                  style={{ flex: "2 1 220px" }}
-                  value={c.insight}
-                  onChange={(e) => updateCompetitor(i, { insight: e.target.value })}
-                  placeholder="Insight"
-                />
-              </div>
-            ))}
-
-            <p className="label-caps" style={{ margin: "var(--stack-sm) 0 0.5rem" }}>
-              ICP buckets / first customers
-            </p>
-            {draft.icp_buckets.map((b, i) => (
-              <div
-                key={i}
-                style={{
-                  border: "1px solid var(--outline)",
-                  padding: "0.75rem",
-                  marginBottom: "0.5rem",
-                }}
-              >
-                <div className="form-line" style={{ marginBottom: "0.4rem" }}>
-                  <label className="mono label-caps">Label</label>
+              <div key={i} className="input-pair">
+                <div className="form-line">
                   <input
-                    value={b.label}
-                    onChange={(e) => updateBucket(i, { label: e.target.value })}
-                  />
-                </div>
-                <div className="form-line" style={{ marginBottom: "0.4rem" }}>
-                  <label className="mono label-caps">Where they live</label>
-                  <input
-                    value={b.where_they_live}
-                    onChange={(e) => updateBucket(i, { where_they_live: e.target.value })}
-                  />
-                </div>
-                <div className="form-line" style={{ marginBottom: "0.4rem" }}>
-                  <label className="mono label-caps">Trigger signal</label>
-                  <input
-                    value={b.trigger_signal}
-                    onChange={(e) => updateBucket(i, { trigger_signal: e.target.value })}
-                  />
-                </div>
-                <div className="form-line" style={{ marginBottom: "0.4rem" }}>
-                  <label className="mono label-caps">Size</label>
-                  <input
-                    value={b.est_size}
-                    onChange={(e) => updateBucket(i, { est_size: e.target.value })}
+                    aria-label={`Competitor ${i + 1} name`}
+                    value={c.name}
+                    onChange={(e) => updateCompetitor(i, { name: e.target.value })}
+                    placeholder="Name"
                   />
                 </div>
                 <div className="form-line">
-                  <label className="mono label-caps">Angle</label>
-                  <textarea
-                    className="sales-textarea"
-                    rows={2}
-                    value={b.angle}
-                    onChange={(e) => updateBucket(i, { angle: e.target.value })}
+                  <input
+                    aria-label={`Competitor ${i + 1} insight`}
+                    value={c.insight}
+                    onChange={(e) => updateCompetitor(i, { insight: e.target.value })}
+                    placeholder="Insight"
                   />
                 </div>
               </div>
             ))}
-          </>
+
+            <p className="label-caps">ICP buckets / first customers</p>
+            {draft.icp_buckets.map((b, i) => (
+              <div key={i} className="subcard form-stack">
+                {BUCKET_FIELDS.map(([field, label]) => (
+                  <div key={field} className="form-line">
+                    <label className="mono label-caps" htmlFor={`bucket-${i}-${field}`}>
+                      {label}
+                    </label>
+                    {field === "angle" ? (
+                      <textarea
+                        id={`bucket-${i}-${field}`}
+                        className="sales-textarea"
+                        rows={2}
+                        value={b[field]}
+                        onChange={(e) => updateBucket(i, { [field]: e.target.value })}
+                      />
+                    ) : (
+                      <input
+                        id={`bucket-${i}-${field}`}
+                        value={b[field]}
+                        onChange={(e) => updateBucket(i, { [field]: e.target.value })}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
         ) : (
-          <>
-            <h3 style={{ marginBottom: "0.5rem" }}>{view.company}</h3>
-            <p style={{ marginBottom: "0.75rem" }}>{view.positioning}</p>
-            <p className="mono" style={{ fontSize: 13, color: "var(--ink-soft)" }}>
-              Voice: {view.brand_voice}
-            </p>
+          <div className="flow">
+            <h3>{view.company}</h3>
+            <p>{view.positioning}</p>
+            <p className="mono meta-line">Voice: {view.brand_voice}</p>
             {view.icp_buckets?.[0] && (
-              <p style={{ marginTop: "0.75rem" }}>
+              <p>
                 Suggested first customers: <strong>{view.icp_buckets[0].label}</strong>
               </p>
             )}
-          </>
+          </div>
         )}
       </div>
 
-      <div
-        style={{
-          display: "flex",
-          gap: "0.75rem",
-          flexWrap: "wrap",
-          marginBottom: "var(--stack-md)",
-        }}
-      >
+      <div className="actions">
         <button
           type="button"
           className="hanko-btn"
@@ -329,16 +277,11 @@ export default function DossierConfirm({
         </button>
         <button
           type="button"
-          className="mono"
+          className="btn-outline mono"
+          aria-expanded={showRegenerate}
           onClick={() => {
             setShowRegenerate((v) => !v);
             setError(null);
-          }}
-          style={{
-            border: "1px solid var(--ink)",
-            background: "transparent",
-            padding: "0.4rem 0.75rem",
-            cursor: "pointer",
           }}
         >
           Regenerate
@@ -346,21 +289,19 @@ export default function DossierConfirm({
       </div>
 
       {showRegenerate && (
-        <div
-          className="kraft-card"
-          style={{ padding: "var(--stack-md)", marginBottom: "var(--stack-md)" }}
-        >
-          <p className="label-caps" style={{ marginBottom: "0.5rem" }}>
+        <div className="kraft-card unfold form-stack">
+          <label className="label-caps" htmlFor="dossier-correction">
             What did we misunderstand?
-          </p>
+          </label>
           <textarea
+            id="dossier-correction"
             className="sales-textarea"
             rows={3}
             value={correction}
             onChange={(e) => setCorrection(e.target.value)}
             placeholder="e.g. We sell to enterprise IT buyers in India, not consumers shopping sneakers."
           />
-          <div style={{ marginTop: "0.75rem", display: "flex", gap: "0.5rem" }}>
+          <div className="actions">
             <button
               type="button"
               className="btn-secondary"
@@ -371,14 +312,8 @@ export default function DossierConfirm({
             </button>
             <button
               type="button"
-              className="mono"
+              className="link-button mono"
               onClick={() => setShowRegenerate(false)}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: "var(--ink-soft)",
-              }}
             >
               Cancel
             </button>
@@ -386,18 +321,9 @@ export default function DossierConfirm({
         </div>
       )}
 
-      {error && (
-        <p
-          className="mono"
-          style={{ color: "var(--hanko)", fontSize: 13, marginBottom: "var(--stack-sm)" }}
-        >
-          {error}
-        </p>
-      )}
+      {error && <Callout tone="error">{error}</Callout>}
 
-      <div style={{ marginTop: "var(--stack-md)" }}>
-        <IntelPanel dossier={view} defaultAllOpen />
-      </div>
+      <IntelPanel dossier={view} defaultAllOpen />
     </div>
   );
 }

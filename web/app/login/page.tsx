@@ -35,7 +35,7 @@ function LoginForm() {
 
   return (
     <form className="landing-form" onSubmit={submit}>
-      <div className="form-line" style={{ minWidth: 280, textAlign: "left" }}>
+      <div className="form-line form-line--hero">
         <label className="mono label-caps" htmlFor="admin-token">
           ADMIN TOKEN
         </label>

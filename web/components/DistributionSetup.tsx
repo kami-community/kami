@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Callout from "@/components/ui/Callout";
+import Skeleton from "@/components/ui/Skeleton";
 import { api, errorMessage } from "@/lib/client/api";
 import {
   DISTRIBUTION_PLATFORMS,
@@ -148,222 +150,154 @@ export default function DistributionSetup({
 
   if (!config && busy) {
     return (
-      <div className="kraft-card" style={{ padding: "var(--stack-md)", maxWidth: 560 }}>
-        <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>
-          Create distribution
-        </p>
-        <p className="mono" style={{ color: "var(--ink-soft)" }}>
-          Hermes is recommending a plan from your dossier…
-        </p>
+      <div className="kraft-card distribution-setup" role="status" aria-busy="true">
+        <p className="label-caps">Create distribution</p>
+        <p className="mono meta-line">Recommending a plan from your dossier…</p>
+        <Skeleton lines={4} title />
       </div>
     );
   }
 
   if (!config) {
     return (
-      <div className="kraft-card" style={{ padding: "var(--stack-md)", maxWidth: 560 }}>
-        <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>
-          Create distribution
-        </p>
-        {error && (
-          <p
-            className="mono"
-            style={{ color: "var(--hanko)", fontSize: 13, marginBottom: "0.5rem" }}
+      <div className="kraft-card distribution-setup">
+        <p className="label-caps">Create distribution</p>
+        {error && <Callout tone="error">{error}</Callout>}
+        <div className="actions">
+          <button
+            type="button"
+            className="hanko-btn"
+            onClick={() => recommend()}
+            disabled={busy || !sessionDbId}
           >
-            {error}
-          </p>
-        )}
-        <button
-          type="button"
-          className="hanko-btn"
-          onClick={() => recommend()}
-          disabled={busy || !sessionDbId}
-        >
-          {busy ? "…" : "Get Hermes recommendation"}
-        </button>
+            Recommend a plan
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="kraft-card" style={{ padding: "var(--stack-md)", maxWidth: 640 }}>
-      <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>
-        Confirm distribution plan
+    <div className="kraft-card distribution-setup distribution-setup--plan unfold">
+      <p className="label-caps">Confirm distribution plan</p>
+      <p className="sales-intro">
+        {source === "fallback"
+          ? "A starter plan built from your dossier. Edit anything, then approve before Kami researches opportunities."
+          : "Kami's recommended next move for your company. Edit anything, then approve before Kami researches opportunities."}
       </p>
-      <p className="sales-intro" style={{ marginBottom: "var(--stack-md)" }}>
-        Hermes analyzed your company and recommends this next move. Edit anything, then approve
-        before we research opportunities.
-      </p>
+      {note && <p className="mono meta-line">{note}</p>}
 
-      {(source || note) && (
-        <p
-          className="mono"
-          style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: "var(--stack-sm)" }}
-        >
-          {source === "fallback" ? "Starter plan · " : "Hermes · "}
-          {note || "Review before approving."}
-        </p>
-      )}
+      <div className="form-stack">
+        <div className="form-line">
+          <label className="mono label-caps" htmlFor="dist-goal">
+            Job (plain English)
+          </label>
+          <input id="dist-goal" value={goalLabel} onChange={(e) => setGoalLabel(e.target.value)} />
+        </div>
 
-      <label className="mono" style={{ display: "block", fontSize: 12, marginBottom: 4 }}>
-        Job (plain English)
-      </label>
-      <input
-        value={goalLabel}
-        onChange={(e) => setGoalLabel(e.target.value)}
-        style={{
-          width: "100%",
-          marginBottom: "0.75rem",
-          padding: "0.5rem",
-          border: "1px solid var(--outline)",
-          background: "var(--paper)",
-          color: "var(--ink)",
-          fontFamily: "var(--font-body)",
-        }}
-      />
+        <div className="form-line">
+          <label className="mono label-caps" htmlFor="dist-angle">
+            Campaign angle
+          </label>
+          <textarea
+            id="dist-angle"
+            className="sales-textarea sales-textarea--compact"
+            rows={3}
+            value={angle}
+            onChange={(e) => setAngle(e.target.value)}
+          />
+        </div>
 
-      <label className="mono" style={{ display: "block", fontSize: 12, marginBottom: 4 }}>
-        Campaign angle
-      </label>
-      <textarea
-        value={angle}
-        onChange={(e) => setAngle(e.target.value)}
-        rows={3}
-        style={{
-          width: "100%",
-          marginBottom: "0.75rem",
-          padding: "0.5rem",
-          border: "1px solid var(--outline)",
-          background: "var(--paper)",
-          color: "var(--ink)",
-          fontFamily: "var(--font-body)",
-        }}
-      />
+        <div className="form-line">
+          <span className="mono label-caps" id="dist-surfaces">
+            Surfaces (max 3)
+          </span>
+          <div className="chip-row" role="group" aria-labelledby="dist-surfaces">
+            {DISTRIBUTION_PLATFORMS.map((p) => {
+              const on = surfaces.includes(p);
+              return (
+                <button
+                  key={p}
+                  type="button"
+                  className="chip-toggle"
+                  aria-pressed={on}
+                  disabled={!on && surfaces.length >= 3}
+                  onClick={() => toggleSurface(p)}
+                >
+                  <span className="chip-toggle__mark" aria-hidden="true">
+                    {on ? "✓" : "·"}
+                  </span>
+                  {PLATFORM_LABELS[p]}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-      <label className="mono" style={{ display: "block", fontSize: 12, marginBottom: 4 }}>
-        Surfaces (max 3)
-      </label>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem", marginBottom: "0.75rem" }}>
-        {DISTRIBUTION_PLATFORMS.map((p) => {
-          const on = surfaces.includes(p);
-          return (
-            <button
-              key={p}
-              type="button"
-              className="mono"
-              onClick={() => toggleSurface(p)}
-              style={{
-                fontSize: 12,
-                border: on ? "1px solid var(--hanko)" : "1px solid var(--outline)",
-                background: on ? "var(--kraft)" : "transparent",
-                padding: "0.3rem 0.55rem",
-                cursor: "pointer",
-                color: "var(--ink)",
-              }}
-            >
-              {PLATFORM_LABELS[p]}
-            </button>
-          );
-        })}
+        <div className="form-line">
+          <label className="mono label-caps" htmlFor="dist-rationale">
+            Why this plan
+          </label>
+          <textarea
+            id="dist-rationale"
+            className="sales-textarea sales-textarea--compact"
+            rows={2}
+            value={rationale}
+            onChange={(e) => setRationale(e.target.value)}
+          />
+        </div>
+
+        <div className="form-line">
+          <label className="mono label-caps" htmlFor="dist-why-surfaces">
+            Why these surfaces
+          </label>
+          <textarea
+            id="dist-why-surfaces"
+            className="sales-textarea sales-textarea--compact"
+            rows={2}
+            value={whySurfaces}
+            onChange={(e) => setWhySurfaces(e.target.value)}
+          />
+        </div>
       </div>
 
-      <label className="mono" style={{ display: "block", fontSize: 12, marginBottom: 4 }}>
-        Why this plan
-      </label>
-      <textarea
-        value={rationale}
-        onChange={(e) => setRationale(e.target.value)}
-        rows={2}
-        style={{
-          width: "100%",
-          marginBottom: "0.75rem",
-          padding: "0.5rem",
-          border: "1px solid var(--outline)",
-          background: "var(--paper)",
-          color: "var(--ink)",
-          fontFamily: "var(--font-body)",
-        }}
-      />
+      {error && <Callout tone="error">{error}</Callout>}
 
-      <label className="mono" style={{ display: "block", fontSize: 12, marginBottom: 4 }}>
-        Why these surfaces
-      </label>
-      <textarea
-        value={whySurfaces}
-        onChange={(e) => setWhySurfaces(e.target.value)}
-        rows={2}
-        style={{
-          width: "100%",
-          marginBottom: "var(--stack-md)",
-          padding: "0.5rem",
-          border: "1px solid var(--outline)",
-          background: "var(--paper)",
-          color: "var(--ink)",
-          fontFamily: "var(--font-body)",
-        }}
-      />
-
-      {error && (
-        <p className="mono" style={{ color: "var(--hanko)", fontSize: 13, marginBottom: "0.5rem" }}>
-          {error}
-        </p>
-      )}
-
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "0.5rem",
-          marginBottom: "var(--stack-md)",
-        }}
-      >
+      <div className="actions distribution-setup__approve">
         <button
           type="button"
           className="hanko-btn"
           onClick={approve}
           disabled={busy || !sessionDbId}
         >
-          {busy ? "…" : "Approve plan"}
+          {busy ? "Saving…" : "Approve plan"}
         </button>
       </div>
 
       <hr className="crease" />
-      <p
-        className="mono"
-        style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: "var(--stack-sm)" }}
-      >
-        Not right? Tell Hermes what to change.
-      </p>
-      <textarea
-        value={reviseNote}
-        onChange={(e) => setReviseNote(e.target.value)}
-        placeholder="e.g. Focus on Product Hunt launch this month"
-        rows={2}
-        style={{
-          width: "100%",
-          marginTop: "0.5rem",
-          marginBottom: "0.5rem",
-          padding: "0.5rem",
-          border: "1px solid var(--outline)",
-          background: "var(--paper)",
-          color: "var(--ink)",
-          fontFamily: "var(--font-body)",
-        }}
-      />
-      <button
-        type="button"
-        className="mono"
-        onClick={() => recommend(reviseNote)}
-        disabled={busy || !sessionDbId}
-        style={{
-          border: "1px solid var(--ink)",
-          background: "transparent",
-          padding: "0.4rem 0.75rem",
-          cursor: "pointer",
-        }}
-      >
-        {busy ? "…" : "Try another"}
-      </button>
+      <div className="form-line">
+        <label className="mono label-caps" htmlFor="dist-revise">
+          Not right? Tell Kami what to change.
+        </label>
+        <textarea
+          id="dist-revise"
+          className="sales-textarea sales-textarea--compact"
+          rows={2}
+          value={reviseNote}
+          onChange={(e) => setReviseNote(e.target.value)}
+          placeholder="e.g. Focus on Product Hunt launch this month"
+        />
+      </div>
+      <div className="actions">
+        <button
+          type="button"
+          className="btn-outline mono"
+          onClick={() => recommend(reviseNote)}
+          disabled={busy || !sessionDbId}
+        >
+          {busy ? "Rethinking…" : "Try another"}
+        </button>
+      </div>
     </div>
   );
 }

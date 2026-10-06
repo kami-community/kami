@@ -730,7 +730,9 @@ h3 {
   color: var(--ink);
   border: 1px solid var(--ink);
   padding: 0.3rem 0.7rem;
+  font-family: var(--font-mono);
   font-size: 12px;
+  letter-spacing: 0.02em;
   cursor: pointer;
 }
 .btn-outline:hover:not(:disabled) {

@@ -25,21 +25,12 @@ function Chip({
   return (
     <button
       type="button"
+      className="chip-toggle"
+      aria-pressed={selected}
       onClick={onClick}
       disabled={disabled}
-      className="mono"
-      style={{
-        background: selected ? "var(--kraft)" : "transparent",
-        border: "1px solid var(--ink)",
-        padding: "0.4rem 0.75rem",
-        cursor: disabled ? "default" : "pointer",
-        color: "var(--ink)",
-        display: "inline-flex",
-        gap: "0.4rem",
-        alignItems: "center",
-      }}
     >
-      <span style={{ fontWeight: 700, color: selected ? "var(--hanko)" : "var(--outline)" }}>
+      <span className="chip-toggle__mark" aria-hidden="true">
         {selected ? "✓" : "·"}
       </span>
       {label}
@@ -59,9 +50,11 @@ export default function GoalChips({
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--stack-sm)" }}>
-      <p className="label-caps">What are you after?</p>
-      <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", justifyContent: "center" }}>
+    <div className="goal-chips">
+      <p className="label-caps" id="goal-chips-goals">
+        What are you after?
+      </p>
+      <div className="chip-row goal-chips__row" role="group" aria-labelledby="goal-chips-goals">
         {GOALS.map((g) => (
           <Chip
             key={g}
@@ -72,10 +65,10 @@ export default function GoalChips({
           />
         ))}
       </div>
-      <p className="label-caps" style={{ marginTop: "var(--stack-sm)" }}>
+      <p className="label-caps" id="goal-chips-stage">
         Your stage
       </p>
-      <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", justifyContent: "center" }}>
+      <div className="chip-row goal-chips__row" role="group" aria-labelledby="goal-chips-stage">
         {STAGES.map((s) => (
           <Chip
             key={s}

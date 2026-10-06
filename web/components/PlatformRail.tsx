@@ -27,77 +27,40 @@ export default function PlatformRail({
   ).length;
 
   return (
-    <aside>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "var(--stack-sm)",
-        }}
-      >
+    <aside className="platform-rail">
+      <div className="section-head">
         <p className="label-caps">Platforms</p>
-        <button
-          type="button"
-          className="mono"
-          onClick={onOpenSettings}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            color: "var(--ink-soft)",
-            fontSize: 11,
-          }}
-        >
+        <button type="button" className="link-button mono" onClick={onOpenSettings}>
           settings
         </button>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--stack-sm)" }}>
+      <div className="platform-rail__list">
         {config.platforms.includes("x") && (
           <button
             type="button"
-            className="kraft-card"
+            className="kraft-card is-interactive platform-card"
+            aria-pressed={activeFilter === "x"}
             onClick={() => onFilter(activeFilter === "x" ? "all" : "x")}
-            style={{
-              padding: "1rem",
-              cursor: "pointer",
-              textAlign: "left",
-              border: activeFilter === "x" ? "2px solid var(--hanko)" : "1px solid var(--ink)",
-            }}
           >
-            <strong style={{ fontFamily: "var(--font-headline)" }}>X (Twitter)</strong>
-            <p
-              className="mono"
-              style={{ color: "var(--ink-soft)", marginTop: "0.4rem", fontSize: 12 }}
-            >
+            <strong className="platform-card__name">X (Twitter)</strong>
+            <p className="mono meta-line">
               {xLeads.length} leads · {xActive} active
             </p>
-            <p className="mono" style={{ color: "var(--ink-soft)", fontSize: 12 }}>
-              Budget: ${config.x_boost_budget ?? 0}/mo
-            </p>
+            <p className="mono meta-line">Budget: ${config.x_boost_budget ?? 0}/mo</p>
           </button>
         )}
         {config.platforms.includes("instagram") && (
           <button
             type="button"
-            className="kraft-card"
+            className="kraft-card is-interactive platform-card"
+            aria-pressed={activeFilter === "instagram"}
             onClick={() => onFilter(activeFilter === "instagram" ? "all" : "instagram")}
-            style={{
-              padding: "1rem",
-              cursor: "pointer",
-              textAlign: "left",
-              border:
-                activeFilter === "instagram" ? "2px solid var(--hanko)" : "1px solid var(--ink)",
-            }}
           >
-            <strong style={{ fontFamily: "var(--font-headline)" }}>Instagram</strong>
-            <p
-              className="mono"
-              style={{ color: "var(--ink-soft)", marginTop: "0.4rem", fontSize: 12 }}
-            >
+            <strong className="platform-card__name">Instagram</strong>
+            <p className="mono meta-line">
               {creators.length} creators · {creatorsNegotiating} negotiating
             </p>
-            <p className="mono" style={{ color: "var(--ink-soft)", fontSize: 12 }}>
+            <p className="mono meta-line">
               Offer: ${config.ig_offer_min ?? 0}–${config.ig_offer_max ?? 0}
             </p>
           </button>

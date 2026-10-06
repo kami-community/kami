@@ -7,6 +7,7 @@ interface EscalationBannerProps {
   onDecline: () => void;
 }
 
+/** A conversation the agent will not handle alone: the founder decides. */
 export default function EscalationBanner({
   reason,
   onApprove,
@@ -14,64 +15,19 @@ export default function EscalationBanner({
   onDecline,
 }: EscalationBannerProps) {
   return (
-    <div
-      style={{
-        background: "var(--hanko)",
-        color: "var(--paper)",
-        padding: "0.75rem 1rem",
-        marginBottom: "var(--stack-sm)",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        gap: "1rem",
-        flexWrap: "wrap",
-      }}
-    >
-      <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700 }}>
-        ⚠ ESCALATION — {reason}
+    <div className="escalation unfold" role="alert">
+      <p className="escalation__reason">
+        <span className="label-caps">Needs your decision</span>
+        {reason}
       </p>
-      <div style={{ display: "flex", gap: "0.5rem" }}>
-        <button
-          type="button"
-          className="mono"
-          onClick={onApprove}
-          style={{
-            background: "var(--paper)",
-            color: "var(--ink)",
-            border: "none",
-            padding: "0.3rem 0.7rem",
-            cursor: "pointer",
-            fontWeight: 700,
-          }}
-        >
+      <div className="actions">
+        <button type="button" className="btn-secondary" onClick={onApprove}>
           Approve
         </button>
-        <button
-          type="button"
-          className="mono"
-          onClick={onCounter}
-          style={{
-            background: "transparent",
-            color: "var(--paper)",
-            border: "1px solid var(--paper)",
-            padding: "0.3rem 0.7rem",
-            cursor: "pointer",
-          }}
-        >
+        <button type="button" className="btn-outline mono" onClick={onCounter}>
           Counter
         </button>
-        <button
-          type="button"
-          className="mono"
-          onClick={onDecline}
-          style={{
-            background: "transparent",
-            color: "var(--paper)",
-            border: "1px solid var(--paper)",
-            padding: "0.3rem 0.7rem",
-            cursor: "pointer",
-          }}
-        >
+        <button type="button" className="btn-outline mono" onClick={onDecline}>
           Decline
         </button>
       </div>

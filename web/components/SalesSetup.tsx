@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Callout from "@/components/ui/Callout";
 import { api, errorMessage } from "@/lib/client/api";
 import type { Dossier } from "@/lib/domain/dossier";
 import {
@@ -100,20 +101,18 @@ export default function SalesSetup({
   }
 
   return (
-    <div className="sales-panel" style={{ paddingTop: "var(--stack-md)" }}>
-      <h3 style={{ marginBottom: "var(--stack-sm)" }}>Confirm who and what</h3>
+    <div className="sales-panel sales-setup form-stack unfold">
+      <h3>Confirm who and what</h3>
       <p className="sales-intro">
         We filled this from your company research. Edit anything that looks wrong, then confirm your
         ICP segments.
       </p>
 
       {!sessionDbId && (
-        <p className="mono" style={{ color: "var(--hanko)", marginBottom: "var(--stack-md)" }}>
-          Waiting for session — launch a campaign first.
-        </p>
+        <Callout tone="warn">Waiting for session — launch a campaign first.</Callout>
       )}
 
-      <div className="form-line" style={{ marginBottom: "var(--stack-md)" }}>
+      <div className="form-line">
         <label className="mono label-caps" htmlFor="who-sentence">
           {salesWhoLabel(goals)}
         </label>
@@ -125,7 +124,7 @@ export default function SalesSetup({
         />
       </div>
 
-      <div className="form-line" style={{ marginBottom: "var(--stack-md)" }}>
+      <div className="form-line">
         <label className="mono label-caps" htmlFor="what-sentence">
           What should we say you help with?
         </label>
@@ -137,15 +136,18 @@ export default function SalesSetup({
         />
       </div>
 
-      <div className="form-line" style={{ marginBottom: "var(--stack-md)" }}>
-        <label className="mono label-caps">How many companies should we research first?</label>
-        <div className="sales-qty-chips">
+      <div className="form-line">
+        <span className="mono label-caps" id="qty-label">
+          How many companies should we research first?
+        </span>
+        <div className="sales-qty-chips" role="group" aria-labelledby="qty-label">
           {QTY_OPTIONS.map((n) => (
             <button
               key={n}
               type="button"
               className="sales-qty-chip"
               data-active={targetQty === n}
+              aria-pressed={targetQty === n}
               onClick={() => setTargetQty(n)}
             >
               {n}
@@ -154,33 +156,20 @@ export default function SalesSetup({
         </div>
       </div>
 
-      <button
-        type="button"
-        className="mono"
-        onClick={() => setShowDetails(!showDetails)}
-        style={{
-          border: "none",
-          background: "none",
-          padding: 0,
-          cursor: "pointer",
-          textDecoration: "underline",
-          fontSize: 12,
-          marginBottom: "var(--stack-md)",
-        }}
-      >
-        {showDetails ? "Hide details" : "Edit details"}
-      </button>
+      <div>
+        <button
+          type="button"
+          className="link-button mono"
+          aria-expanded={showDetails}
+          onClick={() => setShowDetails(!showDetails)}
+        >
+          {showDetails ? "Hide details" : "Edit details"}
+        </button>
+      </div>
 
       {showDetails && (
-        <div
-          style={{
-            display: "flex",
-            gap: "var(--stack-md)",
-            flexWrap: "wrap",
-            marginBottom: "var(--stack-md)",
-          }}
-        >
-          <div className="form-line" style={{ flex: 1, minWidth: 180 }}>
+        <div className="inline-form unfold">
+          <div className="form-line">
             <label className="mono label-caps" htmlFor="icp-titles">
               Titles
             </label>
@@ -190,7 +179,7 @@ export default function SalesSetup({
               onChange={(e) => setIcpTitles(e.target.value)}
             />
           </div>
-          <div className="form-line" style={{ flex: 1, minWidth: 180 }}>
+          <div className="form-line">
             <label className="mono label-caps" htmlFor="icp-industries">
               Industries
             </label>
@@ -200,7 +189,7 @@ export default function SalesSetup({
               onChange={(e) => setIcpIndustries(e.target.value)}
             />
           </div>
-          <div className="form-line" style={{ flex: 1, minWidth: 120 }}>
+          <div className="form-line">
             <label className="mono label-caps" htmlFor="geo">
               Geography
             </label>
@@ -214,25 +203,26 @@ export default function SalesSetup({
         </div>
       )}
 
-      <details className="sales-disclosure" style={{ marginBottom: "var(--stack-lg)" }}>
+      <details className="sales-disclosure">
         <summary>Advanced</summary>
-        <div style={{ paddingTop: "var(--stack-sm)" }}>
-          <div className="form-line" style={{ marginBottom: "var(--stack-sm)" }}>
+        <div className="form-stack sales-setup__advanced">
+          <div className="form-line">
             <label className="mono label-caps" htmlFor="exclusions">
               Exclusions (one per line)
             </label>
             <textarea
               id="exclusions"
-              className="sales-textarea"
+              className="sales-textarea sales-textarea--compact"
               rows={2}
               value={exclusions}
+              aria-describedby="exclusions-hint"
               onChange={(e) => setExclusions(e.target.value)}
             />
-            <p className="mono" style={{ fontSize: 11, color: "var(--ink-soft)", marginTop: 4 }}>
+            <p id="exclusions-hint" className="mono fine-print">
               Domains or company names to skip during Find.
             </p>
           </div>
-          <div className="form-line" style={{ marginBottom: "var(--stack-sm)", maxWidth: 200 }}>
+          <div className="form-line sales-setup__cap">
             <label className="mono label-caps" htmlFor="daily-cap">
               Daily send cap
             </label>
@@ -244,36 +234,30 @@ export default function SalesSetup({
               onChange={(e) => setDailyCap(Number(e.target.value))}
             />
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+          <div className="card-list card-list--tight">
             <button
               type="button"
-              className="mono"
+              className="chip-toggle sales-setup__toggle"
+              aria-pressed={requireFirstSendApproval}
               onClick={() => setRequireFirstSendApproval(!requireFirstSendApproval)}
-              style={{
-                background: requireFirstSendApproval ? "var(--kraft)" : "transparent",
-                border: "1px solid var(--ink)",
-                padding: "0.4rem 0.75rem",
-                cursor: "pointer",
-                textAlign: "left",
-              }}
             >
-              {requireFirstSendApproval ? "✓" : "·"} Require approval before first send
+              <span className="chip-toggle__mark" aria-hidden="true">
+                {requireFirstSendApproval ? "✓" : "·"}
+              </span>
+              Require approval before first send
             </button>
             <button
               type="button"
-              className="mono"
+              className="chip-toggle sales-setup__toggle"
+              aria-pressed={autoFollowups}
               onClick={() => setAutoFollowups(!autoFollowups)}
-              style={{
-                background: autoFollowups ? "var(--kraft)" : "transparent",
-                border: "1px solid var(--ink)",
-                padding: "0.4rem 0.75rem",
-                cursor: "pointer",
-                textAlign: "left",
-              }}
             >
-              {autoFollowups ? "✓" : "·"} Plan follow-ups in sequences
+              <span className="chip-toggle__mark" aria-hidden="true">
+                {autoFollowups ? "✓" : "·"}
+              </span>
+              Plan follow-ups in sequences
             </button>
-            <p className="mono" style={{ fontSize: 11, color: "var(--ink-soft)" }}>
+            <p className="mono fine-print">
               Follow-ups stay in the sequence plan — approval and send gates still apply. Does not
               auto-send.
             </p>
@@ -281,19 +265,18 @@ export default function SalesSetup({
         </div>
       </details>
 
-      {error && (
-        <p className="form-error" role="alert">
-          {error}
-        </p>
-      )}
+      {error && <Callout tone="error">{error}</Callout>}
 
-      <button
-        className="hanko-btn"
-        onClick={submit}
-        disabled={!sessionDbId || !whatSentence.trim() || saving}
-      >
-        {saving ? "Saving…" : "Looks good — show plan"}
-      </button>
+      <div className="actions">
+        <button
+          type="button"
+          className="hanko-btn"
+          onClick={submit}
+          disabled={!sessionDbId || !whatSentence.trim() || saving}
+        >
+          {saving ? "Saving…" : "Looks good — show plan"}
+        </button>
+      </div>
     </div>
   );
 }

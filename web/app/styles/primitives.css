@@ -492,3 +492,375 @@
   gap: var(--space-2);
   flex-wrap: wrap;
 }
+
+/* --- Layout helpers -------------------------------------------------------- */
+
+/* A row of actions: primary first, the rest recede. */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+.actions--end {
+  justify-content: flex-end;
+}
+
+/* Vertical form: each line separated by the small stack. */
+.form-stack {
+  display: grid;
+  gap: var(--stack-sm);
+}
+
+/* A sheet inside a card: thin crease outline, no fill. */
+.subcard {
+  border: 1px solid var(--crease-strong);
+  padding: 0.75rem;
+}
+
+/* Two inputs on one line (name + detail), wrapping on narrow screens. */
+.input-pair {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.input-pair > :first-child {
+  flex: 1 1 140px;
+}
+.input-pair > :last-child {
+  flex: 2 1 220px;
+}
+
+/* Vertical rhythm for a card's contents. */
+.flow > * + * {
+  margin-top: var(--stack-sm);
+}
+.flow-md > * + * {
+  margin-top: var(--stack-md);
+}
+
+/* --- Dossier --------------------------------------------------------------- */
+
+.dossier-confirm {
+  margin-top: var(--stack-md);
+  width: 100%;
+}
+
+.intel-panel > .label-caps {
+  margin-bottom: var(--stack-sm);
+}
+.intel-section {
+  border-bottom: 1px solid var(--crease);
+}
+.intel-section__toggle {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.6rem 0;
+  background: none;
+  border: none;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.intel-section__mark {
+  color: var(--hanko);
+  transition: transform var(--dur-quick) var(--ease-settle);
+}
+.intel-section__toggle:hover .intel-section__mark {
+  transform: scale(1.2);
+}
+.intel-section__body {
+  display: grid;
+  gap: var(--stack-sm);
+  padding-bottom: var(--stack-sm);
+  font-size: 14px;
+}
+.intel-bucket {
+  border: 1px solid var(--crease);
+  padding: 0.5rem 0.75rem;
+  font-size: 13px;
+}
+.intel-bucket summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+}
+.intel-bucket[open] summary {
+  margin-bottom: 0.5rem;
+}
+.intel-bucket__facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.2rem 0.75rem;
+  margin-bottom: 0.4rem;
+}
+.intel-bucket__facts dt {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-muted);
+}
+
+/* --- Marketing platform rail -------------------------------------------------- */
+
+.platform-rail__list {
+  display: grid;
+  gap: var(--stack-sm);
+}
+.platform-card {
+  display: grid;
+  gap: 0.25rem;
+  padding: 1rem;
+  text-align: left;
+  cursor: pointer;
+  color: var(--ink);
+}
+.platform-card[aria-pressed="true"] {
+  border-color: var(--hanko);
+  box-shadow: inset 0 0 0 1px var(--hanko);
+}
+.platform-card__name {
+  font-family: var(--font-headline);
+}
+.platform-card .meta-line {
+  margin-top: 0;
+}
+
+/* --- Landing goal chips ---------------------------------------------------------- */
+
+.goal-chips {
+  display: grid;
+  gap: var(--stack-sm);
+}
+.goal-chips__row {
+  justify-content: center;
+}
+.chip-toggle:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* --- Escalation: the agent stops and asks ----------------------------------------- */
+
+.escalation {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--kraft-light);
+  border: 1px solid var(--crease-strong);
+  border-left: 3px solid var(--ochre);
+}
+.escalation__reason {
+  display: grid;
+  gap: 0.2rem;
+  font-size: 14px;
+}
+.escalation__reason .label-caps {
+  color: var(--ochre);
+}
+
+/* --- Status chips: a pigment per meaning; red stays reserved for the seal --- */
+
+.status-chip {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--outline);
+  color: var(--ink-soft);
+}
+.status-chip--positive {
+  background: var(--moss);
+  border-color: var(--moss);
+  color: var(--paper);
+}
+.status-chip--action {
+  border-color: var(--ochre);
+  color: var(--ochre);
+  background: var(--paper-raised);
+}
+.status-chip--terminal {
+  background: var(--kraft-light);
+}
+
+/* --- Kill switch: quiet until it is on ------------------------------------------ */
+
+.kill-switch {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 0.3rem 0.7rem;
+  background: transparent;
+  color: var(--ink-soft);
+  border: 1px solid var(--ink);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-quick) var(--ease-settle),
+    color var(--dur-quick) var(--ease-settle);
+}
+.kill-switch[aria-pressed="true"] {
+  background: var(--hanko);
+  border-color: var(--hanko);
+  color: var(--paper);
+}
+.kill-switch:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* --- Landing & login ------------------------------------------------------------- */
+
+.form-line--hero {
+  min-width: min(280px, 100%);
+  text-align: left;
+}
+.landing-features__title {
+  text-align: center;
+  margin: var(--stack-md) 0;
+}
+.landing-features__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--stack-md);
+}
+.landing-feature strong {
+  font-family: var(--font-headline);
+}
+.landing-feature p {
+  margin-top: var(--stack-sm);
+  color: var(--ink-soft);
+}
+
+/* --- Sales busy overlay ----------------------------------------------------------- */
+
+.sales-busy-title {
+  margin-bottom: 0.75rem;
+}
+.sales-busy-hint {
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin-top: 0.75rem;
+}
+
+/* --- Distribution plan --------------------------------------------------------------- */
+
+.sales-textarea.sales-textarea--compact {
+  min-height: 0;
+}
+.distribution-setup {
+  display: grid;
+  gap: var(--stack-sm);
+  max-width: 560px;
+}
+.distribution-setup--plan {
+  max-width: 640px;
+  gap: var(--stack-md);
+}
+.distribution-setup .sales-intro,
+.distribution-setup .meta-line {
+  margin: 0;
+}
+
+/* --- Sales plan ------------------------------------------------------------------------ */
+
+.sales-plan {
+  display: grid;
+  gap: var(--stack-sm);
+  margin-bottom: var(--stack-md);
+}
+.sales-plan .sales-intro,
+.sales-plan .meta-line {
+  margin: 0;
+}
+.sales-plan__summary {
+  font-size: 15px;
+}
+.sales-plan__details summary {
+  cursor: pointer;
+  font-size: 12px;
+}
+.sales-plan__details[open] summary {
+  margin-bottom: 0.75rem;
+}
+.sales-plan__details p {
+  font-size: 14px;
+}
+.sales-plan__list {
+  padding-left: 1.2rem;
+  font-size: 13px;
+}
+.sales-plan__list--fine {
+  font-size: 12px;
+}
+.sales-plan__tiers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--stack-sm);
+}
+.sales-plan__tier {
+  flex: 1 1 140px;
+  font-size: 12px;
+}
+.sales-plan__tier p:first-of-type {
+  color: var(--ink-soft);
+  margin: 0.25rem 0;
+}
+
+/* --- Sales setup ---------------------------------------------------------------------- */
+
+.sales-setup {
+  gap: var(--stack-md);
+  padding-top: var(--stack-md);
+}
+.sales-setup .sales-intro {
+  margin: 0;
+}
+.sales-setup__advanced {
+  padding-top: var(--stack-sm);
+}
+.sales-setup__cap {
+  max-width: 200px;
+}
+.sales-setup__toggle {
+  text-align: left;
+}
+
+/* --- Segment confirm -------------------------------------------------------------------- */
+
+.segment-confirm-panel {
+  position: relative;
+  padding-top: var(--stack-md);
+}
+.segment-confirm-panel > h3 {
+  margin-bottom: var(--stack-sm);
+}
+.segment-confirm-panel__source,
+.segment-confirm-panel__empty {
+  margin-bottom: var(--stack-md);
+}
+.segment-confirm-panel__actions {
+  margin-top: var(--stack-lg);
+}
+.sales-segment-head__name {
+  flex: 1;
+  min-width: 200px;
+}
+.sales-segment-head__motion {
+  width: min(200px, 100%);
+}
+.sales-segment__field {
+  margin-top: var(--stack-sm);
+}
+.sales-segment__budget {
+  max-width: 100px;
+}
+.sales-segment__group {
+  display: grid;
+  gap: var(--stack-sm);
+  margin-top: var(--stack-sm);
+}

@@ -74,7 +74,7 @@ export default function Landing({
     <div>
       <section className="landing-hero">
         <h1 className="landing-brand">
-          KA<span style={{ color: "var(--hanko)" }}>MI</span>
+          KA<span className="brand-accent">MI</span>
         </h1>
         <p className="landing-tagline">Your AI go-to-market agency for early-stage startups</p>
         <p className="landing-sub">
@@ -104,7 +104,7 @@ export default function Landing({
         )}
 
         <form className="landing-form" onSubmit={submit}>
-          <div className="form-line" style={{ minWidth: 280, textAlign: "left" }}>
+          <div className="form-line form-line--hero">
             <label className="mono label-caps" htmlFor="domain-input">
               ENTER YOUR DOMAIN TO START
             </label>
@@ -155,20 +155,12 @@ export default function Landing({
 
       <section className="landing-features">
         <hr className="crease landing-crease" />
-        <p className="label-caps" style={{ textAlign: "center", margin: "var(--stack-md) 0" }}>
-          What Kami runs for you
-        </p>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-            gap: "var(--stack-md)",
-          }}
-        >
+        <p className="label-caps landing-features__title">What Kami runs for you</p>
+        <div className="landing-features__grid unfold-stagger">
           {FEATURES.map((f) => (
-            <div className="kraft-card" key={f.title}>
-              <strong style={{ fontFamily: "var(--font-headline)" }}>{f.title}</strong>
-              <p style={{ marginTop: "var(--stack-sm)", color: "var(--ink-soft)" }}>{f.body}</p>
+            <div className="kraft-card landing-feature" key={f.title}>
+              <strong>{f.title}</strong>
+              <p>{f.body}</p>
             </div>
           ))}
         </div>
