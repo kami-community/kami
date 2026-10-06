@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { adminCookieValue, decideAccess, isCrossSiteMutation, isLoopbackHost } from "./access";
 
-const base = { authorization: null, adminCookie: null };
+const base = { authorization: null, adminCookie: null, path: "/api/sessions" };
 
 describe("isLoopbackHost", () => {
   it.each(["localhost:3000", "127.0.0.1", "[::1]:3000", "LOCALHOST"])("accepts %s", (h) => {
@@ -55,16 +55,19 @@ describe("decideAccess", () => {
     ).toBe(false);
   });
 
-  it("accepts the cron secret as a bearer token", async () => {
-    expect(
-      await decideAccess({
-        ...base,
-        host: "x",
-        adminToken: "a",
-        cronSecret: "c",
-        authorization: "Bearer c",
-      }),
-    ).toEqual({ allowed: true, via: "cron" });
+  it("accepts the cron secret only on job routes", async () => {
+    const cron = {
+      ...base,
+      host: "x",
+      adminToken: "a",
+      cronSecret: "c",
+      authorization: "Bearer c",
+    };
+    expect(await decideAccess({ ...cron, path: "/api/jobs/email-replies" })).toEqual({
+      allowed: true,
+      via: "cron",
+    });
+    expect((await decideAccess({ ...cron, path: "/api/sales/drafts" })).allowed).toBe(false);
   });
 });
 

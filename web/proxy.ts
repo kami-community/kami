@@ -32,6 +32,7 @@ export async function proxy(request: NextRequest) {
   const config = env();
   const decision = await decideAccess({
     host,
+    path: pathname,
     authorization: request.headers.get("authorization"),
     adminCookie: request.cookies.get(ADMIN_COOKIE)?.value ?? null,
     adminToken: config.KAMI_ADMIN_TOKEN,

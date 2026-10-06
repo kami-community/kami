@@ -55,6 +55,8 @@ function bearer(authorization: string | null): string | null {
 
 export interface AccessInput {
   host: string | null;
+  /** Request path; the cron secret only opens `/api/jobs/*`. */
+  path: string;
   authorization: string | null;
   adminCookie: string | null;
   adminToken?: string;
@@ -68,7 +70,12 @@ export type AccessDecision =
 export async function decideAccess(input: AccessInput): Promise<AccessDecision> {
   const token = bearer(input.authorization);
 
-  if (input.cronSecret && token && safeEqual(token, input.cronSecret)) {
+  if (
+    input.cronSecret &&
+    token &&
+    input.path.startsWith("/api/jobs/") &&
+    safeEqual(token, input.cronSecret)
+  ) {
     return { allowed: true, via: "cron" };
   }
 
