@@ -98,12 +98,23 @@ The visual style is **Tactile / Papercraft**. It treats the screen as a physical
 
 ## Colors
 
-The palette is derived from natural pigments and raw materials. 
-- **Paper (#EDE7DA):** The primary background. It represents a blank, raw state of potential.
-- **Ink (#1C1A17):** Used for all primary text and structural lines. It should mimic the slight bleeding of carbon ink into paper fibers.
-- **Hanko Red (#B4472A):** An accent color used sparingly (one per screen) as a "seal of approval" or primary call-to-action.
-- **Moss (#7A8B7F):** Used for secondary states, success indicators, or organic growth metrics.
-- **Kraft (#C9BFA8):** Used for "containers" or cards, providing a subtle layer of depth against the lighter paper background.
+The palette is derived from natural pigments and raw materials. The CSS custom properties in `web/app/globals.css` (base) and `web/app/styles/tokens.css` (extended) are the source of truth; use the token, never the hex.
+
+| Token | Hex | Role |
+|---|---|---|
+| `--paper` | #FFF9EC | Page background — a blank, raw state of potential |
+| `--paper-sunk` / `--paper-raised` | #F6F0E2 / #FFFCF4 | Wells and inputs / lifted sheets |
+| `--kraft-light` | #F3EDE0 | Card ("container") surface |
+| `--kraft` | #C9BFA8 | Heavier containers, chips, the folded corner |
+| `--ink` | #1D1C14 | Primary text and structural lines; carbon ink bleeding into fibre |
+| `--ink-soft` → `--ink-muted` → `--ink-faint` | #4B463F → #7C766E → #A8A196 | Secondary text, metadata, placeholders |
+| `--crease` / `--crease-soft` / `--crease-strong` | Ink at 15% / 8% / 32% | Folds and dividers |
+| `--hanko` (hover `--hanko-deep`) | #B4472A (#A43C20) | The seal: one primary action per screen, verified output |
+| `--moss` / `--moss-deep` | #7A8B7F / #5F7065 | Success, confirmed states, organic growth |
+| `--ochre` | #B5832A | Warnings and "needs your decision" |
+| `--error` | #9B1C1C | Errors only — never decoration |
+
+The front-matter palette above is the generated Material scheme the tokens were derived from; where they differ, the tokens win.
 
 ## Typography
 
@@ -117,7 +128,7 @@ Typography follows the logic of a printed manuscript.
 
 The layout is a **vertical unfolding flow**. It mimics a long scroll of paper or an unfolding letter. 
 - **Verticality:** Content moves strictly downward. Horizontal split-screens are avoided unless they represent a physical fold.
-- **Crease Lines:** Instead of traditional borders, use 1px lines in Ink (#1C1A17) with 20% opacity to represent folds in the paper.
+- **Crease Lines:** Instead of traditional borders, use 1px `--crease` lines (Ink at 15% opacity) to represent folds in the paper.
 - **Margins:** Generous page margins (32px+) create the "breath" found in editorial design.
 - **Breakpoints:** On mobile, "unfolded" sections stack vertically, and horizontal margins reduce to 16px.
 
@@ -125,7 +136,7 @@ The layout is a **vertical unfolding flow**. It mimics a long scroll of paper or
 
 Depth is achieved through physical manipulation of the paper surface rather than digital light sources.
 - **Folded Corners:** Cards and containers use a "dog-ear" or folded-corner shadow. This is a small, sharp triangular shadow at the bottom right to imply the paper is lifting off the surface.
-- **Tonal Layering:** The background is Paper (#EDE7DA). Elements "on top" are Kraft (#C9BFA8). This provides depth without using blurs.
+- **Tonal Layering:** The background is `--paper`. Elements "on top" are `--kraft-light`, with `--kraft` for the heaviest layer. This provides depth without using blurs.
 - **No Shadows:** Avoid ambient drop shadows. Use only "contact shadows"—thin, dark, and sharp—where two physical surfaces meet or where a fold occurs.
 
 ## Shapes
@@ -135,9 +146,12 @@ Paper is cut, not molded. All buttons, cards, and input fields must have 0px bor
 
 ## Components
 
-- **The Hanko Seal (Primary Button):** A sharp, rectangular block using Stamped Red (#B4472A) background and Paper (#EDE7DA) text. It is used only for the most important action on the page.
-- **Kraft Cards:** Rectangular containers with Kraft (#C9BFA8) backgrounds. Use 1px Ink outlines. The bottom-right corner should have a "lifted" CSS shadow effect.
-- **Crease Dividers:** 1px horizontal lines that span the container width. Use Ink at 15% opacity to look like a physical paper fold.
+- **The Hanko Seal (Primary Button):** A sharp, rectangular block using `--hanko` background and `--paper` text, darkening to `--hanko-deep` on hover. It is used only for the most important action on the page.
+- **Kraft Cards:** Rectangular containers with `--kraft-light` backgrounds. Use 1px Ink outlines. The bottom-right corner should have a "lifted" CSS shadow effect.
+- **Crease Dividers:** 1px `--crease` lines that span the container width, like a physical paper fold.
 - **Input Fields:** Bottom-border only, mimicking a line on a form. The label sits above in Mono typography.
 - **Selection Chips:** Small rectangular boxes with a "checked" mark that looks like a hand-drawn "X" in Ink.
 - **Agent Trace:** A block of Kraft-colored paper with a slight "rough" edge texture, containing Space Mono text for AI processing logs.
+## Motion
+
+Paper settles; it does not bounce. Sections `unfold` (a short downward reveal on `--ease-settle`), lists stagger in, a confirmed dossier gets a `Seal` stamp, and loading states use `Skeleton` sheets instead of spinners. Every animation is disabled under `prefers-reduced-motion`.

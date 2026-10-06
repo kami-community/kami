@@ -31,27 +31,22 @@ Non-negotiables:
 - Community Edition = self-hosted BYOK. Do not hard-require a hosted Kami API.
 - Prefer skills (`SKILL.md`) over hardcoded playbook prompts in routes.
 
-Ask Kami style lives in [`web/lib/prompts.ts`](web/lib/prompts.ts) (`cmoPrompt`) — keep answers short (≤120 words by default).
+Agent behaviour lives in [`agents/`](agents/) (one role prompt per agent, registered in `web/lib/hermes/agents.ts`) and [`skills/`](skills/) — not in route code. Kami Guide's voice is in [`agents/guide.md`](agents/guide.md); keep answers short.
 
 ## Local setup
 
-Follow the minimal path in **[SETUP.md](SETUP.md)** (Hermes + Supabase + migrations `001`–`012`).
-
-BYOK detail and **copy-paste agent setup prompts**: [docs/community-edition.md](docs/community-edition.md).
+Follow **[SETUP.md](SETUP.md)** (Hermes + Supabase + migrations `001`–`018`). BYOK detail and copy-paste agent setup prompts: [docs/community-edition.md](docs/community-edition.md).
 
 ```bash
-cd web
-npm install
-cp .env.example .env.local   # Windows: copy .env.example .env.local
-cd ..
-npm run sync:skills
-npm run readiness
-# Start Hermes gateway on :8642, then:
-cd web
-npm run dev
+cd web && npm install && cp .env.example .env.local   # fill in the Required block
+cd .. && npm run sync:skills && npm run readiness
+hermes gateway run                                    # terminal A
+npm run dev                                           # terminal B → http://localhost:3000
 ```
 
-Verify `/api/capabilities` shows `hermes` + `database` before filing setup issues.
+Verify `GET /api/capabilities` reports `hermes` and `database` before filing setup issues.
+
+A fully local stack works too: `supabase start` from `web/` applies every migration to a local Postgres.
 
 ## Agent-assisted setup
 
@@ -59,9 +54,9 @@ Prefer the one-shot prompts in [docs/community-edition.md](docs/community-editio
 
 ## Scope notes
 
-- Board / Ledger / CRM **routes** may exist for maintainers; they are **not** in the default founder navigation.
-- Marketing CRM / cold DMs stay Advanced / later — do not make them the default journey.
-- Desktop packaging and hosted multi-tenant auth are post-MVP (see Roadmap).
+- Marketing CRM / cold DMs stay Advanced — do not make them the default journey.
+- Activity (`/activity`) is the one place for receipts, agent runs and the suppression list.
+- Hosted multi-tenant auth is out of scope: Community Edition is single-user.
 
 ## Branch layout
 
@@ -72,7 +67,7 @@ Prefer the one-shot prompts in [docs/community-edition.md](docs/community-editio
 | **`feature/…`** | Contributor work. |
 
 ```text
-git clone https://github.com/saranambiar/kami.git
+git clone https://github.com/kami-community/kami.git
 git checkout dev && git pull
 git checkout -b feature/short-name
 # work → push → open PR with base = dev
@@ -108,9 +103,8 @@ Community Edition is **self-hosted / localhost**. Do not re-wire auto-deploy to 
 
 ### Observability (first-class)
 
-- Every meaningful hop should land in `agent_run_logs` with `kamiSessionId` + `kind`.
-- Prefer chokepoint logging (Hermes chat + pipeline routes) over silent one-offs.
-- New specialist/action → new log `kind` (+ Ledger/UI surfacing when useful).
+- Every Hermes call goes through `web/lib/hermes/client.ts`, which logs it to `agent_run_logs` (shown in Activity → Agent runs). New agent step → new `kind`.
+- Every send, post and DM records an `outbound_receipts` row with the provider id (Activity → Outbound).
 - Map missing-table errors to founder-facing copy.
 - Goal: reconstruct dossier → plan → discover/opps → review → external action from logs alone.
 - Future: manager decision artifacts (recommended job, rationale, rejected alternative) and review/revision events.
@@ -119,21 +113,18 @@ Community Edition is **self-hosted / localhost**. Do not re-wire auto-deploy to 
 
 - **Email / research:** AgentMail (human-gated send), Linkup / first-party domain evidence, optional browser CDP. Use the capability registry; degrade gracefully.
 - **Social / distribution:** X (plain-text publish when connected), Reddit / LinkedIn / HN / Product Hunt / Discord as opportunity surfaces via skills.
-- New platform = skill + opportunity contract (URL, evidence, why_now, draft, risks) + approval path that records `published_url` / outcome.
+- New vendor = an adapter in `web/lib/adapters/` behind a port in `web/lib/ports/`, selected in `web/lib/providers.ts`. Services never import vendors directly.
+- New platform = skill + opportunity contract (URL, evidence, why_now, draft, risks) + an approval path through `web/lib/outbound/` that records `published_url` / outcome.
 - Value-first, no spam, no inventing “we posted.” Manual/controlled publish until the automated path is proven.
 - Prefer distribution opportunities over cold DMs as the default Marketing path.
 
 ## Roadmap
 
-- Desktop app — easy local packaging, guided BYOK, Hermes + DB health checks.
-- Memory / personalization — prefs, suppressions, prior contacts/outcomes across runs.
-- Kanban / Hermes task surfacing — show manager + specialist work in flight (tied to run logs).
-- CRM — accounts, contacts, sequences, replies, stages (never invent contacts).
-- Richer social adapters — Instagram, Discord bots, etc., skill-first.
-- Manager orchestration provenance — decision + review bounce before external action.
-- Eval CI / corpus growth.
-
-Board, Ledger, and CRM pages may exist in the repo for maintainers but are **not** part of the default founder navigation. Do not re-add them to primary nav without a product decision.
+- Desktop packaging — guided BYOK, Hermes + DB health checks.
+- Memory / personalization — preferences and prior outcomes across campaigns.
+- Kanban / Hermes task surfacing in Activity.
+- Richer social adapters (Discord, Reddit) — skill-first, behind ports.
+- Eval corpus growth in CI.
 
 ## Good first contributions
 
@@ -141,16 +132,17 @@ Board, Ledger, and CRM pages may exist in the repo for maintainers but are **not
 - One platform or outreach `SKILL.md` improvement with sources.
 - One missing `agent_run_logs` kind on an existing route.
 - One capability + graceful-empty state for an integration.
-- Docs: SETUP edge cases (Windows Hermes home, migrations 009/010).
+- Docs: SETUP edge cases (Windows Hermes home, Supabase CLI).
 
 ## Checks before PR
 
 ```bash
-npm run eval:sales
-npm run build
+cd web
+npm run lint && npm run typecheck && npm test && npm run eval:sales && npm run format:check && npm run build
+cd .. && npm run check:skills
 ```
 
-When touching Marketing or Sales flows, also run a focused `npm run eval:e2e -- --fixture …`.
+CI runs the same gates plus a secret scan. When touching Marketing or Sales flows, also run a focused `npm run eval:e2e -- --fixture …`.
 
 - [ ] Branched from `dev` (PR base = `dev`)
 - [ ] Change is scoped (one concern)

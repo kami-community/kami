@@ -75,6 +75,8 @@ Full walkthrough, optional integrations and troubleshooting: **[SETUP.md](SETUP.
 | [AGENTS.md](AGENTS.md) | Rules for contributors and coding agents |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Branches, PRs, what to work on |
 | [SECURITY.md](SECURITY.md) | Security model and reporting |
+| [CHANGELOG.md](CHANGELOG.md) | What changed |
+| [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | How we work together |
 
 ## License
 

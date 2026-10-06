@@ -2,7 +2,7 @@
 
 Fill `web/.env.local`. **Never paste secrets into chat** — only confirm which vars are set.
 
-Also apply migration `web/supabase/migrations/005_connected_accounts_session.sql` in Supabase (adds `session_id` + `claim_id` on `connected_accounts`).
+Prerequisites: migrations `001`–`018` applied, and `KAMI_TOKEN_ENCRYPTION_KEY` set (`openssl rand -base64 32`). OAuth tokens are encrypted at rest with it; without it Kami refuses to connect any account.
 
 ---
 
@@ -15,7 +15,7 @@ Also apply migration `web/supabase/migrations/005_connected_accounts_session.sql
 | `APIFY_API_TOKEN` | **Kami** | Finding IG creators only (never sends) |
 | `X_ADS_*` | Ads account | Paid boosts (optional) |
 
-After login, accounts are bound to a browser `kami_claim` cookie, then claimed onto the campaign `agent_sessions` row when you hit Begin. Sends require that session’s token — not “latest global account.”
+Accounts are connected **per campaign**: you connect from inside a campaign (after confirming the dossier), and Kami binds the account to that campaign. Posts and DMs always use that campaign's account — never "the latest account anyone connected". Disconnect any time from the same place.
 
 ---
 
@@ -38,8 +38,7 @@ After login, accounts are bound to a browser `kami_claim` cookie, then claimed o
 
 4. App permissions: **Read and write** + Direct Messages if offered  
 5. Copy Client ID / Secret into `.env.local` (already done if X login works)  
-6. On Kami landing: **Log in with X** → see `X connected (@handle)`  
-7. Click **Begin** so the account is claimed onto the campaign session  
+6. In a campaign: **Marketing → Accounts → Connect X** → approve on X → back in Kami you see `✓ X @handle`  
 
 Re-login after adding `dm.read` / `dm.write` scopes so tokens include DM rights.
 
@@ -60,7 +59,8 @@ Re-login after adding `dm.read` / `dm.write` scopes so tokens include DM rights.
    INSTAGRAM_APP_SECRET=
    INSTAGRAM_REDIRECT_URI=http://localhost:3000/api/auth/instagram/callback
    ```
-7. Landing: **Log in with Instagram** → then **Begin** campaign  
+7. In a campaign: **Marketing → Accounts → Connect Instagram**  
+8. Optional, for instant inbound DMs: subscribe the Meta webhook to `<APP_URL>/api/webhooks/instagram` with a verify token you choose, and set `INSTAGRAM_WEBHOOK_VERIFY_TOKEN` to it. Kami checks `X-Hub-Signature-256` with your app secret.  
 
 Cold IG DMs may still fail without messaging permissions / prior thread — the API returns an honest error.
 
@@ -106,11 +106,11 @@ A boost creates a paused campaign → engagement line item (automatic bid, found
 
 ## Checklist before testing DMs
 
-- [ ] Migration `005_connected_accounts_session.sql` applied  
-- [ ] X login shows handle; Begin campaign after login  
-- [ ] Approve lead/creator in Marketing CRM → DM sends **from that user’s** connected account  
-- [ ] Receipt / response includes `account: @handle`  
+- [ ] `KAMI_TOKEN_ENCRYPTION_KEY` set and migrations `001`–`018` applied  
+- [ ] Inside a campaign, Connect X shows `✓ X @handle`  
+- [ ] Approve a lead/creator in Marketing → Advanced → the DM sends **from that campaign's** connected account  
+- [ ] Activity → Outbound shows the DM with the provider's message id  
 - [ ] (IG) App ID/Secret + Apify for creator discovery  
 - [ ] (Optional) X Ads keys for live boosts  
 
-Status probe: `GET /api/accounts/status` → `{ x_oauth, instagram_oauth, apify, x_ads }`
+Status probe: `GET /api/connections?session_id=<campaign id>` → `{ accounts, configured: { x, instagram, token_encryption, apify, x_ads } }`

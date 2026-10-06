@@ -1,0 +1,27 @@
+name: Feature request
+description: Propose a change to Kami's product or developer experience.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is a founder (or contributor) trying to do, and what gets in the way?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: How should it work? Point to docs/product-loops.md where relevant.
+    validations:
+      required: true
+  - type: checkboxes
+    id: principles
+    attributes:
+      label: Product principles
+      options:
+        - label: Keeps founder approval before every real send, post or DM
+          required: true
+        - label: Never invents contact details
+          required: true
