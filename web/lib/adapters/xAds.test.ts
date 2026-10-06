@@ -17,6 +17,7 @@ import {
  * (docs.x.com/fundamentals/authentication/oauth-1-0a/creating-a-signature)
  * and RFC 5849 §3.4.1.3.2.
  */
+// Public test vector from X's OAuth 1.0a "Creating a signature" docs (allow-listed in .gitleaksignore).
 const X_EXAMPLE = {
   url: "https://api.x.com/1.1/statuses/update.json",
   params: [

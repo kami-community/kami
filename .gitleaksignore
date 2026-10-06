@@ -1,0 +1,8 @@
+# Public OAuth 1.0a test vector from X's "Creating a signature" documentation
+# (consumer key xvz1evFS4wEEPTGEFPHBog). Used as a known-answer test in
+# web/lib/adapters/xAds.test.ts — not real credentials.
+2cace97698b4f2432f437439a4043e4743824b01:web/lib/adapters/xAds.test.ts:generic-api-key:27
+2cace97698b4f2432f437439a4043e4743824b01:web/lib/adapters/xAds.test.ts:generic-api-key:28
+2cace97698b4f2432f437439a4043e4743824b01:web/lib/adapters/xAds.test.ts:generic-api-key:29
+2cace97698b4f2432f437439a4043e4743824b01:web/lib/adapters/xAds.test.ts:generic-api-key:30
+2cace97698b4f2432f437439a4043e4743824b01:web/lib/adapters/xAds.test.ts:generic-api-key:99
