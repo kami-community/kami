@@ -161,7 +161,7 @@ export default function DossierConfirm({
     mode === "view" && !confirmed ? (
       <Button
         variant="accent"
-        size={onboarding ? "md" : "sm"}
+        size="sm"
         icon={onboarding ? <IconCheck size={14} strokeWidth={2.4} /> : undefined}
         busy={confirming}
         onClick={() => void confirm()}

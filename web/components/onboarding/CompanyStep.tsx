@@ -9,7 +9,7 @@ import Button from "@/components/ui/Button";
 import Callout from "@/components/ui/Callout";
 import ChipToggle from "@/components/ui/ChipToggle";
 import Field, { Input } from "@/components/ui/Field";
-import { IconGlobe, IconShield } from "@/components/ui/icons";
+import { IconShield } from "@/components/ui/icons";
 import type { CampaignSession } from "@/lib/campaigns/sessions";
 import { api, errorMessage } from "@/lib/client/api";
 import { rememberCampaign } from "@/lib/client/lastCampaign";
@@ -69,11 +69,8 @@ export default function CompanyStep() {
   }
 
   return (
-    <section className="onb__panel onb__panel--form" aria-labelledby="onb-company-title">
+    <section className="onb__panel" aria-labelledby="onb-company-title">
       <div className="onb__intro">
-        <span className="kami-seal kami-seal--lg onb__mark" aria-hidden>
-          K
-        </span>
         <h1 id="onb-company-title" className="onb__title">
           What’s your company’s domain?
         </h1>
@@ -88,11 +85,10 @@ export default function CompanyStep() {
           label="Company domain"
           hideLabel
           error={invalid}
-          hint={busy ? undefined : "Usually takes 20–60 seconds."}
+          hint={busy || invalid ? undefined : "Usually takes 20–60 seconds."}
           className="onb__domain-field"
         >
           <Input
-            className="onb__domain"
             type="text"
             inputMode="url"
             autoComplete="url"
@@ -132,14 +128,7 @@ export default function CompanyStep() {
             <ThinkingState working rows={staged.rows} active="Reading your company" done="Done" />
           </div>
         ) : (
-          <Button
-            type="submit"
-            variant="accent"
-            size="lg"
-            block
-            icon={<IconGlobe size={15} />}
-            kbd="⏎"
-          >
+          <Button type="submit" variant="accent" kbd="⏎">
             Research my company
           </Button>
         )}

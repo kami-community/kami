@@ -56,7 +56,7 @@ The default tab is Opportunities. If the plan isn't approved yet, every tab show
 
 | Step | Screen | Primary action | What Kami does |
 |---|---|---|---|
-| 1 Company | One centred input: "What's your company's domain?", plus optional goal chips in one row | **Research my company** | Checks the domain, reads the site and searches for mentions; a live trace shows each step |
+| 1 Company | A narrow left-aligned column: "What's your company's domain?", optional goal chips that wrap, and a button that fits its label | **Research my company** | Checks the domain, reads the site and searches for mentions; a live trace shows each step |
 | 2 Confirm | The dossier summary as a readable card, with edit and correct-with-text options | **That's us** | The brand analyst drafts and grounds the dossier; any correction is shown as a diff before it's saved |
 | 3 Choose | Two large cards: Find customers / Create distribution, with Kami's recommendation marked | **Start with …** | Opens the workspace in the chosen area |
 

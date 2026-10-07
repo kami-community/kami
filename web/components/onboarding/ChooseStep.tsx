@@ -96,7 +96,7 @@ export default function ChooseStep() {
         <span className="onb__confirmed">
           <IconCheck size={12} strokeWidth={3} /> {company} confirmed
         </span>
-        <h1 id="onb-choose-title" className="onb__title onb__title--sm">
+        <h1 id="onb-choose-title" className="onb__title">
           What should Kami do first?
         </h1>
         <p className="onb__lede">Pick one to start. You can add the other any time.</p>
@@ -138,13 +138,7 @@ export default function ChooseStep() {
       </div>
 
       <div className="onb__actions">
-        <Button
-          variant="accent"
-          size="lg"
-          busy={opening}
-          icon={<IconArrowRight size={15} />}
-          onClick={open}
-        >
+        <Button variant="accent" busy={opening} icon={<IconArrowRight size={14} />} onClick={open}>
           {started === selected ? option.resume : option.start}
         </Button>
         <Link

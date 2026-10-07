@@ -36,8 +36,8 @@ export default function ConfirmStep() {
   if (dossier) {
     return (
       <section className="onb__panel onb__panel--wide" aria-labelledby="onb-confirm-title">
-        <div className="onb__intro onb__intro--left">
-          <h1 id="onb-confirm-title" className="onb__title onb__title--sm">
+        <div className="onb__intro">
+          <h1 id="onb-confirm-title" className="onb__title">
             Is this {dossier.company}?
           </h1>
           <p className="onb__lede">
@@ -58,7 +58,7 @@ export default function ConfirmStep() {
   return (
     <section className="onb__panel" aria-labelledby="onb-confirm-title">
       <div className="onb__intro">
-        <h1 id="onb-confirm-title" className="onb__title onb__title--sm">
+        <h1 id="onb-confirm-title" className="onb__title">
           Getting to know {domain}
         </h1>
         <p className="onb__lede">
