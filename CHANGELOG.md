@@ -11,6 +11,7 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 - Every route validates input with zod; list endpoints require `session_id`. The open `/api/chat` proxy is gone.
 
 ### Added
+- Database tables are created on startup from `web/supabase/migrations/` when `DATABASE_URL` is set (`npm run db:migrate`).
 - One outbound pipeline for email, X posts and DMs: kill switch → suppressions → approvals → idempotent receipt → provider id (`outbound_receipts`, migration `013`).
 - Ports and adapters for email (AgentMail), search (Linkup/Exa/Tavily), ads (X Ads), calendar (Google) and email verification (DNS).
 - Agent registry: each step runs one named Hermes agent (`agents/*.md`) with zod-validated output and one corrective retry.
@@ -24,7 +25,7 @@ All notable changes are recorded here, following [Keep a Changelog](https://keep
 - Campaign state lives in a `CampaignProvider`; UI fetches through a typed `api`/`useApi` layer with visible errors.
 - Design system: tokens, motion and primitives (`Seal`, `Skeleton`, `Callout`, `FoldSteps`, `RichText`, `Tabs`, `ConfirmDialog`).
 - Skills: merged review rubrics, one freshness rule in `business_rules`, `founder_voice` replaces `persona_mimic` (no impersonation).
-- Docs rewritten for macOS/Linux/Windows; migrations are contiguous `001`–`018`.
+- Docs rewritten for macOS/Linux/Windows. The schema is one migration, applied on startup.
 
 ### Removed
 - Superseded routes and components (`/api/chat`, `/api/crm`, `/api/email/*`, `/api/x/post`, Board/Ledger/CRM pages, `CmoChat`, `ConnectX`), `state/` and `contracts/`.

@@ -14,7 +14,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "eval:sales": "tsx evals/sales/run.ts",
-    "eval:e2e": "tsx evals/e2e/run.ts"
+    "eval:e2e": "tsx evals/e2e/run.ts",
+    "db:migrate": "tsx lib/db/migrate-cli.ts"
   },
   "dependencies": {
     "@langfuse/otel": "^5.9.1",
@@ -25,10 +26,12 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "svix": "^2.6.2",
+    "postgres": "^3.4.7",
     "undici": "^8.8.0",
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.3.14",
     "@types/node": "^26.1.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",

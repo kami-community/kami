@@ -2,7 +2,7 @@
 
 Fill `web/.env.local`. **Never paste secrets into chat** — only confirm which vars are set.
 
-Prerequisites: migrations `001`–`018` applied, and `KAMI_TOKEN_ENCRYPTION_KEY` set (`openssl rand -base64 32`). OAuth tokens are encrypted at rest with it; without it Kami refuses to connect any account.
+Prerequisites: `DATABASE_URL` set so Kami can create tables, and `KAMI_TOKEN_ENCRYPTION_KEY` set (`openssl rand -base64 32`). OAuth tokens are encrypted at rest with it; without it Kami refuses to connect any account.
 
 ---
 
@@ -106,7 +106,7 @@ A boost creates a paused campaign → engagement line item (automatic bid, found
 
 ## Checklist before testing DMs
 
-- [ ] `KAMI_TOKEN_ENCRYPTION_KEY` set and migrations `001`–`018` applied  
+- [ ] `KAMI_TOKEN_ENCRYPTION_KEY` set and the database schema applied (`DATABASE_URL`, then `npm run dev` or `npm run db:migrate`)  
 - [ ] Inside a campaign, Connect X shows `✓ X @handle`  
 - [ ] Approve a lead/creator in Marketing → Advanced → the DM sends **from that campaign's** connected account  
 - [ ] Activity → Outbound shows the DM with the provider's message id  

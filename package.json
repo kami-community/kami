@@ -12,6 +12,7 @@
     "test": "npm --prefix web test",
     "eval:sales": "npm --prefix web run eval:sales",
     "eval:e2e": "npm --prefix web run eval:e2e",
+    "db:migrate": "npm --prefix web run db:migrate",
     "readiness": "node scripts/readiness.mjs",
     "sync:skills": "node scripts/sync-hermes-skills.mjs",
     "check:skills": "node scripts/sync-hermes-skills.mjs --check"

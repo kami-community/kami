@@ -52,7 +52,7 @@ npm run sync:skills                 # copy playbooks into Hermes
 npm run readiness                   # checks config without printing secrets
 ```
 
-Apply the database migrations (in order, `001`–`018`): either run each file in `web/supabase/migrations/` in the Supabase SQL editor, or with the Supabase CLI from `web/`: `supabase link` then `supabase db push`.
+Set `DATABASE_URL` in `web/.env.local` to your Postgres connection string. The app applies `web/supabase/migrations/` on startup (`npm run db:migrate` does the same thing). A local Supabase API on `127.0.0.1` is detected automatically.
 
 Then run Hermes' gateway and the app in two terminals:
 

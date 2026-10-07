@@ -86,5 +86,5 @@ if (!requiredOk) {
   console.log("\nMissing required keys — see web/.env.example and SETUP.md");
   process.exitCode = 1;
 } else {
-  console.log("\nRequired local config present. Apply SQL migrations, start Hermes, then npm run dev.");
+  console.log("\nRequired local config present. Set DATABASE_URL so tables are created on startup, start Hermes, then npm run dev.");
 }

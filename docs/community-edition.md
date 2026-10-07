@@ -27,8 +27,8 @@ Read first: README.md, SETUP.md, docs/community-edition.md, web/.env.example, ro
 
 Do:
 1) Install Hermes if missing. Enable API server on 127.0.0.1:8642. Hermes home is ~/.hermes on macOS/Linux and %LOCALAPPDATA%\hermes on Windows. Ask me for the model key and API_SERVER_KEY; never print or commit secrets.
-2) Create or connect my Supabase project. Apply migrations in web/supabase/migrations/ in order: 001–018 (or `supabase db push` from web/). Confirm before running SQL.
-3) Write web/.env.local from web/.env.example (not root .env.example) with HERMES_GATEWAY_URL=http://127.0.0.1:8642/v1/chat/completions, HERMES_API_KEY matching API_SERVER_KEY, NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY. Leave AgentMail, X, Linkup/Exa/Tavily, CDP unset unless I provide them.
+2) Create or connect my Supabase project. Put its Postgres connection string in DATABASE_URL. Kami applies web/supabase/migrations on startup (or `npm run db:migrate`). Confirm before writing that URL.
+3) Write web/.env.local from web/.env.example (not root .env.example) with HERMES_GATEWAY_URL=http://127.0.0.1:8642/v1/chat/completions, HERMES_API_KEY matching API_SERVER_KEY, NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, DATABASE_URL. Leave AgentMail, X, Linkup/Exa/Tavily, CDP unset unless I provide them.
 4) npm install in web/. From repo root: npm run sync:skills && npm run readiness.
 5) Start the Hermes gateway (`hermes gateway run`), then `npm run dev` in web/.
 6) Verify GET http://localhost:3000/api/capabilities reports hermes + database. Fix blockers until true.
@@ -46,8 +46,8 @@ Read SETUP.md, docs/community-edition.md, web/.env.example, root .env.example. N
 
 Target state:
 - Hermes API server on 127.0.0.1:8642 with my model key (Hermes home: ~/.hermes, or %LOCALAPPDATA%\hermes on Windows)
-- Supabase migrations 001–018 applied
-- web/.env.local from web/.env.example: Hermes gateway URL + matching API key + Supabase URL + service role only
+- Database schema applied (DATABASE_URL set; `npm run db:migrate` or the first `npm run dev`)
+- web/.env.local from web/.env.example: Hermes gateway URL + matching API key + Supabase URL + service role + DATABASE_URL
 - AgentMail, X, research providers, CDP only if I explicitly provide credentials
 
 Actions: check each dependency, explain blockers, write only safe local config after I confirm, npm install in web/, npm run sync:skills, npm run readiness, start Hermes (`hermes gateway run`) + npm run dev. Verify /api/capabilities. End with unlocked vs optional capabilities and the first click path (domain → dossier → Sales or Marketing).

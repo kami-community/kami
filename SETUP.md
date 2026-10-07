@@ -47,17 +47,13 @@ npm install
 
 ## 4. Database
 
-Apply every migration in `web/supabase/migrations/` **in order** (`001` → `018`).
+Kami creates the tables itself. Set `DATABASE_URL` to the Postgres connection string (Supabase → Project Settings → Database). On `npm run dev` or `npm run db:migrate`, pending files in `web/supabase/migrations/` are applied once and recorded in `kami_schema_migrations`.
 
-- **Supabase dashboard:** paste each file into the SQL editor and run it.
-- **Supabase CLI** (from `web/`):
-  ```bash
-  supabase link --project-ref <your-project-ref>
-  supabase db push
-  ```
-- **Fully local:** `supabase start` from `web/` runs Postgres + API locally and applies the migrations; use the printed API URL and `service_role` key below.
+A local Supabase API (`http://127.0.0.1:54321`) uses `postgresql://postgres:postgres@127.0.0.1:54322/postgres` when `DATABASE_URL` is unset. `supabase start` from `web/` also applies that same file.
 
-Migrations `016`–`018` enable row-level security on every table and grant access only to the service role Kami's server uses; the public anon key can read nothing.
+The public anon key can read nothing: row-level security is on, and only the service role Kami's server uses is granted access.
+
+A database created by the old `001`–`018` files is left as-is when it already matches this schema. Do not `supabase db push` that history away. A half-applied older database is refused — use a new Supabase project.
 
 ## 5. Configure the web app
 
@@ -118,7 +114,7 @@ Without `KAMI_ADMIN_TOKEN`, Kami refuses any request whose host isn't `localhost
 |---|---|
 | Banner: "Hermes is not reachable" | Gateway running? `HERMES_API_KEY` equals Hermes `API_SERVER_KEY`? |
 | "Supabase is not configured" | URL + service-role key in `web/.env.local`; restart `npm run dev` |
-| `relation … does not exist` | A migration is missing — apply `001`–`018` in order |
+| `relation … does not exist` | Set `DATABASE_URL` and restart `npm run dev` (or run `npm run db:migrate`) |
 | "Kami only serves localhost" | You opened it by IP or hostname; use `localhost` or set `KAMI_ADMIN_TOKEN` |
 | Connect X/Instagram fails immediately | Set `KAMI_TOKEN_ENCRYPTION_KEY`; check the redirect URI matches the app's settings exactly |
 | Dossier keeps failing | Activity → Agent runs shows the brand analyst's input, output and the validation problem |

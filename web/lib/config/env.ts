@@ -37,9 +37,11 @@ const schema = z.object({
   HERMES_HOME: optional,
   HERMES_BROWSER_CDP_URL: optional,
 
-  // Persistence
+  // Persistence. DATABASE_URL is the direct Postgres connection used to create tables.
+  // The app still reads and writes through the Supabase API (service role).
   NEXT_PUBLIC_SUPABASE_URL: optional,
   SUPABASE_SERVICE_ROLE_KEY: optional,
+  DATABASE_URL: optional,
 
   // Research providers
   LINKUP_API_KEY: optional,

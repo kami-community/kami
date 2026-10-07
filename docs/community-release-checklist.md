@@ -15,7 +15,7 @@ Prove each advertised capability with a **real action**, not a 200 response alon
 
 - [ ] Clone repo on a fresh machine/account using [SETUP.md](../SETUP.md)
 - [ ] Copy `web/.env.example` → `web/.env.local` with **user-owned** keys only
-- [ ] Apply migrations `001`–`018` on a **user-owned** Supabase project; anon key reads nothing (RLS)
+- [ ] Set `DATABASE_URL` and start the app (or `npm run db:migrate`) on a **user-owned** Supabase project; anon key reads nothing (RLS)
 - [ ] Hermes gateway on `127.0.0.1:8642` with user model key
 - [ ] `npm run readiness` reports unlocked capabilities without printing secrets
 - [ ] `npm run sync:skills` syncs repo skills into local Hermes home

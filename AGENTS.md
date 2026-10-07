@@ -43,7 +43,7 @@ web/
     shell/              workspace frame: sidebar, top bar, agent activity, view router
     areas/              one screen per workspace area (Home, Inbox, Find customers, …)
     ui/ bui/            design-system atoms, Beautiful UI primitives
-  supabase/migrations/  numbered SQL, applied in order
+  supabase/migrations/  schema, applied on startup by lib/db/migrate.ts
 ```
 
 ## Rules

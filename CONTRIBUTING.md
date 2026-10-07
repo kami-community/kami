@@ -35,7 +35,7 @@ Agent behaviour lives in [`agents/`](agents/) (one role prompt per agent, regist
 
 ## Local setup
 
-Follow **[SETUP.md](SETUP.md)** (Hermes + Supabase + migrations `001`–`018`). BYOK detail and copy-paste agent setup prompts: [docs/community-edition.md](docs/community-edition.md).
+Follow **[SETUP.md](SETUP.md)** (Hermes + Supabase; tables are created on startup). BYOK detail and copy-paste agent setup prompts: [docs/community-edition.md](docs/community-edition.md).
 
 ```bash
 cd web && npm install && cp .env.example .env.local   # fill in the Required block
@@ -161,4 +161,4 @@ CI runs the same gates plus a secret scan. When touching Marketing or Sales flow
 
 ## Agent-assisted changes
 
-Use the prompts in [docs/community-edition.md](docs/community-edition.md). Require confirmation before writing secrets, CDP config, applying migrations, or calling external providers.
+Use the prompts in [docs/community-edition.md](docs/community-edition.md). Require confirmation before writing secrets, CDP config, running migrations, or calling external providers.

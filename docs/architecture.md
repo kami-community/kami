@@ -115,5 +115,5 @@ Single user, self-hosted:
 | `web/lib/hermes/` | Hermes client, agent registry, JSON parsing, SSE |
 | `web/lib/ports/`, `web/lib/adapters/`, `web/lib/providers.ts` | Vendor boundaries |
 | `web/lib/domain/` | Schemas and types shared with the browser |
-| `web/supabase/migrations/` | Schema |
+| `web/lib/db/migrate.ts` | Applies `web/supabase/migrations/` on startup |
 | `agents/`, `skills/` | Agent roles and playbooks |
