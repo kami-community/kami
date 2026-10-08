@@ -6,9 +6,8 @@ on:
   pull_request_target:
     types: [opened, closed, synchronize]
 
-# Requests write below. The org locks the repo default to read-only; if signature
-# commits fail, an org admin must allow Read and write under Organization →
-# Settings → Actions → General → Workflow permissions.
+# The explicit block below overrides the org's read-only default token, so no
+# org or repo setting change is needed for signature commits.
 permissions:
   actions: write
   contents: write

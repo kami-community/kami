@@ -21,7 +21,7 @@ Action: `badideasforsale/cla-github-action` pinned by commit SHA in `cla.yml`. D
 
 1. Confirm `.github/workflows/cla.yml` is on the **default branch**, and that the default branch is `dev`. Since November 2025, `pull_request_target` runs the workflow file from the default branch, not from the pull request base. A copy that exists only on another branch never runs.
 2. Ask unsigned users to paste the sign sentence (exact string). Then comment `recheck` if the check stays red.
-3. If the Action cannot push signatures: `cla-signatures` must exist and must **not** be protected. The workflow requests `contents: write`. The kami-community org currently forbids setting the repository default to Read and write. If signature commits still fail, `@saranambiar` (org admin) must set Organization → Settings → Actions → General → Workflow permissions to **Read and write**.
+3. If the Action cannot push signatures: `cla-signatures` must exist and must **not** be protected. The workflow's own `permissions:` block (`contents: write`) overrides the org's read-only default token, so no Actions setting needs changing.
 4. Never create `cla.json` by hand (the action will fail).
 5. Do not allowlist humans to skip signing.
 
