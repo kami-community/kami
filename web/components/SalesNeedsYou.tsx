@@ -1,138 +1,95 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import type { Meeting, SalesNotification, SalesTask } from "@/lib/salesTypes";
+import NotificationList, { type NotificationItem } from "@/components/sales/NotificationList";
 import SalesConversationThread from "@/components/SalesConversationThread";
-import type { SalesConversation } from "@/lib/salesTypes";
+import { notificationItem, useSalesInbox } from "@/components/SalesInbox";
+import Callout from "@/components/ui/Callout";
+import EmptyState from "@/components/ui/EmptyState";
+import { IconCalendar, IconCheckCircle, IconList } from "@/components/ui/icons";
+import Skeleton from "@/components/ui/Skeleton";
+import { withQuery } from "@/lib/client/api";
+import { useApi } from "@/lib/client/useApi";
+import type { Meeting, SalesTask } from "@/lib/salesTypes";
 
-interface SalesNeedsYouProps {
+/** Replies, meeting requests and tasks waiting on the founder. */
+export default function SalesNeedsYou({
+  sessionDbId,
+  onNavigate,
+}: {
   sessionDbId: string | null;
-}
+  /** open the full list for a kind of item */
+  onNavigate: (target: "meetings" | "tasks") => void;
+}) {
+  const inbox = useSalesInbox(sessionDbId);
+  const meetings = useApi<{ meetings: Meeting[] }>(
+    sessionDbId ? withQuery("/api/sales/meetings", { session_id: sessionDbId }) : null,
+  );
+  const tasks = useApi<{ tasks: SalesTask[] }>(
+    sessionDbId ? withQuery("/api/sales/tasks", { session_id: sessionDbId }) : null,
+  );
 
-export default function SalesNeedsYou({ sessionDbId }: SalesNeedsYouProps) {
-  const [notifications, setNotifications] = useState<SalesNotification[]>([]);
-  const [meetings, setMeetings] = useState<Meeting[]>([]);
-  const [tasks, setTasks] = useState<SalesTask[]>([]);
-  const [conversations, setConversations] = useState<SalesConversation[]>([]);
-  const [activeConv, setActiveConv] = useState<SalesConversation | null>(null);
-
-  const refresh = useCallback(() => {
-    if (!sessionDbId) return;
-    fetch(`/api/sales/inbox?session_id=${sessionDbId}`)
-      .then((r) => r.json())
-      .then((j) => setNotifications([...(j.escalations ?? []), ...(j.notifications ?? [])]))
-      .catch(() => {});
-
-    fetch(`/api/sales/meetings?session_id=${sessionDbId}`)
-      .then((r) => r.json())
-      .then((j) => setMeetings((j.meetings ?? []).filter((m: Meeting) => m.status === "proposed")))
-      .catch(() => {});
-
-    fetch(`/api/sales/tasks?session_id=${sessionDbId}`)
-      .then((r) => r.json())
-      .then((j) => setTasks((j.tasks ?? []).filter((t: SalesTask) => t.status === "open" || t.status === "in_progress")))
-      .catch(() => {});
-
-    fetch(`/api/sales/conversations?session_id=${sessionDbId}`)
-      .then((r) => r.json())
-      .then((j) => setConversations(j.conversations ?? []))
-      .catch(() => {});
-  }, [sessionDbId]);
-
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  async function markRead(id: string) {
-    await fetch("/api/sales/inbox", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, read: true }),
-    });
-    refresh();
-  }
-
-  function openConversation(notif: SalesNotification) {
-    if (notif.entity_type === "sales_conversation" && notif.entity_id) {
-      const conv = conversations.find((c) => c.id === notif.entity_id);
-      if (conv) {
-        setActiveConv(conv);
-        if (notif.id) markRead(notif.id);
-      }
-    }
-  }
-
-  if (activeConv) {
+  if (inbox.active) {
     return (
       <SalesConversationThread
-        conversation={activeConv}
+        conversation={inbox.active}
         onBack={() => {
-          setActiveConv(null);
-          refresh();
+          inbox.close();
+          meetings.reload();
+          tasks.reload();
         }}
-        onRefresh={refresh}
+        onRefresh={inbox.reload}
       />
     );
   }
 
-  const unread = notifications.filter((n) => !n.read);
-  const hasItems = unread.length > 0 || meetings.length > 0 || tasks.length > 0;
+  const unread = inbox.inbox
+    ? [...inbox.inbox.escalations, ...inbox.inbox.notifications].filter(
+        (n, i, all) => !n.read && all.findIndex((m) => m.id === n.id) === i,
+      )
+    : [];
+  const proposed = (meetings.data?.meetings ?? []).filter((m) => m.status === "proposed");
+  const openTasks = (tasks.data?.tasks ?? []).filter(
+    (t) => t.status === "open" || t.status === "in_progress",
+  );
+  const loading = inbox.loading || meetings.loading || tasks.loading;
+  const errors = [inbox.error, meetings.error, tasks.error].filter((e): e is string => Boolean(e));
+
+  const items: NotificationItem[] = [
+    ...unread.map((n) => notificationItem(n, inbox.canOpen(n), () => void inbox.open(n))),
+    ...proposed.map((m) => ({
+      key: `meeting-${m.id}`,
+      kind: "meeting_request",
+      tone: "green" as const,
+      title: m.title ?? "New meeting request",
+      body: "Accept with a calendar invite, or decline.",
+      icon: <IconCalendar size={15} />,
+      onOpen: () => onNavigate("meetings"),
+    })),
+    ...openTasks.map((t) => ({
+      key: `task-${t.id}`,
+      kind: `${t.priority}_priority_task`,
+      tone: (t.priority === "high" ? "orange" : "neutral") as NotificationItem["tone"],
+      title: t.title,
+      body: t.due_at ? `Due ${new Date(t.due_at).toLocaleDateString()}` : undefined,
+      icon: <IconList size={15} />,
+      onOpen: () => onNavigate("tasks"),
+    })),
+  ];
 
   return (
-    <div className="sales-panel">
-      <p className="sales-intro" style={{ marginBottom: "var(--stack-md)" }}>
-        Replies, meeting requests, and tasks that need your decision.
-      </p>
-
-      {!sessionDbId && (
-        <p className="mono" style={{ color: "var(--ink-soft)", fontSize: 13 }}>
-          Complete setup and send outreach to see items here.
-        </p>
+    <>
+      {errors.map((e) => (
+        <Callout key={e} tone="error">
+          {e}
+        </Callout>
+      ))}
+      {loading && !items.length && <Skeleton title lines={4} />}
+      {!loading && !items.length && !errors.length && (
+        <EmptyState title="Nothing needs you right now" icon={<IconCheckCircle size={16} />}>
+          Kami will surface replies, meeting requests and follow-ups here.
+        </EmptyState>
       )}
-
-      {sessionDbId && !hasItems && (
-        <p className="mono" style={{ color: "var(--ink-soft)", fontSize: 13 }}>
-          Nothing needs you right now — Kami will surface replies and meeting requests here.
-        </p>
-      )}
-
-      {unread.map((n) => (
-        <button
-          key={n.id}
-          type="button"
-          className="kraft-card"
-          onClick={() => openConversation(n)}
-          style={{
-            display: "block",
-            width: "100%",
-            textAlign: "left",
-            marginBottom: "var(--stack-sm)",
-            padding: "var(--stack-sm)",
-            cursor: "pointer",
-          }}
-        >
-          <p className="label-caps" style={{ fontSize: 11 }}>
-            {n.kind?.replace(/_/g, " ") ?? "Notification"}
-          </p>
-          <p style={{ fontSize: 14, marginTop: "0.25rem" }}>{n.title ?? n.body ?? "Needs your input"}</p>
-        </button>
-      ))}
-
-      {meetings.map((m) => (
-        <div key={m.id} className="kraft-card" style={{ padding: "var(--stack-sm)", marginBottom: "var(--stack-sm)" }}>
-          <p className="label-caps" style={{ fontSize: 11 }}>Meeting proposed</p>
-          <p style={{ fontSize: 14, marginTop: "0.25rem" }}>
-            {m.title ?? "New meeting"} — review in More → Meetings
-          </p>
-        </div>
-      ))}
-
-      {tasks.map((t) => (
-        <div key={t.id} className="kraft-card" style={{ padding: "var(--stack-sm)", marginBottom: "var(--stack-sm)" }}>
-          <p className="label-caps" style={{ fontSize: 11 }}>Task</p>
-          <p style={{ fontSize: 14, marginTop: "0.25rem" }}>{t.title}</p>
-        </div>
-      ))}
-    </div>
+      {items.length > 0 && <NotificationList label="Needs you" items={items} />}
+    </>
   );
 }

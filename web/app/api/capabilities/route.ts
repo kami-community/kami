@@ -1,13 +1,5 @@
 import { detectCapabilities } from "@/lib/capabilities";
-import { hermesGatewayConfigured } from "@/lib/hermesServer";
+import { route } from "@/lib/http/route";
 
-export async function GET(): Promise<Response> {
-  const caps = detectCapabilities();
-  // Live gateway probe is optional; env presence is enough for UI gates.
-  const hermesReachable = hermesGatewayConfigured();
-  return Response.json({
-    ...caps,
-    hermes: hermesReachable,
-    modelConfigured: hermesReachable && caps.modelConfigured,
-  });
-}
+/** What this install can do (no secrets). */
+export const GET = route(async () => Response.json(await detectCapabilities()));

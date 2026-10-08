@@ -1,13 +1,13 @@
-import type { SalesSegment } from "./salesSegments";
+import type { SalesSegment } from "@/lib/domain/segments";
 import {
   findContactForDomain,
   isBuyerReachableContact,
   type FoundContact,
 } from "./salesContactFinder";
-import { linkupConfigured, searchLinkup } from "./linkup";
+import { searchProvider } from "@/lib/providers";
 
 export interface ProvenanceRecord {
-  provider: "linkup" | "hermes" | "site_scrape";
+  provider: "linkup" | "exa" | "tavily" | "hermes" | "site_scrape";
   url: string;
   captured_at: string;
   confidence: number;
@@ -145,8 +145,12 @@ export function normalizeCompanyDomain(raw: string): string | null {
     if (host.split(".").length < 2) return null;
     return host;
   } catch {
-    const cleaned = raw.trim().toLowerCase().replace(/^www\./, "");
-    if (cleaned.includes(".") && !cleaned.includes(" ") && !isDomainBlocked(cleaned)) return cleaned;
+    const cleaned = raw
+      .trim()
+      .toLowerCase()
+      .replace(/^www\./, "");
+    if (cleaned.includes(".") && !cleaned.includes(" ") && !isDomainBlocked(cleaned))
+      return cleaned;
     return null;
   }
 }
@@ -169,7 +173,9 @@ export function extractCompanyDomainsFromContent(
     if (isDomainBlocked(host)) continue;
     found.add(host);
   }
-  const bareMatches = content.matchAll(/\b([a-z0-9][a-z0-9-]{1,40}\.(?:com|io|co|ai|dev|app|so|gg))\b/gi);
+  const bareMatches = content.matchAll(
+    /\b([a-z0-9][a-z0-9-]{1,40}\.(?:com|io|co|ai|dev|app|so|gg))\b/gi,
+  );
   for (const m of bareMatches) {
     const host = m[1].toLowerCase();
     if (host === publisherHost) continue;
@@ -241,7 +247,11 @@ export function scoreAccountAxes(params: {
   return { fit, intent, contactability, priority, explanation };
 }
 
-export function assignTierFromAxes(fit: number, intent: number, hasBuyerContact: boolean): 1 | 2 | 3 {
+export function assignTierFromAxes(
+  fit: number,
+  intent: number,
+  hasBuyerContact: boolean,
+): 1 | 2 | 3 {
   // Tier 1 requires trigger-aligned intent AND a buyer-reachable contact — not any mailbox.
   if (fit >= 0.65 && intent >= 0.55 && hasBuyerContact) return 1;
   if (fit >= 0.5 && intent >= 0.35) return 2;
@@ -290,7 +300,8 @@ export async function fetchSignalsForCandidate(params: {
   trigger?: string;
   capturedAt: string;
 }): Promise<ResearchedSignal[]> {
-  if (!linkupConfigured()) return [];
+  const search = searchProvider();
+  if (!search) return [];
 
   const trigger = (params.trigger ?? "").trim();
   const queries = [
@@ -302,19 +313,19 @@ export async function fetchSignalsForCandidate(params: {
   const seen = new Set<string>();
 
   for (const q of queries) {
-    const results = await searchLinkup(q);
-    for (const r of results.slice(0, 3)) {
+    const results = await search.search(q, { limit: 3 });
+    for (const r of results) {
       if (!r.url || !r.content) continue;
       if (seen.has(r.url)) continue;
       seen.add(r.url);
       out.push({
-        provider: "linkup",
+        provider: search.id,
         url: r.url,
         captured_at: params.capturedAt,
         confidence: 0.7,
         evidence_text: r.content.slice(0, 400),
         signal_type: trigger ? "segment_trigger_hit" : "company_mention",
-        detail: (r.name || r.content).slice(0, 240),
+        detail: (r.title || r.content).slice(0, 240),
         observed_at: params.capturedAt,
       });
     }
@@ -387,18 +398,16 @@ export async function researchFromSegments(
             kamiSessionId,
           );
           const hasAnyEmail = Boolean(contact?.email);
-          const hasBuyerContact = Boolean(
-            contact?.email && isBuyerReachableContact(contact),
-          );
+          const hasBuyerContact = Boolean(contact?.email && isBuyerReachableContact(contact));
 
-          const linkupSignals = await fetchSignalsForCandidate({
+          const searchSignals = await fetchSignalsForCandidate({
             domain,
             companyName: candidate.name || companyNameFromDomain(domain),
             trigger: segment.trigger_signal,
             capturedAt,
           });
 
-          const signals: ResearchedSignal[] = [...linkupSignals];
+          const signals: ResearchedSignal[] = [...searchSignals];
           if (!signals.length) {
             signals.push({
               provider: "site_scrape",
@@ -411,25 +420,25 @@ export async function researchFromSegments(
             });
           }
 
-          const ageDays = signalAgeDays(linkupSignals, capturedAt);
+          const ageDays = signalAgeDays(searchSignals, capturedAt);
           const triggerTokens = (segment.trigger_signal || "")
             .toLowerCase()
             .split(/[^a-z0-9]+/)
             .filter((t) => t.length >= 4);
-          const hasTriggerAlignedSignal = linkupSignals.some((s) => {
+          const hasTriggerAlignedSignal = searchSignals.some((s) => {
             const blob = `${s.evidence_text} ${s.detail} ${s.signal_type}`.toLowerCase();
             if (s.signal_type === "domain_alive") return false;
             if (!triggerTokens.length) return Boolean(s.url);
             return triggerTokens.some((t) => blob.includes(t));
           });
-          const hasDatedSignal = linkupSignals.length > 0;
+          const hasDatedSignal = searchSignals.length > 0;
           const fit = Math.min(1, 0.7 + (candidate.why ? 0.15 : 0) + (segment.why_fit ? 0.05 : 0));
           const intentRaw = hasTriggerAlignedSignal ? 0.75 : hasDatedSignal ? 0.4 : 0.25;
           const score = scoreAccountAxes({
             fit,
             intentRaw,
             hasVerifiedContact: hasBuyerContact,
-            signalAgeDays: hasTriggerAlignedSignal ? ageDays ?? 7 : null,
+            signalAgeDays: hasTriggerAlignedSignal ? (ageDays ?? 7) : null,
           });
           if (score.priority <= 0 && fit < FIT_FLOOR) return;
 

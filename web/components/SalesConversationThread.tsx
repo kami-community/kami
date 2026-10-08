@@ -1,6 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useRef, useState } from "react";
+import {
+  ChatBubble,
+  ChatComposer,
+  ChatPanel,
+  ChatSection,
+  ChatThread,
+} from "@/components/bui/Chat";
+import Button from "@/components/ui/Button";
+import Callout from "@/components/ui/Callout";
+import { IconArrowLeft, IconWarning } from "@/components/ui/icons";
+import { humanize, StatusPill, statusTone } from "@/components/ui/Pills";
+import Skeleton from "@/components/ui/Skeleton";
+import { api, errorMessage, withQuery } from "@/lib/client/api";
+import { useApi } from "@/lib/client/useApi";
 import type { ReplyClassificationLabel, SalesConversation } from "@/lib/salesTypes";
 
 interface MessageWithClassification {
@@ -16,50 +30,62 @@ interface MessageWithClassification {
   } | null;
 }
 
-const LABELS: ReplyClassificationLabel[] = [
+/** Labels a founder can apply by hand; the rest come from auto-classification. */
+const MANUAL_LABELS: ReplyClassificationLabel[] = [
   "positive",
   "objection",
   "information_request",
   "referral",
-  "not_now",
-  "unsubscribe",
-  "negative",
-  "spam_risk",
 ];
 
 interface SalesConversationThreadProps {
   conversation: SalesConversation;
   onBack: () => void;
   onRefresh: () => void;
+  /** Inbox already has its own way back; hide this one so the thread isn't a second header. */
+  showBack?: boolean;
 }
 
-export default function SalesConversationThread({ conversation, onBack, onRefresh }: SalesConversationThreadProps) {
-  const [messages, setMessages] = useState<MessageWithClassification[]>([]);
+/** One email conversation with a prospect: read, classify replies, answer, escalate. */
+export default function SalesConversationThread({
+  conversation,
+  onBack,
+  onRefresh,
+  showBack = true,
+}: SalesConversationThreadProps) {
+  const url = `/api/sales/conversations/${conversation.id}`;
+  const thread = useApi<{ messages: MessageWithClassification[] }>(
+    withQuery(url, { session_id: conversation.session_id }),
+  );
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [classifying, setClassifying] = useState<string | null>(null);
-
-  const fetchMessages = useCallback(() => {
-    fetch(`/api/sales/conversations/${conversation.id}`)
-      .then((r) => r.json())
-      .then((j) => setMessages(j.messages ?? []))
-      .catch(() => {});
-  }, [conversation.id]);
-
-  useEffect(() => { fetchMessages(); }, [fetchMessages]);
+  const [error, setError] = useState<string | null>(null);
+  const replyIdRef = useRef<string | null>(null);
+  const messages = thread.data?.messages ?? [];
+  const latestDraft = [...messages].reverse().find((m) => m.classification?.draft_response)
+    ?.classification?.draft_response;
 
   async function sendMessage() {
     const text = input.trim();
     if (!text || sending) return;
-    setInput("");
+    // One id per composed message: retries of the same text never send twice.
+    replyIdRef.current ??= crypto.randomUUID();
     setSending(true);
+    setError(null);
     try {
-      await fetch(`/api/sales/conversations/${conversation.id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "message", content: text }),
+      await api.post(url, {
+        action: "reply",
+        session_id: conversation.session_id,
+        content: text,
+        client_message_id: replyIdRef.current,
       });
-      fetchMessages();
+      setInput("");
+      replyIdRef.current = null;
+      thread.reload();
+      onRefresh();
+    } catch (err) {
+      setError(errorMessage(err, "Reply not sent"));
     } finally {
       setSending(false);
     }
@@ -67,123 +93,172 @@ export default function SalesConversationThread({ conversation, onBack, onRefres
 
   async function classifyMessage(messageId: string, label?: ReplyClassificationLabel) {
     setClassifying(messageId);
+    setError(null);
     try {
-      await fetch(`/api/sales/conversations/${conversation.id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "classify", message_id: messageId, label }),
+      await api.post(url, {
+        action: "classify",
+        session_id: conversation.session_id,
+        message_id: messageId,
+        label,
       });
-      fetchMessages();
+      thread.reload();
       onRefresh();
+    } catch (err) {
+      setError(errorMessage(err, "Could not classify this reply"));
     } finally {
       setClassifying(null);
     }
   }
 
   async function escalate() {
-    await fetch(`/api/sales/conversations/${conversation.id}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "escalate", reason: "Manual review requested" }),
-    });
-    onRefresh();
+    setError(null);
+    try {
+      await api.post(url, {
+        action: "escalate",
+        session_id: conversation.session_id,
+        reason: "Manual review requested",
+      });
+      onRefresh();
+    } catch (err) {
+      setError(errorMessage(err, "Could not escalate"));
+    }
   }
 
   return (
-    <div>
-      <button
-        type="button"
-        className="mono"
-        onClick={onBack}
-        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-soft)", marginBottom: "var(--stack-sm)" }}
-      >
-        ← back to inbox
-      </button>
-      <p className="label-caps" style={{ marginBottom: "var(--stack-sm)" }}>
-        {conversation.channel} · {conversation.status.replace(/_/g, " ")}
-      </p>
+    <div className="conversation fade-up">
+      <div className="row row--between" style={{ marginBottom: 12 }}>
+        {showBack ? (
+          <Button size="xs" variant="quiet" icon={<IconArrowLeft size={13} />} onClick={onBack}>
+            Back to inbox
+          </Button>
+        ) : (
+          <span />
+        )}
+        <span className="row" style={{ gap: 6 }}>
+          <StatusPill dot={false}>{humanize(conversation.channel)}</StatusPill>
+          <StatusPill tone={statusTone(conversation.status)}>
+            {humanize(conversation.status)}
+          </StatusPill>
+        </span>
+      </div>
 
       {conversation.status === "escalated" && (
-        <div className="kraft-card" style={{ padding: "0.5rem", marginBottom: "var(--stack-sm)", borderLeft: "3px solid var(--hanko)" }}>
-          <p className="mono" style={{ fontSize: 12, color: "var(--hanko)" }}>Escalated — review before auto-reply</p>
+        <div style={{ marginBottom: 12 }}>
+          <Callout tone="warn">Escalated — this one needs your decision before any reply.</Callout>
         </div>
       )}
 
-      <div className="kraft-card" style={{ maxHeight: 360, overflowY: "auto", marginBottom: "var(--stack-sm)" }}>
-        {messages.length === 0 && (
-          <p className="mono" style={{ color: "var(--ink-soft)" }}>No messages yet.</p>
-        )}
-        {messages.map((m) => (
-          <div key={m.id} style={{ marginBottom: "var(--stack-sm)" }}>
-            <span className="label-caps" style={{ color: m.direction === "outbound" ? "var(--moss)" : "var(--ink-soft)", fontSize: 10 }}>
-              {m.direction === "outbound" ? "You" : "Prospect"}
-            </span>
-            <span className="mono" style={{ fontSize: 10, color: "var(--outline)", marginLeft: "0.5rem" }}>
-              {m.sent_at ? new Date(m.sent_at).toLocaleTimeString() : ""}
-            </span>
-            <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, whiteSpace: "pre-wrap", marginTop: "0.2rem" }}>
-              {m.content}
-            </p>
-            {m.classification && (
-              <p className="mono" style={{ fontSize: 11, color: "var(--moss)" }}>
-                classified: {m.classification.label}
-                {m.classification.draft_response && ` · draft ready`}
-              </p>
-            )}
-            {m.direction === "inbound" && !m.classification && (
-              <div style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap", marginTop: "0.25rem" }}>
+      <ChatPanel
+        label="Conversation"
+        className="conversation__panel"
+        tabs={
+          <span className="chat__tab" aria-pressed="true">
+            Thread
+          </span>
+        }
+        actions={
+          <Button
+            size="xs"
+            variant="quiet"
+            icon={<IconWarning size={13} />}
+            onClick={() => void escalate()}
+          >
+            Escalate
+          </Button>
+        }
+        composer={
+          <ChatComposer
+            value={input}
+            onChange={(v) => {
+              setInput(v);
+              replyIdRef.current = null; // edited text is a new message
+            }}
+            onSend={() => void sendMessage()}
+            busy={sending}
+            enterToSend={false}
+            sendLabel="Send email reply"
+            placeholder="Write a reply… (sending is a real email)"
+            label="Your reply"
+            footer={
+              latestDraft && !input ? (
                 <button
                   type="button"
-                  className="hanko-btn"
-                  disabled={classifying === m.id}
-                  onClick={() => classifyMessage(m.id)}
-                  style={{ fontSize: 11, padding: "0.2rem 0.5rem" }}
+                  className="chat__suggestion"
+                  onClick={() => setInput(latestDraft)}
                 >
-                  Auto-classify
+                  Use Kami’s suggested reply
                 </button>
-                {LABELS.slice(0, 4).map((l) => (
-                  <button
-                    key={l}
-                    type="button"
-                    className="mono"
-                    disabled={classifying === m.id}
-                    onClick={() => classifyMessage(m.id, l)}
-                    style={{ border: "1px solid var(--ink)", background: "transparent", padding: "0.15rem 0.4rem", fontSize: 10, cursor: "pointer" }}
-                  >
-                    {l.replace(/_/g, " ")}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "var(--stack-sm)" }}>
-        <div className="form-line" style={{ flex: 1 }}>
-          <label className="mono label-caps" htmlFor="sales-reply">Reply</label>
-          <input
-            id="sales-reply"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-            placeholder="Draft reply…"
-            disabled={sending}
+              ) : (
+                <span>Click send to email this reply.</span>
+              )
+            }
           />
-        </div>
-        <button className="hanko-btn" onClick={sendMessage} disabled={sending} style={{ alignSelf: "flex-end" }}>
-          Send
-        </button>
-      </div>
-
-      <button
-        type="button"
-        className="mono"
-        onClick={escalate}
-        style={{ border: "1px solid var(--hanko)", color: "var(--hanko)", background: "transparent", padding: "0.3rem 0.6rem", fontSize: 12, cursor: "pointer" }}
+        }
       >
-        Escalate
-      </button>
+        <ChatThread>
+          {thread.loading && !thread.data && <Skeleton lines={3} />}
+          {thread.error && <p className="field__error">{thread.error}</p>}
+          {!thread.loading && messages.length === 0 && (
+            <p className="text-3 text-sm">No messages yet.</p>
+          )}
+          {messages.map((m) =>
+            m.direction === "outbound" ? (
+              <ChatBubble key={m.id}>{m.content}</ChatBubble>
+            ) : (
+              <ChatSection
+                key={m.id}
+                label="Prospect"
+                sub={m.sent_at ? new Date(m.sent_at).toLocaleString() : undefined}
+              >
+                <p className="conversation__text">{m.content}</p>
+                {m.classification ? (
+                  <span className="row row--wrap" style={{ gap: 6, marginTop: 6 }}>
+                    <StatusPill tone={m.classification.escalation_required ? "red" : "accent"}>
+                      {humanize(m.classification.label)}
+                    </StatusPill>
+                    {m.classification.draft_response && (
+                      <span className="text-3 text-xs">Draft reply ready</span>
+                    )}
+                  </span>
+                ) : (
+                  <div
+                    className="row row--wrap"
+                    role="group"
+                    aria-label="Classify this reply"
+                    style={{ gap: 4, marginTop: 6 }}
+                  >
+                    <Button
+                      size="xs"
+                      variant="secondary"
+                      busy={classifying === m.id}
+                      onClick={() => void classifyMessage(m.id)}
+                    >
+                      Auto-classify
+                    </Button>
+                    {MANUAL_LABELS.map((l) => (
+                      <Button
+                        key={l}
+                        size="xs"
+                        variant="quiet"
+                        disabled={classifying === m.id}
+                        onClick={() => void classifyMessage(m.id, l)}
+                      >
+                        {humanize(l)}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+              </ChatSection>
+            ),
+          )}
+        </ChatThread>
+      </ChatPanel>
+
+      {error && (
+        <div style={{ marginTop: 12 }}>
+          <Callout tone="error">{error}</Callout>
+        </div>
+      )}
     </div>
   );
 }

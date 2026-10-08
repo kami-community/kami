@@ -1,21 +1,11 @@
 /** Soft vocabulary Hermes may choose; free-text goals also allowed. */
-export type DistributionGoalKey =
-  | "launch"
-  | "early_users"
-  | "credibility"
-  | "waitlist"
-  | "other";
+export type DistributionGoalKey = "launch" | "early_users" | "credibility" | "waitlist" | "other";
 
 /** @deprecated Prefer DistributionGoalKey; goal is now a flexible string. */
 export type DistributionGoal = DistributionGoalKey | string;
 
 export type DistributionPlatform =
-  | "x"
-  | "reddit"
-  | "hackernews"
-  | "linkedin"
-  | "producthunt"
-  | "discord";
+  "x" | "reddit" | "hackernews" | "linkedin" | "producthunt" | "discord";
 
 export type DistributionPlanStatus = "proposed" | "approved" | "superseded";
 
@@ -23,21 +13,10 @@ export type DistributionPlanSource = "hermes" | "fallback";
 
 export type DistributionApprovalStatus = "needs_review" | "approved" | "skipped";
 
-export type DistributionActionStatus =
-  | "draft"
-  | "ready"
-  | "posted_manual"
-  | "published"
-  | "failed";
+export type DistributionActionStatus = "draft" | "ready" | "posted_manual" | "published" | "failed";
 
 export type DistributionOutcome =
-  | "none"
-  | "posted"
-  | "got_reply"
-  | "got_interest"
-  | "got_signup"
-  | "not_relevant"
-  | "skipped";
+  "none" | "posted" | "got_reply" | "got_interest" | "got_signup" | "not_relevant" | "skipped";
 
 /** Hermes-recommended campaign plan (stored on distribution_campaigns). */
 export interface DistributionPlan {

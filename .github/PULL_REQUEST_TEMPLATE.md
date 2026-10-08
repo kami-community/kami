@@ -6,6 +6,14 @@
 
 <!-- Commands, screens, or real-surface check. -->
 
+## Checklist
+
+- [ ] Base branch is `dev`
+- [ ] `npm run lint && npm run typecheck && npm test && npm run eval:sales && npm run build` pass (in `web/`)
+- [ ] Real sends/posts still go through `web/lib/outbound/` (kill switch, suppressions, approval, receipt)
+- [ ] New tables have a numbered migration with RLS enabled
+- [ ] No secrets or real people's contact details in code, fixtures or screenshots
+
 ## CLA
 
 - [ ] I have read [CLA.md](../CLA.md)

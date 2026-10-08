@@ -71,7 +71,7 @@ async function main(): Promise<void> {
     const [sessionPack, runs, accounts, drafts, distSetup, opps, salesSetup, plan, segments] =
       await Promise.all([
         get(`/api/sessions/${sid}`),
-        get(`/api/observability/runs?session_id=${encodeURIComponent(sid)}&limit=100`),
+        get(`/api/activity/runs?session_id=${encodeURIComponent(sid)}&limit=100`),
         get(`/api/sales/accounts?session_id=${encodeURIComponent(sid)}`),
         get(`/api/sales/drafts?session_id=${encodeURIComponent(sid)}`),
         get(`/api/marketing/distribution/setup?session_id=${encodeURIComponent(sid)}`),
@@ -83,8 +83,7 @@ async function main(): Promise<void> {
         ),
       ]);
 
-    const brand = (sessionPack.brand ?? null) as AnyRec | null;
-    const dossier = (brand?.raw_dossier ?? null) as AnyRec | null;
+    const dossier = (sessionPack.dossier ?? null) as AnyRec | null;
     const runList = (runs.runs as AnyRec[] | undefined) ?? [];
     const accountList = (accounts.accounts as AnyRec[] | undefined) ?? [];
     const oppList = (opps.opportunities as AnyRec[] | undefined) ?? [];
@@ -315,7 +314,9 @@ async function main(): Promise<void> {
     }
     lines.push(`- **Offer:** ${clip((sales.config as AnyRec).offer, 280)}`);
     lines.push(`- **ICP:** \`${JSON.stringify((sales.config as AnyRec).icp)}\``);
-    lines.push(`- **Segments confirmed:** ${(sales.config as AnyRec).segments_confirmed_at || "—"}`);
+    lines.push(
+      `- **Segments confirmed:** ${(sales.config as AnyRec).segments_confirmed_at || "—"}`,
+    );
     if (sales.plan) {
       const p = sales.plan as AnyRec;
       lines.push(`- **Plan status:** ${p.status}`);
@@ -391,18 +392,14 @@ async function main(): Promise<void> {
 
   lines.push("## 6. Cross-cutting observations (for later RCA / gold compare)");
   lines.push("");
-  lines.push(
-    "Hard gates already passed; these are qualitative notes from the pulled outputs.",
-  );
+  lines.push("Hard gates already passed; these are qualitative notes from the pulled outputs.");
   lines.push("");
 
   // Auto observations
   const salesRows = collected.filter((r) =>
     ["argus", "cal", "linear", "browserbase", "notion"].includes(String(r.id)),
   );
-  const mktRows = collected.filter((r) =>
-    ["mirage", "nike-in", "duolingo"].includes(String(r.id)),
-  );
+  const mktRows = collected.filter((r) => ["mirage", "nike-in", "duolingo"].includes(String(r.id)));
 
   lines.push("### Identity / dossier");
   lines.push("");
@@ -438,10 +435,16 @@ async function main(): Promise<void> {
   lines.push("");
   lines.push("### Suggested next analysis questions");
   lines.push("");
-  lines.push("1. Do B2B account lists avoid listicles/publishers (spot-check domains against gold `must_not`)?");
+  lines.push(
+    "1. Do B2B account lists avoid listicles/publishers (spot-check domains against gold `must_not`)?",
+  );
   lines.push("2. For argus — is biomedical language absent from dossier + segments?");
-  lines.push("3. For mirage/arc-class PLG — is distribution honestly preferred over inventing consumer emails?");
-  lines.push("4. For notion (mixed) — are segments overfitted to one niche or appropriately broad?");
+  lines.push(
+    "3. For mirage/arc-class PLG — is distribution honestly preferred over inventing consumer emails?",
+  );
+  lines.push(
+    "4. For notion (mixed) — are segments overfitted to one niche or appropriately broad?",
+  );
   lines.push("5. Are distribution drafts specific (why_now + URL) or generic engagement bait?");
   lines.push("");
   lines.push("## 7. Artifact index");

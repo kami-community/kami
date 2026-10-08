@@ -1,32 +1,32 @@
 ---
 name: review_rubric
-description: Deterministic Reviewer checklists per output type. Use when reviewing a Draft before it may be sent or posted. Never rubber-stamp — check each invariant explicitly.
+description: The checklist every outreach draft must pass before the founder can approve it — email, X posts and DMs. Use it to self-check drafts; the app runs the same checks in code.
 ---
 
-# Reviewer Rubric
+# Review rubric
 
-You have no tools. You check a `Draft` against the deterministic checklist for its surface and emit a `Verdict {approved, score, failed_criteria[], required_fixes[]}`. Do not answer "is this good?" — verify each invariant and cite the ones that fail. Every `required_fix` must be concrete enough to act on without asking questions.
+The app enforces the email checks in `web/lib/salesReview.ts`; a draft that fails cannot be approved. Agents that draft should self-check against this list so drafts pass first time. Walk every box; never answer "is this good?" in general.
 
-## Email checklist (all must pass)
+## Email (all must pass)
+- [ ] Subject present, under 60 characters, no clickbait or ALL CAPS.
+- [ ] Body at most 150 words, plain text, 3–5 sentences.
+- [ ] Exactly one call to action.
+- [ ] Step 1 opens with a real, dated signal (see `business_rules` → Signal freshness) and carries its source URL in `signal_ref`.
+- [ ] Follow-ups (step 2+) add new value — never "just bumping".
+- [ ] Only approved claims; no invented metrics, customers or logos.
+- [ ] Opt-out line present ("reply unsubscribe and I won't follow up").
+- [ ] Greets a person by name only when the contact's name is known; otherwise a neutral greeting.
 
-- [ ] Body ≤ 150 words, 3–5 sentences, plain text.
-- [ ] Exactly one CTA (count question marks + asks; more than one distinct ask = fail).
-- [ ] Hook references a real, dated signal with a `source_url` present in `signal_ref`.
-- [ ] Signal date within 90 days.
-- [ ] Subject under 60 chars, no clickbait, no ALL CAPS.
-- [ ] Recipient matches the intended prospect (`prospect_id` set, email verification `valid`/`safe_to_send`).
-- [ ] Recipient NOT on `do_not_contact`.
-- [ ] Follow-up (`sequence_step` > 1) adds new value vs prior step — reject "just bumping".
-- [ ] No fabricated metrics: every number must exist in the Work Order `inputs` or provenance.
+## X post (all must pass)
+- [ ] The point lands in the first 8 words; at most 280 characters.
+- [ ] No links (they are blocked at publish time).
+- [ ] Every claim traceable to the dossier or evidence; no "guaranteed" claims.
+- [ ] Useful on its own; product mention only where natural.
 
-## X post checklist (all must pass)
-
-- [ ] Argument lands in the first 8 words; hook ≤ ~200 chars.
-- [ ] No links in the post body. No hedging, no ALL CAPS, no "RT if".
-- [ ] Every claim traceable to `proof_on_hand`; no "undetectable/guaranteed" claims.
-- [ ] No identity-targeted provocation.
+## DM (all must pass)
+- [ ] 1–3 sentences, individual to this person (references something they actually posted).
+- [ ] No links in the first message; one clear ask.
+- [ ] Honest: written for the founder to send; never denies AI assistance if asked.
 
 ## Verdict
-
-- `approved: true` only when every box passes. `score` = fraction passed.
-- On failure: list `failed_criteria` verbatim from above and write `required_fixes` as imperative edits (e.g. "Cut body from 212 to <150 words; delete the second CTA sentence").
+`{ approved, score, failed_criteria[], required_fixes[] }`. `approved` only when every box passes. Each `required_fix` is an imperative edit concrete enough to apply without questions (e.g. "Cut the body from 212 to under 150 words").

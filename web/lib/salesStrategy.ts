@@ -3,11 +3,12 @@
  * Offline fallback remains synthesizePlanFromConfig (explicitly labeled).
  */
 
-import type { Dossier } from "@/lib/hermes";
-import { buildCompanyContextPack } from "@/lib/cmoContext";
-import { hermesChatOnce, hermesGatewayConfigured, parseLastJsonBlock } from "@/lib/hermesServer";
+import type { Dossier } from "@/lib/domain/dossier";
+import { buildCompanyContextPack } from "@/lib/campaigns/contextPack";
+import { completeOrNull, hermesConfigured } from "@/lib/hermes/client";
+import { parseLastJsonBlock } from "@/lib/hermes/json";
 import { synthesizePlanFromConfig } from "@/lib/salesPlan";
-import type { SalesSegment } from "@/lib/salesSegments";
+import type { SalesSegment } from "@/lib/domain/segments";
 import type {
   ApprovalScope,
   EstimatedActivity,
@@ -35,12 +36,14 @@ function normalizeMotion(raw: unknown): SalesPlanMotion | null {
   const o = raw as Record<string, unknown>;
   const allowed: SalesMotion[] = ["outbound_email", "signal_outreach", "x_dm", "multi_channel"];
   const motionRaw = typeof o.motion === "string" ? o.motion : "signal_outreach";
-  const motion = (allowed.includes(motionRaw as SalesMotion)
-    ? motionRaw
-    : "signal_outreach") as SalesMotion;
+  const motion = (
+    allowed.includes(motionRaw as SalesMotion) ? motionRaw : "signal_outreach"
+  ) as SalesMotion;
   const rationale = typeof o.rationale === "string" ? o.rationale.trim() : "";
   if (!rationale) return null;
-  const channel = (typeof o.primary_channel === "string" ? o.primary_channel : "email") as SalesChannel;
+  const channel = (
+    typeof o.primary_channel === "string" ? o.primary_channel : "email"
+  ) as SalesChannel;
   return {
     motion,
     rationale,
@@ -119,9 +122,7 @@ function parseStrategistPlan(
   const prerequisites = asStringArray(o.prerequisites);
   const approvalRaw = asStringArray(o.approval_scope) as ApprovalScope[];
   const approval_scope: ApprovalScope[] =
-    approvalRaw.length > 0
-      ? approvalRaw
-      : ["sequence_activation", "target_cohort", "first_send"];
+    approvalRaw.length > 0 ? approvalRaw : ["sequence_activation", "target_cohort", "first_send"];
 
   let estimated_activity: EstimatedActivity = {
     accounts_to_research: qty,
@@ -189,7 +190,7 @@ ${goalLine}
 Offer (from setup): ${params.config.offer}
 
 CRITICAL:
-- Plan ONLY for this product / domain. Never invent healthcare, scheduling, Calendly, or booking narratives unless the company pack supports them.
+- Plan ONLY for this product / domain, using only what the company pack supports.
 - If segments or evidence are thin, say so in risks/prerequisites — do not fabricate industry-specific tactics.
 - Prefer signal-backed outreach; no signal = nurture/hold, not "high intent".
 
@@ -238,7 +239,6 @@ export async function generateSalesStrategy(params: {
   version: number;
   segments?: SalesSegment[] | null;
   goals?: string[];
-  hermesSessionId?: string;
   kamiSessionId?: string | null;
 }): Promise<StrategistResult> {
   const segments = params.segments ?? null;
@@ -246,9 +246,10 @@ export async function generateSalesStrategy(params: {
 
   const thinEvidence =
     !params.dossier?.positioning?.trim() ||
-    (!segments?.length && !(params.config.icp?.titles?.length || params.config.icp?.industries?.length));
+    (!segments?.length &&
+      !(params.config.icp?.titles?.length || params.config.icp?.industries?.length));
 
-  if (!hermesGatewayConfigured()) {
+  if (!hermesConfigured()) {
     const plan = synthesizePlanFromConfig(
       params.config,
       params.campaignId,
@@ -276,18 +277,17 @@ export async function generateSalesStrategy(params: {
     };
   }
 
-  const text = await hermesChatOnce({
-    content: strategistPrompt({
+  const text = await completeOrNull({
+    agent: "sales-strategist",
+    kind: "sales_plan",
+    input: strategistPrompt({
       domain: params.domain,
       dossier: params.dossier,
       config: params.config,
       segments,
       goals,
     }),
-    sessionId: params.hermesSessionId ?? `kami-sales-plan-${params.domain}`,
     kamiSessionId: params.kamiSessionId,
-    kind: "sales_plan",
-    agent: "sales_strategist",
     timeoutMs: 90_000,
   });
 

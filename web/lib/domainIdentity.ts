@@ -1,3 +1,5 @@
+import type { DomainIdentity } from "@/lib/domain/research";
+
 /**
  * Exact-domain identity: normalize, resolve, extract first-party evidence.
  * Never substitutes a search-result domain for the submitted domain.
@@ -9,20 +11,6 @@ export type DomainInvalidReason =
   | "Domain redirected to another site"
   | "Website returned no usable content"
   | "Invalid domain";
-
-export interface DomainIdentity {
-  input: string;
-  canonical_domain: string;
-  final_url: string;
-  company_name: string | null;
-  title: string | null;
-  description: string | null;
-  h1: string | null;
-  excerpt: string;
-  evidence_url: string;
-  confidence: number;
-  validated_at: string;
-}
 
 export type DomainValidationResult =
   | { ok: true; identity: DomainIdentity }
@@ -63,7 +51,12 @@ export function sameRegistrableHost(a: string, b: string): boolean {
 
 /** First label of a hostname (notion.so → notion). */
 export function apexLabel(host: string): string {
-  return host.toLowerCase().replace(/^www\./, "").split(".")[0] ?? "";
+  return (
+    host
+      .toLowerCase()
+      .replace(/^www\./, "")
+      .split(".")[0] ?? ""
+  );
 }
 
 /**
@@ -94,22 +87,10 @@ function stripTags(html: string): string {
 function metaContent(html: string, name: string): string | null {
   // Prefer double-quoted content (allows apostrophes like "It's 100% free")
   const patterns = [
-    new RegExp(
-      `<meta[^>]+(?:name|property)=["']${name}["'][^>]+content="([^"]*)"`,
-      "i",
-    ),
-    new RegExp(
-      `<meta[^>]+content="([^"]*)"[^>]+(?:name|property)=["']${name}["']`,
-      "i",
-    ),
-    new RegExp(
-      `<meta[^>]+(?:name|property)=["']${name}["'][^>]+content='([^']*)'`,
-      "i",
-    ),
-    new RegExp(
-      `<meta[^>]+content='([^']*)'[^>]+(?:name|property)=["']${name}["']`,
-      "i",
-    ),
+    new RegExp(`<meta[^>]+(?:name|property)=["']${name}["'][^>]+content="([^"]*)"`, "i"),
+    new RegExp(`<meta[^>]+content="([^"]*)"[^>]+(?:name|property)=["']${name}["']`, "i"),
+    new RegExp(`<meta[^>]+(?:name|property)=["']${name}["'][^>]+content='([^']*)'`, "i"),
+    new RegExp(`<meta[^>]+content='([^']*)'[^>]+(?:name|property)=["']${name}["']`, "i"),
   ];
   for (const re of patterns) {
     const m = html.match(re)?.[1];
@@ -118,10 +99,17 @@ function metaContent(html: string, name: string): string | null {
   return null;
 }
 
-function extractIdentityFromHtml(html: string, canonicalDomain: string, finalUrl: string): DomainIdentity {
-  const title = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/\s+/g, " ").trim() ?? null;
-  const description =
-    metaContent(html, "description") ?? metaContent(html, "og:description");
+function extractIdentityFromHtml(
+  html: string,
+  canonicalDomain: string,
+  finalUrl: string,
+): DomainIdentity {
+  const title =
+    html
+      .match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]
+      ?.replace(/\s+/g, " ")
+      .trim() ?? null;
+  const description = metaContent(html, "description") ?? metaContent(html, "og:description");
   const h1 = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1]
     ? stripTags(html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)![1]).slice(0, 200)
     : null;
@@ -162,9 +150,7 @@ function extractIdentityFromHtml(html: string, canonicalDomain: string, finalUrl
     if (metaBlob.length > excerpt.length) excerpt = metaBlob.slice(0, 1200);
   }
   const companyGuess =
-    orgName ||
-    (title ? title.split(/[|\-–—]/)[0].trim() : null) ||
-    canonicalDomain.split(".")[0];
+    orgName || (title ? title.split(/[|\-–—]/)[0].trim() : null) || canonicalDomain.split(".")[0];
 
   const confidence = Math.min(
     1,
@@ -191,7 +177,10 @@ function extractIdentityFromHtml(html: string, canonicalDomain: string, finalUrl
   };
 }
 
-async function fetchHtml(url: string, timeoutMs = 12_000): Promise<{ ok: boolean; status: number; url: string; html: string | null }> {
+async function fetchHtml(
+  url: string,
+  timeoutMs = 12_000,
+): Promise<{ ok: boolean; status: number; url: string; html: string | null }> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {

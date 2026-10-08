@@ -16,7 +16,6 @@ web/.env.local
 
 # Hermes / local agent clutter
 .claude/settings.local.json
-references/
 # Local Cursor junk; keep shared rules, skills, and Bugbot config
 .cursor/*
 !.cursor/rules/
@@ -49,3 +48,13 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 *.tsbuildinfo
+
+# Local coding-agent worktrees
+.claude/worktrees/
+
+# E2E eval artifacts (contain local session ids)
+web/evals/e2e/GAPLOG.md
+web/evals/e2e/results/
+
+# Local browser-automation artifacts
+.playwright-mcp/

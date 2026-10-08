@@ -1,5 +1,5 @@
 {
-  "name": "web",
+  "name": "kami-web",
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
@@ -8,8 +8,14 @@
     "dev:turbo": "next dev",
     "build": "next build",
     "start": "next start",
-    "eval:sales": "npx --yes tsx evals/sales/run.ts",
-    "eval:e2e": "npx --yes tsx evals/e2e/run.ts"
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "eval:sales": "tsx evals/sales/run.ts",
+    "eval:e2e": "tsx evals/e2e/run.ts",
+    "db:migrate": "tsx lib/db/migrate-cli.ts"
   },
   "dependencies": {
     "@langfuse/otel": "^5.9.1",
@@ -19,12 +25,25 @@
     "next": "16.2.10",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "undici": "^8.8.0"
+    "svix": "^2.6.2",
+    "postgres": "^3.4.7",
+    "undici": "^8.8.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.3.14",
     "@types/node": "^26.1.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "typescript": "^5"
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.2.10",
+    "postcss": "^8.5.29",
+    "prettier": "^3.9.9",
+    "tsx": "^4.23.15",
+    "typescript": "^5",
+    "vitest": "^5.0.3"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

@@ -16,21 +16,10 @@ export interface MarketingConfig {
 }
 
 export type XLeadStatus =
-  | "identified"
-  | "approved"
-  | "contacted"
-  | "in_conversation"
-  | "converted"
-  | "lost";
+  "identified" | "approved" | "contacted" | "in_conversation" | "converted" | "lost";
 
 export type CreatorStatus =
-  | "identified"
-  | "contacted"
-  | "negotiating"
-  | "agreed"
-  | "content_live"
-  | "paid"
-  | "completed";
+  "identified" | "contacted" | "negotiating" | "agreed" | "content_live" | "paid" | "completed";
 
 export type CrmEntryType = "x_lead" | "creator";
 
@@ -93,18 +82,28 @@ export interface ConversationMessage {
   sent_at: string;
 }
 
-export type BoostStatus = "pending" | "live" | "completed";
+/** pending = claimed, X Ads calls in flight; active = live on X with campaign ids; failed = nothing spending. */
+export type BoostStatus = "pending" | "active" | "failed" | "completed";
 
 export interface BoostCampaign {
   id: string;
   session_id: string;
   post_id: string;
   post_text: string;
+  /** Total spend cap in `currency` (whole units). */
   budget: number;
+  currency: string | null;
+  duration_days: number | null;
   status: BoostStatus;
-  impressions?: number;
-  clicks?: number;
-  spend?: number;
+  x_campaign_id: string | null;
+  x_line_item_id: string | null;
+  x_promoted_tweet_id: string | null;
+  starts_at: string | null;
+  ends_at: string | null;
+  error: string | null;
+  impressions?: number | null;
+  clicks?: number | null;
+  spend?: number | null;
   created_at: string;
   updated_at: string;
 }

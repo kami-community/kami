@@ -25,27 +25,17 @@ export async function collectEvidence(
   try {
     const { data } = await api.get<{
       session?: Record<string, unknown>;
-      brand?: Record<string, unknown> | null;
+      dossier?: Record<string, unknown> | null;
     }>(`/api/sessions/${sessionId}`);
     evidence.session = data.session ?? null;
-    evidence.brand = data.brand ?? null;
-    const raw = data.brand?.raw_dossier;
-    if (raw && typeof raw === "object") {
-      evidence.dossier = raw as Record<string, unknown>;
-    } else if (data.brand) {
-      evidence.dossier = {
-        company: data.brand.company,
-        positioning: data.brand.positioning,
-        brand_voice: data.brand.brand_voice,
-      };
-    }
+    evidence.dossier = data.dossier ?? null;
   } catch (e) {
     warnings.push(`session_load: ${e instanceof Error ? e.message : String(e)}`);
   }
 
   try {
     const { data } = await api.get<{ runs?: Array<Record<string, unknown>> }>(
-      `/api/observability/runs?session_id=${encodeURIComponent(sessionId)}&limit=100`,
+      `/api/activity/runs?session_id=${encodeURIComponent(sessionId)}&limit=100`,
     );
     evidence.runLogs = data.runs ?? [];
   } catch (e) {

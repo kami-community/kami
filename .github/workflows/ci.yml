@@ -2,7 +2,7 @@ name: ci
 
 on:
   push:
-    branches: [dev, prod, main, master]
+    branches: [main, dev]
   pull_request:
 
 jobs:
@@ -20,6 +20,10 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
       - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run typecheck
+      - run: npm test
       - run: npm run eval:sales
       - run: npm run build
         env:
@@ -35,6 +39,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: skills and agents are valid
+        run: node scripts/sync-hermes-skills.mjs --check
       - name: readiness fails without required keys
         run: |
           set +e
@@ -49,3 +55,12 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
           SUPABASE_SERVICE_ROLE_KEY: ci-placeholder
         run: node scripts/readiness.mjs
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: gitleaks (full history)
+        run: docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:latest git /repo --redact --verbose

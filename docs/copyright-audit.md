@@ -32,7 +32,7 @@ First-party code is **MIT** (`LICENSE`, © 2026 Kami contributors). Remotion is 
 | Okara / Cal AI / Cluely | Research notes only (“study, don’t copy”) |
 | Hermes / Nous | Text dependency refs; no logos or partner claims; not vendored |
 | Video compositions | Code-drawn Remotion scenes; no stock footage / audio beds |
-| Fonts | Domine, Source Sans 3, Space Mono via `next/font` / Remotion Google Fonts (typical OFL); not checked in as binary font files |
+| Fonts | Inter, JetBrains Mono via `next/font` (web); Domine, Source Sans 3, Space Mono via Remotion Google Fonts (video) — typical OFL; not checked in as binary font files |
 | GPL / AGPL in first-party or direct deps | None found |
 | Brand logos | Provenance in [`assets/README.md`](../assets/README.md) |
 | `web/public/` trademarks | Next/Vercel template SVGs **removed** |

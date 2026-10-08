@@ -10,7 +10,7 @@ const longAgent = new Agent({
 });
 
 const SLOW_PATH =
-  /\/api\/(sales\/discover|dossier\/generate|marketing\/distribution\/opportunities|sales\/segments|sales\/plan|research)/;
+  /\/api\/(sessions|sales\/discover|marketing\/distribution|sales\/segments|sales\/plan)/;
 
 export class ApiError extends Error {
   constructor(

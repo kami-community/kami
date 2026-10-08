@@ -1,23 +1,18 @@
-import type { Metadata } from "next";
-import { Domine, Source_Sans_3, Space_Mono } from "next/font/google";
-import Nav from "@/components/Nav";
+import type { Metadata, Viewport } from "next";
+import { Inter, JetBrains_Mono } from "next/font/google";
+import { THEME_SCRIPT } from "@/components/ui/ThemeToggle";
 import "./globals.css";
 
-const domine = Domine({
-  variable: "--font-domine",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
-  weight: ["400", "700"],
+  display: "swap",
 });
 
-const sourceSans = Source_Sans_3({
-  variable: "--font-source-sans",
+const mono = JetBrains_Mono({
+  variable: "--font-mono-face",
   subsets: ["latin"],
-});
-
-const spaceMono = Space_Mono({
-  variable: "--font-space-mono",
-  subsets: ["latin"],
-  weight: ["400", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -26,20 +21,25 @@ export const metadata: Metadata = {
     "Tell Kami what you built. It helps you find customers and get your product in front of the right people.",
 };
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f7f7f9" },
+    { media: "(prefers-color-scheme: dark)", color: "#1b1c1f" },
+  ],
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${domine.variable} ${sourceSans.variable} ${spaceMono.variable}`}
-    >
-      <body>
-        <Nav />
-        {children}
-      </body>
+    <html lang="en" className={`${inter.variable} ${mono.variable}`} suppressHydrationWarning>
+      <head>
+        {/* applies the saved / system theme before first paint (no flash) */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
+      <body>{children}</body>
     </html>
   );
 }

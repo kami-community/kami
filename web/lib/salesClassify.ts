@@ -7,14 +7,50 @@ export interface ClassifyResult {
   draft_response?: string;
 }
 
-const RULES: { label: ReplyClassificationLabel; patterns: RegExp[]; confidence: number; escalate?: boolean }[] = [
-  { label: "unsubscribe", patterns: [/unsubscribe/i, /remove me/i, /opt[\s-]?out/i, /stop (emailing|contacting)/i], confidence: 0.95, escalate: true },
-  { label: "negative", patterns: [/not interested/i, /no thanks/i, /don't contact/i, /leave me alone/i], confidence: 0.9, escalate: true },
-  { label: "positive", patterns: [/interested/i, /let'?s (talk|chat|connect)/i, /sounds good/i, /would love to/i], confidence: 0.85 },
-  { label: "information_request", patterns: [/\?/, /more info/i, /tell me more/i, /learn more/i, /pricing/i], confidence: 0.75 },
-  { label: "objection", patterns: [/budget/i, /already (have|using)/i, /too expensive/i, /not a fit/i, /wrong person/i], confidence: 0.8, escalate: true },
-  { label: "not_now", patterns: [/not now/i, /maybe later/i, /next quarter/i, /circle back/i, /check back/i], confidence: 0.7 },
-  { label: "referral", patterns: [/talk to/i, /reach out to/i, /contact (my|our)/i, /forward(ed)? (this )?to/i], confidence: 0.75 },
+const RULES: {
+  label: ReplyClassificationLabel;
+  patterns: RegExp[];
+  confidence: number;
+  escalate?: boolean;
+}[] = [
+  {
+    label: "unsubscribe",
+    patterns: [/unsubscribe/i, /remove me/i, /opt[\s-]?out/i, /stop (emailing|contacting)/i],
+    confidence: 0.95,
+    escalate: true,
+  },
+  {
+    label: "negative",
+    patterns: [/not interested/i, /no thanks/i, /don't contact/i, /leave me alone/i],
+    confidence: 0.9,
+    escalate: true,
+  },
+  {
+    label: "positive",
+    patterns: [/interested/i, /let'?s (talk|chat|connect)/i, /sounds good/i, /would love to/i],
+    confidence: 0.85,
+  },
+  {
+    label: "information_request",
+    patterns: [/\?/, /more info/i, /tell me more/i, /learn more/i, /pricing/i],
+    confidence: 0.75,
+  },
+  {
+    label: "objection",
+    patterns: [/budget/i, /already (have|using)/i, /too expensive/i, /not a fit/i, /wrong person/i],
+    confidence: 0.8,
+    escalate: true,
+  },
+  {
+    label: "not_now",
+    patterns: [/not now/i, /maybe later/i, /next quarter/i, /circle back/i, /check back/i],
+    confidence: 0.7,
+  },
+  {
+    label: "referral",
+    patterns: [/talk to/i, /reach out to/i, /contact (my|our)/i, /forward(ed)? (this )?to/i],
+    confidence: 0.75,
+  },
 ];
 
 export function classifyReplyContent(content: string): ClassifyResult {
@@ -47,7 +83,12 @@ export function classifyReplyContent(content: string): ClassifyResult {
     return { label: "spam_risk", confidence: 0.6, escalation_required: true };
   }
 
-  return { label: "information_request", confidence: 0.5, escalation_required: false, draft_response: suggestDraft("information_request") };
+  return {
+    label: "information_request",
+    confidence: 0.5,
+    escalation_required: false,
+    draft_response: suggestDraft("information_request"),
+  };
 }
 
 function suggestDraft(label: ReplyClassificationLabel): string | undefined {

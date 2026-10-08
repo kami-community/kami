@@ -12,17 +12,12 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { randomUUID } from "node:crypto";
 
 import { ApiClient, ApiError } from "./lib/apiClient";
 import { collectEvidence } from "./lib/collect";
 import { appendGaps, gapLogPath, writeAggregateReport } from "./lib/gapLog";
 import { scoreRun } from "./lib/score";
-import type {
-  CompanyFixture,
-  Scorecard,
-  StepResult,
-} from "./lib/types";
+import type { CompanyFixture, Scorecard, StepResult } from "./lib/types";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const E2E_DIR = __dirname;
@@ -49,7 +44,10 @@ function parseArgs(argv: string[]): CliArgs {
     if (a === "--all") fixtures = "all";
     else if (a === "--fixture" || a === "--fixtures") {
       const v = argv[++i] ?? "";
-      fixtures = v.split(",").map((s) => s.trim()).filter(Boolean);
+      fixtures = v
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
     } else if (a === "--base-url") baseUrl = argv[++i] ?? baseUrl;
     else if (a === "--environment") environment = argv[++i] ?? environment;
     else if (a === "--no-keep-results") keepResults = false;
@@ -85,9 +83,7 @@ function selectFixtures(all: CompanyFixture[], sel: string[] | "all"): CompanyFi
   return out;
 }
 
-function pickRoute(
-  fixture: CompanyFixture,
-): "sales" | "marketing" {
+function pickRoute(fixture: CompanyFixture): "sales" | "marketing" {
   const job = fixture.expected.job_primary;
   if (job === "create_distribution") return "marketing";
   if (job === "find_customers") return "sales";
@@ -122,8 +118,7 @@ function seedPlgPersonas(segments: unknown[]): unknown[] {
           why_fit:
             (typeof s.why_fit === "string" ? s.why_fit.slice(0, 160) : "") ||
             "Would try this product on their own",
-          personalization_hook:
-            typeof s.trigger_signal === "string" ? s.trigger_signal : undefined,
+          personalization_hook: typeof s.trigger_signal === "string" ? s.trigger_signal : undefined,
         },
       ],
     };
@@ -170,16 +165,17 @@ async function step(
 async function preflight(api: ApiClient): Promise<void> {
   const { data } = await api.get<{
     hermes?: boolean;
-    modelConfigured?: boolean;
-    supabase?: boolean;
-    error?: string;
+    hermesReachable?: boolean;
+    database?: boolean;
   }>("/api/capabilities");
   console.log("capabilities:", JSON.stringify(data));
-  if (!data.hermes) {
-    throw new Error("Hermes gateway not configured — start Hermes and set HERMES_* env");
+  if (!data.hermes || !data.hermesReachable) {
+    throw new Error("Hermes gateway not reachable — start Hermes and set HERMES_* env");
   }
-  if (data.supabase === false) {
-    throw new Error("Supabase not configured — set NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY");
+  if (!data.database) {
+    throw new Error(
+      "Supabase not configured — set NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY",
+    );
   }
 }
 
@@ -190,10 +186,8 @@ async function runFixture(
 ): Promise<Scorecard> {
   const startedAt = new Date().toISOString();
   const steps: StepResult[] = [];
-  const hermesSessionId = `e2e-${fixture.id}-${randomUUID().slice(0, 8)}`;
   let sessionId: string | null = null;
   let identity: Record<string, unknown> | null = null;
-  let snapshot: Record<string, unknown> | null = null;
   let dossier: Record<string, unknown> | null = null;
   const route = pickRoute(fixture);
   let actualRoute: Scorecard["route"]["actual"] = "unknown";
@@ -201,95 +195,45 @@ async function runFixture(
   console.log(`\n=== ${fixture.id} (${fixture.domain}) → ${route} ===`);
 
   steps.push(
-    await step("domain_validate", async () => {
-      const { data, status } = await api.post<{
-        ok: boolean;
-        identity?: Record<string, unknown>;
-        reason?: string;
-      }>("/api/domain/validate", { domain: fixture.domain });
-      if (!data.ok || !data.identity) {
-        throw new ApiError(data.reason ?? "domain validate failed", status, data);
-      }
-      identity = data.identity;
+    await step("session_create", async () => {
+      const { data, status } = await api.post<{ session: Record<string, unknown> }>(
+        "/api/sessions",
+        {
+          domain: fixture.domain,
+          goals: route === "marketing" ? ["early users"] : ["book meetings"],
+          stage: "mvp",
+        },
+      );
+      sessionId = String(data.session.id);
+      identity = (data.session.domain_check as Record<string, unknown>) ?? null;
       return {
         status,
-        summary: String(data.identity.canonical_domain ?? fixture.domain),
+        summary: `${sessionId} · ${String(identity?.canonical_domain ?? fixture.domain)}`,
       };
-    }),
-  );
-  if (!steps[steps.length - 1].ok) {
-    return finalize();
-  }
-
-  steps.push(
-    await step("research", async () => {
-      const { data, status } = await api.post<{
-        ok: boolean;
-        snapshot?: Record<string, unknown>;
-        reason?: string;
-      }>("/api/research", { identity });
-      if (!data.ok || !data.snapshot) {
-        throw new ApiError(data.reason ?? "research failed", status, data);
-      }
-      snapshot = data.snapshot;
-      return { status, summary: "research_snapshot ok" };
-    }),
-  );
-  if (!steps[steps.length - 1].ok) {
-    return finalize();
-  }
-
-  steps.push(
-    await step("session_create", async () => {
-      const { data, status } = await api.post<{
-        id?: string | null;
-        error?: string;
-        persisted?: boolean;
-      }>("/api/sessions", {
-        hermesSessionId,
-        domain: fixture.domain,
-        goals: route === "marketing" ? ["early users"] : ["book meetings"],
-        stage: "mvp",
-        canonical_domain: identity?.canonical_domain ?? fixture.domain,
-        domain_validated_at: new Date().toISOString(),
-        domain_check: identity,
-        research_snapshot: snapshot,
-      });
-      if (!data.id) {
-        throw new ApiError(data.error ?? "session not persisted (Supabase?)", status, data);
-      }
-      sessionId = data.id;
-      return { status, summary: data.id };
     }),
   );
   if (!sessionId) return finalize();
 
   steps.push(
     await step("dossier_generate", async () => {
-      const { data, status } = await api.post<{
-        dossier?: Record<string, unknown>;
-        error?: string;
-        persisted?: boolean;
-      }>("/api/dossier/generate", {
-        session_id: sessionId,
-        persist: true,
-        goals: route === "marketing" ? ["early users"] : ["book meetings"],
-        stage: "mvp",
-      });
-      if (!data.dossier) {
-        throw new ApiError(data.error ?? "no dossier", status, data);
-      }
+      const { data, status } = await api.post<{ dossier: Record<string, unknown> }>(
+        `/api/sessions/${sessionId}/dossier`,
+      );
       dossier = data.dossier;
-      return {
-        status,
-        summary: `${String(data.dossier.company ?? "?")} (persisted=${data.persisted})`,
-      };
+      return { status, summary: String(data.dossier.company ?? "?") };
     }),
   );
   if (!steps[steps.length - 1].ok) {
     actualRoute = "blocked";
     return finalize();
   }
+
+  steps.push(
+    await step("dossier_confirm", async () => {
+      const { status } = await api.post(`/api/sessions/${sessionId}/dossier/confirm`);
+      return { status, summary: "That's us" };
+    }),
+  );
 
   if (route === "sales") {
     actualRoute = "sales";
@@ -542,15 +486,14 @@ async function runFixture(
     const card = scoreRun({
       fixture,
       sessionId,
-      hermesSessionId,
+      // Kami derives Hermes session ids per agent run: kami-<campaign>-<agent>-<run>.
+      hermesSessionId: `kami-${sessionId ?? "none"}-*`,
       startedAt,
       endedAt,
       environment: opts.environment,
       baseUrl: opts.baseUrl,
       actualRoute:
-        fixture.expected.job_primary === "mixed" && actualRoute === "sales"
-          ? "mixed"
-          : actualRoute,
+        fixture.expected.job_primary === "mixed" && actualRoute === "sales" ? "mixed" : actualRoute,
       steps,
       evidence,
     });
@@ -611,9 +554,7 @@ async function main(): Promise<void> {
   const reportPath = join(RESULTS_DIR, `summary-${stamp}.md`);
   writeAggregateReport(reportPath, cards);
   console.log(`\nAggregate: ${reportPath}`);
-  console.log(
-    `Pass rate: ${cards.filter((c) => c.passed).length}/${cards.length}`,
-  );
+  console.log(`Pass rate: ${cards.filter((c) => c.passed).length}/${cards.length}`);
 
   const anyFail = cards.some((c) => !c.passed);
   process.exit(anyFail ? 1 : 0);

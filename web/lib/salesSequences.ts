@@ -4,6 +4,8 @@ export interface BuildEmailSequenceParams {
   offer: string;
   claims: string[];
   account: { name: string; industry?: string; domain?: string };
+  /** The person being emailed, when known. Never the company name. */
+  contactName?: string | null;
   signals: AccountSignal[];
   tone?: string;
   /** Campaign / session goals — drives CTA wording (never defaults to meetings-only). */
@@ -39,12 +41,16 @@ function trimToWordLimit(text: string, maxWords: number): string {
   return `${words.slice(0, maxWords).join(" ")}…`;
 }
 
+/** First name of the contact, or a neutral greeting when we don't know it. */
+export function greetingName(contactName?: string | null): string {
+  const first = contactName?.trim().split(/\s+/)[0];
+  return first && /^[\p{L}'-]{2,}$/u.test(first) ? first : "there";
+}
+
 function pickSignal(signals: AccountSignal[]): AccountSignal | null {
   if (!signals.length) return null;
   return (
-    signals.find((s) => s.source_url && s.detail) ??
-    signals.find((s) => s.detail) ??
-    signals[0]
+    signals.find((s) => s.source_url && s.detail) ?? signals.find((s) => s.detail) ?? signals[0]
   );
 }
 
@@ -67,7 +73,7 @@ function buildOpener(
   claim: string | null,
 ): EmailDraft {
   const { offer, account, goal } = params;
-  const firstName = account.name.split(/\s+/)[0] || "there";
+  const firstName = greetingName(params.contactName);
   const cta = ctaFromGoal(goal);
   const hook = signal
     ? formatSignalHook(signal, account.name)
@@ -89,9 +95,7 @@ function buildOpener(
     subject,
     body,
     cta,
-    evidence_refs: signal
-      ? [signal.id, signal.source_url].filter(Boolean) as string[]
-      : [],
+    evidence_refs: signal ? ([signal.id, signal.source_url].filter(Boolean) as string[]) : [],
     sequence_step: 1,
     signal_ref: signal?.source_url ?? signal?.id,
   };
@@ -103,14 +107,12 @@ function buildValueFollowUp(
   claim: string | null,
 ): EmailDraft {
   const { offer, account, claims } = params;
-  const firstName = account.name.split(/\s+/)[0] || "there";
+  const firstName = greetingName(params.contactName);
   const angle =
     claims[1]?.trim() ||
     claim ||
     `Teams like yours use us to move faster on ${offer.toLowerCase()}.`;
-  const signalNote = signal
-    ? `Given your recent ${signal.signal_type.replace(/_/g, " ")}, `
-    : "";
+  const signalNote = signal ? `Given your recent ${signal.signal_type.replace(/_/g, " ")}, ` : "";
 
   const bodyCore = trimToWordLimit(
     `Hi ${firstName},\n\n${signalNote}I wanted to share one angle we haven't covered: ${angle}\n\nHappy to send a one-pager if useful — should I?`,
@@ -123,8 +125,10 @@ function buildValueFollowUp(
     body,
     cta: "Happy to send a one-pager if useful — should I?",
     evidence_refs: signal
-      ? [signal.id, signal.source_url].filter(Boolean) as string[]
-      : claim ? ["approved_claim"] : [],
+      ? ([signal.id, signal.source_url].filter(Boolean) as string[])
+      : claim
+        ? ["approved_claim"]
+        : [],
     sequence_step: 2,
     signal_ref: signal?.source_url ?? signal?.id,
   };
@@ -132,7 +136,7 @@ function buildValueFollowUp(
 
 function buildCloseLoop(params: BuildEmailSequenceParams): EmailDraft {
   const { offer, account } = params;
-  const firstName = account.name.split(/\s+/)[0] || "there";
+  const firstName = greetingName(params.contactName);
 
   const bodyCore = trimToWordLimit(
     `Hi ${firstName},\n\nI'll close the loop here — if ${offer.toLowerCase()} isn't a priority right now, no worries.\n\nIf timing opens up later, reply anytime and we can pick this back up.`,

@@ -1,101 +1,132 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import type { SalesConversation, SalesNotification } from "@/lib/salesTypes";
+import { useCallback, useState } from "react";
+import NotificationList from "@/components/sales/NotificationList";
 import SalesConversationThread from "@/components/SalesConversationThread";
+import Callout from "@/components/ui/Callout";
+import EmptyState from "@/components/ui/EmptyState";
+import { IconInbox, IconMail, IconWarning } from "@/components/ui/icons";
+import Skeleton from "@/components/ui/Skeleton";
+import { api, errorMessage, withQuery } from "@/lib/client/api";
+import { useApi } from "@/lib/client/useApi";
+import type { InboxView } from "@/lib/sales/inbox";
+import type { SalesConversation, SalesNotification } from "@/lib/salesTypes";
 
-interface SalesInboxProps {
-  sessionDbId: string | null;
-}
+/**
+ * The campaign's Sales inbox plus its conversations, and the action that opens
+ * a notification's conversation (marking it read). Shared by Inbox and Needs you.
+ */
+export function useSalesInbox(sessionId: string | null, onChanged?: () => void) {
+  const inbox = useApi<InboxView>(
+    sessionId ? withQuery("/api/sales/inbox", { session_id: sessionId }) : null,
+  );
+  const conversations = useApi<{ conversations: SalesConversation[] }>(
+    sessionId ? withQuery("/api/sales/conversations", { session_id: sessionId }) : null,
+  );
+  const [active, setActive] = useState<SalesConversation | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
-export default function SalesInbox({ sessionDbId }: SalesInboxProps) {
-  const [notifications, setNotifications] = useState<SalesNotification[]>([]);
-  const [escalations, setEscalations] = useState<SalesNotification[]>([]);
-  const [conversations, setConversations] = useState<SalesConversation[]>([]);
-  const [activeConv, setActiveConv] = useState<SalesConversation | null>(null);
+  const reloadInbox = inbox.reload;
+  const reloadConversations = conversations.reload;
+  const reload = useCallback(() => {
+    reloadInbox();
+    reloadConversations();
+    onChanged?.();
+  }, [reloadInbox, reloadConversations, onChanged]);
 
-  const fetchInbox = useCallback(() => {
-    if (!sessionDbId) return;
-    fetch(`/api/sales/inbox?session_id=${sessionDbId}`)
-      .then((r) => r.json())
-      .then((j) => {
-        setNotifications(j.notifications ?? []);
-        setEscalations(j.escalations ?? []);
-      })
-      .catch(() => {});
+  const conversationFor = (n: SalesNotification) =>
+    n.entity_type === "sales_conversation" && n.entity_id
+      ? (conversations.data?.conversations.find((c) => c.id === n.entity_id) ?? null)
+      : null;
 
-    fetch(`/api/sales/conversations?session_id=${sessionDbId}`)
-      .then((r) => r.json())
-      .then((j) => setConversations(j.conversations ?? []))
-      .catch(() => {});
-  }, [sessionDbId]);
-
-  useEffect(() => { fetchInbox(); }, [fetchInbox]);
-
-  async function markRead(id: string) {
-    await fetch("/api/sales/inbox", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, read: true }),
-    });
-    fetchInbox();
-  }
-
-  function openConversation(notif: SalesNotification) {
-    if (notif.entity_type === "sales_conversation" && notif.entity_id) {
-      const conv = conversations.find((c) => c.id === notif.entity_id);
-      if (conv) {
-        setActiveConv(conv);
-        if (notif.id) markRead(notif.id);
-      }
+  async function open(n: SalesNotification) {
+    const conv = conversationFor(n);
+    if (!conv || !sessionId) return;
+    setActive(conv);
+    if (!n.id || n.read) return;
+    try {
+      await api.patch("/api/sales/inbox", { session_id: sessionId, id: n.id, read: true });
+      setActionError(null);
+      reloadInbox();
+      onChanged?.();
+    } catch (err) {
+      setActionError(errorMessage(err, "Could not mark the notification read"));
     }
   }
 
-  if (activeConv) {
+  return {
+    inbox: inbox.data,
+    loading: inbox.loading || conversations.loading,
+    error: inbox.error ?? conversations.error ?? actionError,
+    active,
+    close: () => {
+      setActive(null);
+      reload();
+    },
+    open,
+    canOpen: (n: SalesNotification) => Boolean(conversationFor(n)),
+    reload,
+  };
+}
+
+export function notificationItem(
+  n: SalesNotification,
+  canOpen: boolean,
+  onOpen: () => void,
+): Parameters<typeof NotificationList>[0]["items"][number] {
+  const escalation = /escalat/i.test(n.kind);
+  return {
+    key: n.id ?? `${n.kind}-${n.title}`,
+    kind: n.kind,
+    tone: escalation ? "red" : n.read ? "neutral" : "accent",
+    title: n.title,
+    body: n.body,
+    at: n.created_at,
+    icon: escalation ? <IconWarning size={15} /> : <IconMail size={15} />,
+    onOpen: canOpen ? onOpen : undefined,
+  };
+}
+
+export default function SalesInbox({
+  sessionDbId,
+  onChanged,
+}: {
+  sessionDbId: string | null;
+  onChanged?: () => void;
+}) {
+  const inbox = useSalesInbox(sessionDbId, onChanged);
+
+  if (inbox.active) {
     return (
       <SalesConversationThread
-        conversation={activeConv}
-        onBack={() => { setActiveConv(null); fetchInbox(); }}
-        onRefresh={fetchInbox}
+        conversation={inbox.active}
+        onBack={inbox.close}
+        onRefresh={inbox.reload}
       />
     );
   }
 
-  const items = [...escalations, ...notifications.filter((n) => !n.read)].slice(0, 20);
+  const items = inbox.inbox
+    ? [...inbox.inbox.escalations, ...inbox.inbox.notifications.filter((n) => !n.read)]
+        .filter((n, i, all) => all.findIndex((m) => m.id === n.id) === i)
+        .slice(0, 30)
+    : [];
 
   return (
-    <div>
-      {items.length === 0 && (
-        <p className="mono" style={{ color: "var(--ink-soft)", fontSize: 13 }}>No pending decisions.</p>
+    <>
+      {inbox.error && <Callout tone="error">{inbox.error}</Callout>}
+      {inbox.loading && !inbox.inbox && <Skeleton title lines={4} />}
+      {inbox.inbox && items.length === 0 && (
+        <EmptyState title="No pending decisions" icon={<IconInbox size={16} />}>
+          Replies and escalations from your outbound land here.
+        </EmptyState>
       )}
-      {items.map((n) => (
-        <button
-          key={n.id}
-          type="button"
-          className="kraft-card"
-          onClick={() => openConversation(n)}
-          style={{
-            display: "block",
-            width: "100%",
-            textAlign: "left",
-            padding: "0.6rem 0.75rem",
-            marginBottom: "0.35rem",
-            cursor: n.entity_type === "sales_conversation" ? "pointer" : "default",
-            borderLeft: n.kind === "escalation" ? "3px solid var(--hanko)" : undefined,
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span className="label-caps" style={{ fontSize: 10, color: n.kind === "escalation" ? "var(--hanko)" : "var(--moss)" }}>
-              {n.kind}
-            </span>
-            <span className="mono" style={{ fontSize: 10, color: "var(--outline)" }}>
-              {n.created_at ? new Date(n.created_at).toLocaleDateString() : ""}
-            </span>
-          </div>
-          <p style={{ fontSize: 13, margin: "0.25rem 0 0", fontWeight: 600 }}>{n.title}</p>
-          {n.body && <p className="mono" style={{ fontSize: 12, color: "var(--ink-soft)", margin: "0.15rem 0 0" }}>{n.body}</p>}
-        </button>
-      ))}
-    </div>
+      {items.length > 0 && (
+        <NotificationList
+          label="Inbox"
+          items={items.map((n) => notificationItem(n, inbox.canOpen(n), () => void inbox.open(n)))}
+        />
+      )}
+    </>
   );
 }

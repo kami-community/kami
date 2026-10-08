@@ -1,3 +1,5 @@
+import type { StoredEmailVerification } from "@/lib/domain/contacts";
+
 export type SalesMotion = "outbound_email" | "signal_outreach" | "x_dm" | "multi_channel";
 
 export type SalesChannel = "email" | "x";
@@ -34,6 +36,10 @@ export type SequenceEnrollmentStatus =
 
 export type MeetingStatus =
   | "proposed"
+  /** Invite claimed; the calendar call is in flight. */
+  | "scheduling"
+  /** Calendar event exists (provider receipt recorded) and the invite was emailed. */
+  | "scheduled"
   | "held"
   | "invited"
   | "accepted"
@@ -45,22 +51,20 @@ export type MeetingStatus =
 
 export type SalesPlanStatus = "draft" | "approved" | "superseded";
 
-export type ReplyClassificationLabel =
-  | "positive"
-  | "objection"
-  | "information_request"
-  | "referral"
-  | "not_now"
-  | "unsubscribe"
-  | "negative"
-  | "spam_risk";
+export const REPLY_CLASSIFICATION_LABELS = [
+  "positive",
+  "objection",
+  "information_request",
+  "referral",
+  "not_now",
+  "unsubscribe",
+  "negative",
+  "spam_risk",
+] as const;
 
-export type BuyingGroupRole =
-  | "champion"
-  | "economic_buyer"
-  | "evaluator"
-  | "blocker"
-  | "sponsor";
+export type ReplyClassificationLabel = (typeof REPLY_CLASSIFICATION_LABELS)[number];
+
+export type BuyingGroupRole = "champion" | "economic_buyer" | "evaluator" | "blocker" | "sponsor";
 
 export type ApprovalScope =
   | "first_send"
@@ -77,12 +81,7 @@ export type SalesTaskStatus = "open" | "in_progress" | "done" | "cancelled";
 export type SalesTaskPriority = "low" | "medium" | "high" | "urgent";
 
 export type NotificationKind =
-  | "reply"
-  | "escalation"
-  | "meeting"
-  | "approval_required"
-  | "cap_warning"
-  | "policy_block";
+  "reply" | "escalation" | "meeting" | "approval_required" | "cap_warning" | "policy_block";
 
 export interface SalesAutonomyPolicy {
   paused: boolean;
@@ -179,6 +178,8 @@ export interface SalesPlan {
   approval_scope: ApprovalScope[];
   status: SalesPlanStatus;
   revise_note?: string;
+  /** who wrote it: the strategist agent, or the offline scaffold when Hermes was unavailable */
+  source?: "hermes" | "offline_fallback";
   created_at?: string;
   updated_at?: string;
 }
@@ -226,14 +227,7 @@ export interface SalesContact {
   email?: string;
   handle?: string;
   channel?: SalesChannel;
-  email_verification?:
-    | "valid"
-    | "safe_to_send"
-    | "role_inbox"
-    | "non_buyer_inbox"
-    | "catch_all"
-    | "unknown"
-    | "invalid";
+  email_verification?: StoredEmailVerification;
   do_not_contact?: boolean;
   created_at?: string;
   updated_at?: string;
@@ -383,6 +377,11 @@ export interface Meeting {
   scheduled_at?: string;
   calendar_event_id?: string;
   provider_receipt?: Record<string, unknown>;
+  attendee_email?: string;
+  ends_at?: string;
+  time_zone?: string;
+  meeting_link?: string;
+  last_error?: string;
   created_at?: string;
   updated_at?: string;
 }

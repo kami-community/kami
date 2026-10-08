@@ -14,7 +14,9 @@
         "geo": "United States",
         "target_quantity": 40,
         "daily_send_cap": 25,
-        "approved_claims": ["Teams use Kami to lift qualified meetings without increasing send volume"]
+        "approved_claims": [
+          "Teams use Kami to lift qualified meetings without increasing send volume"
+        ]
       },
       "expect": {
         "quality": "precise",
@@ -77,7 +79,9 @@
         "cta": "Would a 15-minute call this week make sense?",
         "sequence_step": 1,
         "signal_ref": "https://techcrunch.com/acme-series-b",
-        "approved_claims": ["Teams use Kami to lift qualified meetings without increasing send volume"]
+        "approved_claims": [
+          "Teams use Kami to lift qualified meetings without increasing send volume"
+        ]
       },
       "expect": {
         "approved": true,

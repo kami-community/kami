@@ -1,3 +1,8 @@
+---
+name: x_cold_dm
+description: Draft cold X DMs that reference a lead's recent post, with one clear ask and strict follow-up limits.
+---
+
 # X Cold DM Outreach Playbook
 
 ## Opener Rules
@@ -11,7 +16,7 @@
 ## Conversation Flow
 1. **Hook** — reference their post + one-sentence value prop
 2. **Qualify** — if they reply, ask one question to confirm fit
-3. **Value** — share one concrete proof point (metric, case study reference)
+3. **Value** — share one concrete proof point from the approved claims (never invent metrics)
 4. **Close** — single CTA: "Want to try it?" or "Open to a 15-min call?"
 
 ## Hard Rules
@@ -21,3 +26,4 @@
 - No selling in first message — just open the door
 - If they say no or don't reply to follow-up: mark lost, never contact again
 - Max 20 new DMs per day (platform rate limit safety)
+- Every DM is sent by the founder from the app; follow `founder_voice` and `business_rules`

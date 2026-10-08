@@ -1,287 +1,280 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import type { ReviewerVerdict } from "@/lib/salesTypes";
-
-interface DraftRow {
-  id: string;
-  step: number;
-  status: string;
-  draft_subject?: string;
-  draft_body?: string;
-  draft_cta?: string;
-  reviewer_verdict?: ReviewerVerdict;
-  approved_at?: string;
-  sent_at?: string;
-  sales_sequence_enrollments?: {
-    status: string;
-    sales_contacts?: { name?: string; email?: string };
-    sales_accounts?: { name?: string; domain?: string };
-  };
-}
+import { useState } from "react";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import DraftCard, {
+  nextAction,
+  type DraftAction,
+  type DraftRow,
+} from "@/components/sales/DraftCard";
+import Button from "@/components/ui/Button";
+import Callout from "@/components/ui/Callout";
+import EmptyState from "@/components/ui/EmptyState";
+import { IconMail, IconSend } from "@/components/ui/icons";
+import Segmented from "@/components/ui/Segmented";
+import Skeleton from "@/components/ui/Skeleton";
+import { api, ApiError, errorMessage, withQuery } from "@/lib/client/api";
+import { useApi } from "@/lib/client/useApi";
 
 interface SalesDraftQueueProps {
   sessionDbId: string | null;
   paused?: boolean;
   onSent?: () => void;
+  /** any draft changed state (edit / review / approve) */
+  onChanged?: () => void;
 }
 
-const HYBRID_INDIVIDUAL_CAP = 3;
+/** After this many one-by-one sends, the founder can batch-send the rest. */
+const INDIVIDUAL_SENDS_BEFORE_BATCH = 1;
 
-export default function SalesDraftQueue({ sessionDbId, paused, onSent }: SalesDraftQueueProps) {
-  const [drafts, setDrafts] = useState<DraftRow[]>([]);
-  const [loading, setLoading] = useState(false);
+type Filter = "all" | "check" | "approved";
+
+/**
+ * Review emails: each draft moves check → approve → send, one step at a time.
+ * The first sends go one by one; after that the rest can be sent together.
+ */
+export default function SalesDraftQueue({
+  sessionDbId,
+  paused = false,
+  onSent,
+  onChanged,
+}: SalesDraftQueueProps) {
+  const query = useApi<{ drafts: DraftRow[] }>(
+    sessionDbId
+      ? withQuery("/api/sales/drafts", { session_id: sessionDbId, status: undefined })
+      : null,
+  );
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [batchBusy, setBatchBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [needsFirstSendApproval, setNeedsFirstSendApproval] = useState(false);
-  const [individualSendCount, setIndividualSendCount] = useState(0);
+  const [approving, setApproving] = useState(false);
+  const [confirmSend, setConfirmSend] = useState<DraftRow | null>(null);
+  const [confirmBatch, setConfirmBatch] = useState(false);
+  const [sentThisVisit, setSentThisVisit] = useState(0);
+  const [filter, setFilter] = useState<Filter>("all");
 
-  const fetchDrafts = useCallback(() => {
-    if (!sessionDbId) return;
-    setLoading(true);
-    fetch(`/api/sales/drafts?session_id=${sessionDbId}`)
-      .then((r) => r.json())
-      .then((j) => {
-        const rows = j.drafts ?? [];
-        setDrafts(rows);
-        setIndividualSendCount(rows.filter((d: DraftRow) => d.status === "sent").length);
-      })
-      .catch(() => setDrafts([]))
-      .finally(() => setLoading(false));
-  }, [sessionDbId]);
-
-  useEffect(() => {
-    fetchDrafts();
-  }, [fetchDrafts]);
-
-  async function approveFirstSend() {
-    if (!sessionDbId) return;
-    const res = await fetch("/api/sales/approvals", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ session_id: sessionDbId, scope: "first_send" }),
+  // stable order (company, then sequence step) so cards don't jump after an action
+  const drafts = (query.data?.drafts ?? [])
+    .filter((d) => d.status !== "sent")
+    .sort((a, b) => {
+      const an = a.sales_sequence_enrollments?.sales_accounts?.name ?? "";
+      const bn = b.sales_sequence_enrollments?.sales_accounts?.name ?? "";
+      return an.localeCompare(bn) || a.step - b.step || a.id.localeCompare(b.id);
     });
-    if (res.ok) {
-      setNeedsFirstSendApproval(false);
-      setError(null);
-    }
+  const approved = drafts.filter((d) => d.status === "approved");
+  const toCheck = drafts.filter((d) => d.status !== "approved");
+  const visible = filter === "approved" ? approved : filter === "check" ? toCheck : drafts;
+  const canBatch = sentThisVisit >= INDIVIDUAL_SENDS_BEFORE_BATCH && approved.length > 1;
+  // one accent per screen: the batch send, or else the first card with a next step
+  const emphasized = canBatch ? null : (visible.find((d) => nextAction(d))?.id ?? null);
+
+  function fail(err: unknown, fallback: string) {
+    const message = errorMessage(err, fallback);
+    setError(message);
+    if (err instanceof ApiError && /first send/i.test(message)) setNeedsFirstSendApproval(true);
   }
 
-  async function runAction(draftId: string, action: "review" | "approve" | "send") {
-    if (!sessionDbId || paused) return;
-    setBusyId(draftId);
+  async function act(draft: DraftRow, action: DraftAction) {
+    if (!sessionDbId) return;
+    setBusyId(draft.id);
     setError(null);
-    setNeedsFirstSendApproval(false);
     try {
-      const res = await fetch("/api/sales/drafts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, touchpoint_id: draftId, session_id: sessionDbId }),
+      await api.post("/api/sales/drafts", {
+        action,
+        touchpoint_id: draft.id,
+        session_id: sessionDbId,
       });
-      const json = await res.json();
-      if (!res.ok) {
-        const msg = json.error ?? `Action ${action} failed`;
-        setError(msg);
-        if (msg.includes("first send")) setNeedsFirstSendApproval(true);
-        return;
-      }
       if (action === "send") {
-        setIndividualSendCount((c) => c + 1);
+        setSentThisVisit((n) => n + 1);
         onSent?.();
       }
-      fetchDrafts();
-    } catch {
-      setError(`Action ${action} failed`);
+      onChanged?.();
+      query.reload();
+    } catch (err) {
+      fail(err, `Could not ${action} the draft`);
     } finally {
       setBusyId(null);
     }
   }
 
-  async function sendRemainingApproved() {
-    if (!sessionDbId || paused) return;
-    const toSend = drafts.filter((d) => d.status === "approved");
-    if (!toSend.length) return;
-
-    setBatchBusy(true);
+  async function save(draft: DraftRow, edits: { subject: string; body: string }) {
+    if (!sessionDbId) return false;
+    setBusyId(draft.id);
     setError(null);
     try {
-      for (const draft of toSend) {
-        const res = await fetch("/api/sales/drafts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "send", touchpoint_id: draft.id, session_id: sessionDbId }),
-        });
-        const json = await res.json();
-        if (!res.ok) {
-          setError(json.error ?? "Batch send stopped on error");
-          if ((json.error as string)?.includes("first send")) setNeedsFirstSendApproval(true);
-          break;
-        }
-      }
-      onSent?.();
-      fetchDrafts();
+      await api.post("/api/sales/drafts", {
+        action: "edit",
+        touchpoint_id: draft.id,
+        session_id: sessionDbId,
+        ...edits,
+      });
+      await api.post("/api/sales/drafts", {
+        action: "review",
+        touchpoint_id: draft.id,
+        session_id: sessionDbId,
+      });
+      onChanged?.();
+      query.reload();
+      return true;
+    } catch (err) {
+      fail(err, "Could not save the draft");
+      return false;
     } finally {
-      setBatchBusy(false);
+      setBusyId(null);
     }
   }
 
-  const pendingDrafts = drafts.filter((d) => d.status !== "sent");
-  const approvedPending = pendingDrafts.filter((d) => d.status === "approved");
-  const showBatchSend =
-    individualSendCount >= 1 &&
-    individualSendCount < HYBRID_INDIVIDUAL_CAP &&
-    approvedPending.length > 0;
+  async function sendAllApproved() {
+    setConfirmBatch(false);
+    for (const draft of approved) {
+      setBusyId(draft.id);
+      try {
+        await api.post("/api/sales/drafts", {
+          action: "send",
+          touchpoint_id: draft.id,
+          session_id: sessionDbId,
+        });
+        setSentThisVisit((n) => n + 1);
+      } catch (err) {
+        fail(err, "Sending stopped");
+        break;
+      }
+    }
+    setBusyId(null);
+    onSent?.();
+    query.reload();
+  }
 
-  const showBatchAfterCap = individualSendCount >= HYBRID_INDIVIDUAL_CAP && approvedPending.length > 0;
+  async function approveFirstSend() {
+    if (!sessionDbId) return;
+    setApproving(true);
+    try {
+      await api.post("/api/sales/approvals", { session_id: sessionDbId, scope: "first_send" });
+      setNeedsFirstSendApproval(false);
+      setError(null);
+    } catch (err) {
+      setError(errorMessage(err, "Could not record your approval"));
+    } finally {
+      setApproving(false);
+    }
+  }
 
   return (
-    <div className="sales-panel" style={{ marginTop: "var(--stack-md)" }}>
-      <p className="sales-intro" style={{ marginBottom: "var(--stack-sm)" }}>
-        Review each email before it goes out. Send the first few one-by-one, then batch the rest when you&apos;re confident.
-      </p>
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--stack-sm)", flexWrap: "wrap", gap: "0.5rem" }}>
-        <p className="label-caps">Review emails</p>
-        <button
-          type="button"
-          className="mono"
-          onClick={fetchDrafts}
-          disabled={!sessionDbId || loading}
-          style={{ border: "1px solid var(--ink)", background: "transparent", padding: "0.3rem 0.6rem", cursor: "pointer", fontSize: 12 }}
-        >
-          refresh
-        </button>
-      </div>
-      <hr className="crease" />
-
-      {needsFirstSendApproval && (
-        <div className="kraft-card" style={{ padding: "var(--stack-sm)", marginBottom: "var(--stack-sm)" }}>
-          <p style={{ fontSize: 14, marginBottom: "0.5rem" }}>First send needs your explicit OK.</p>
-          <button type="button" className="hanko-btn" onClick={approveFirstSend}>
-            Approve first send
-          </button>
+    <section className="draft-queue">
+      {query.data && (
+        <div className="draft-queue__bar">
+          <Segmented<Filter>
+            label="Filter drafts"
+            value={filter}
+            onChange={setFilter}
+            options={[
+              { value: "all", label: "All", count: drafts.length },
+              { value: "check", label: "To review", count: toCheck.length },
+              { value: "approved", label: "Approved", count: approved.length },
+            ]}
+          />
+          {canBatch && (
+            <Button
+              variant="accent"
+              size="sm"
+              icon={<IconSend size={13} />}
+              onClick={() => setConfirmBatch(true)}
+              disabled={paused || Boolean(busyId)}
+            >
+              Send {approved.length} approved
+            </Button>
+          )}
         </div>
       )}
 
-      {error && (
-        <p className="mono" style={{ color: "var(--hanko)", fontSize: 12, marginBottom: "var(--stack-sm)" }}>
-          {error}
-        </p>
-      )}
-
-      {!sessionDbId && (
-        <p className="mono" style={{ color: "var(--ink-soft)", fontSize: 13 }}>
-          Start a session to manage email drafts.
-        </p>
-      )}
-
-      {sessionDbId && !loading && pendingDrafts.length === 0 && (
-        <p className="mono" style={{ color: "var(--ink-soft)", fontSize: 13 }}>
-          No drafts yet — finish Find companies and add contact emails first.
-        </p>
-      )}
-
-      {(showBatchSend || showBatchAfterCap) && (
-        <button
-          type="button"
-          className="hanko-btn"
-          onClick={sendRemainingApproved}
-          disabled={paused || batchBusy}
-          style={{ marginBottom: "var(--stack-md)" }}
-        >
-          {batchBusy ? "Sending…" : `Send remaining approved (${approvedPending.length})`}
-        </button>
-      )}
-
-      {pendingDrafts.map((draft) => {
-        const contact = draft.sales_sequence_enrollments?.sales_contacts;
-        const account = draft.sales_sequence_enrollments?.sales_accounts;
-        const verdict = draft.reviewer_verdict;
-        const isBusy = busyId === draft.id;
-        const hasEmail = Boolean(contact?.email);
-
-        return (
-          <div key={draft.id} className="kraft-card" style={{ padding: "var(--stack-md)", marginBottom: "var(--stack-sm)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--stack-sm)", flexWrap: "wrap" }}>
-              <div>
-                <p style={{ fontSize: 15, fontWeight: 700 }}>
-                  {contact?.name ?? account?.name ?? "Unknown"}
-                </p>
-                <p className="mono" style={{ fontSize: 12, color: "var(--ink-soft)" }}>
-                  {hasEmail ? contact?.email : "No email — go back to Find companies"} · step {draft.step}
-                </p>
-              </div>
-              <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
-                <button
-                  type="button"
-                  className="mono"
-                  disabled={paused || isBusy || draft.status === "sent" || !hasEmail}
-                  onClick={() => runAction(draft.id, "review")}
-                  style={{ border: "1px solid var(--ink)", background: "transparent", padding: "0.25rem 0.5rem", fontSize: 11, cursor: "pointer" }}
-                >
-                  review
-                </button>
-                <button
-                  type="button"
-                  className="mono"
-                  disabled={paused || isBusy || !verdict?.approved || draft.status === "approved" || draft.status === "sent" || !hasEmail}
-                  onClick={() => runAction(draft.id, "approve")}
-                  style={{ border: "1px solid var(--ink)", background: "transparent", padding: "0.25rem 0.5rem", fontSize: 11, cursor: "pointer" }}
-                >
-                  approve
-                </button>
-                <button
-                  type="button"
-                  className="hanko-btn"
-                  disabled={paused || isBusy || draft.status !== "approved" || !hasEmail}
-                  onClick={() => runAction(draft.id, "send")}
-                  style={{ padding: "0.25rem 0.65rem", fontSize: 11 }}
-                >
-                  send
-                </button>
-              </div>
-            </div>
-
-            {draft.draft_subject && (
-              <p className="mono" style={{ fontSize: 12, marginTop: "var(--stack-sm)" }}>
-                Subject: {draft.draft_subject}
-              </p>
-            )}
-
-            {draft.draft_body && (
-              <pre
-                className="mono"
-                style={{
-                  fontSize: 11,
-                  whiteSpace: "pre-wrap",
-                  marginTop: "var(--stack-sm)",
-                  color: "var(--ink-soft)",
-                  maxHeight: 160,
-                  overflow: "auto",
-                }}
+      <div className="stack stack--sm">
+        {paused && (
+          <Callout tone="warn">
+            Sending is paused. Resume Sales, or turn off the kill switch, to send.
+          </Callout>
+        )}
+        {needsFirstSendApproval && (
+          <Callout
+            tone="warn"
+            title="The first email of this campaign needs your explicit go-ahead"
+            actions={
+              <Button
+                size="sm"
+                variant="secondary"
+                busy={approving}
+                onClick={() => void approveFirstSend()}
               >
-                {draft.draft_body}
-              </pre>
-            )}
+                Approve the first send
+              </Button>
+            }
+          />
+        )}
+        {(error ?? query.error) && <Callout tone="error">{error ?? query.error}</Callout>}
+      </div>
 
-            {verdict && (
-              <div style={{ marginTop: "var(--stack-sm)" }}>
-                <p className="mono" style={{ fontSize: 11, color: verdict.approved ? "var(--ink)" : "var(--hanko)" }}>
-                  Review: {verdict.approved ? "pass" : "needs fixes"} · score {verdict.score}
-                </p>
-                {!verdict.approved && verdict.required_fixes.length > 0 && (
-                  <ul style={{ margin: "0.25rem 0 0", paddingLeft: "1.2rem", fontSize: 11 }} className="mono">
-                    {verdict.required_fixes.map((fix) => (
-                      <li key={fix} style={{ color: "var(--hanko)" }}>{fix}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
+      {query.loading && !query.data && <Skeleton title lines={6} />}
+
+      {sessionDbId && query.data && visible.length === 0 && (
+        <EmptyState
+          title={drafts.length ? "Nothing in this filter" : "All caught up"}
+          icon={<IconMail size={16} />}
+        >
+          {drafts.length
+            ? "Try another filter."
+            : "Every draft has been sent. New drafts appear here when you pick more companies."}
+        </EmptyState>
+      )}
+
+      <div className="draft-queue__list">
+        {visible.map((draft) => (
+          <div
+            key={`${draft.id}-${draft.draft_subject}-${draft.status}`}
+            className="draft-queue__item"
+          >
+            <DraftCard
+              draft={draft}
+              sessionId={sessionDbId ?? ""}
+              busy={busyId === draft.id}
+              paused={paused}
+              emphasis={draft.id === emphasized}
+              onAction={(action) =>
+                action === "send" ? setConfirmSend(draft) : void act(draft, action)
+              }
+              onSave={(edits) => save(draft, edits)}
+            />
           </div>
-        );
-      })}
-    </div>
+        ))}
+      </div>
+
+      <ConfirmDialog
+        open={Boolean(confirmSend)}
+        title={`Send to ${confirmSend?.sales_sequence_enrollments?.sales_contacts?.email ?? "this contact"}?`}
+        body={
+          confirmSend ? (
+            <div className="send-preview">
+              <p className="send-preview__subject">{confirmSend.draft_subject}</p>
+              <p className="send-preview__body">{confirmSend.draft_body}</p>
+            </div>
+          ) : undefined
+        }
+        confirmLabel="Send email"
+        busy={Boolean(confirmSend && busyId === confirmSend.id)}
+        onConfirm={() => {
+          const draft = confirmSend;
+          setConfirmSend(null);
+          if (draft) void act(draft, "send");
+        }}
+        onCancel={() => setConfirmSend(null)}
+      />
+
+      <ConfirmDialog
+        open={confirmBatch}
+        title={`Send ${approved.length} approved emails?`}
+        body="Each one is checked against the kill switch, the do-not-contact list and your daily limit as it goes."
+        confirmLabel={`Send ${approved.length}`}
+        onConfirm={() => void sendAllApproved()}
+        onCancel={() => setConfirmBatch(false)}
+      />
+    </section>
   );
 }

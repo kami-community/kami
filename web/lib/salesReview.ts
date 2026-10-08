@@ -1,4 +1,4 @@
-import type { EmailDraft, ReviewerVerdict } from "./salesTypes";
+import type { ReviewerVerdict } from "./salesTypes";
 
 export interface ReviewDraftInput {
   subject: string;
@@ -96,18 +96,6 @@ export function draftFromTouchpoint(row: Record<string, unknown>): ReviewDraftIn
     subject: String(row.draft_subject ?? ""),
     body: String(row.draft_body ?? ""),
     cta: String(row.draft_cta ?? ""),
-    sequence_step: Number(row.step ?? 1),
-    signal_ref: metadata.signal_ref as string | undefined,
-  };
-}
-
-export function touchpointToEmailDraft(row: Record<string, unknown>): EmailDraft {
-  const metadata = (row.draft_metadata ?? {}) as Record<string, unknown>;
-  return {
-    subject: String(row.draft_subject ?? ""),
-    body: String(row.draft_body ?? ""),
-    cta: String(row.draft_cta ?? ""),
-    evidence_refs: (metadata.evidence_refs as string[]) ?? [],
     sequence_step: Number(row.step ?? 1),
     signal_ref: metadata.signal_ref as string | undefined,
   };

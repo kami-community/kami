@@ -5,123 +5,79 @@
 <h1 align="center">Kami</h1>
 
 <p align="center">
-  <strong>Your AI go-to-market agency for early-stage startups.</strong>
+  <strong>Your AI go-to-market agency for early-stage startups.</strong><br />
+  Community Edition — self-hosted, bring your own keys.
 </p>
 
-<p align="center">
-  Community Edition — self-hosted, BYOK. Run Hermes locally, open <code>localhost:3000</code>.
-</p>
+Tell Kami what you built. It learns your company from your domain, then helps you **find customers** and **create distribution** — with real research, reviewed drafts, and nothing sent without your approval.
 
-Tell Kami what you built. It helps you **find customers** and **create distribution** — with real research, reviewed drafts, and no invented emails.
+## How it works
 
-## What it does
+1. **Enter your domain.** Kami reads your site and public evidence and writes a company dossier.
+2. **Confirm it — "That's us".** Edit it or correct it in plain language first.
+3. **Choose a job.**
+   - **Find customers (Sales):** segments → plan → verified companies and real public contacts → reviewed email drafts → you approve each send → replies land in *Needs your decision*.
+   - **Create distribution (Marketing):** a plan from your dossier → live conversations on X, Reddit, LinkedIn, HN, Product Hunt and Discord with a useful draft for each → post to X from Kami or copy and post yourself.
+4. **Ask Kami anytime.** Kami Guide answers from your live campaign state.
+5. **See everything on Activity:** every send with its provider receipt, every agent run with its input and output, your suppression list.
 
-1. Enter your domain → confirm the dossier (**That’s us**)
-2. Choose **Find customers** (Sales) or **Create distribution** (Marketing)
-3. Approve small batches before anything sends or posts
-4. Ask Kami anytime — grounded in your live campaign state
+Under the hood, [Hermes](https://hermes-agent.nousresearch.com/docs/) runs the agents (role prompts in [`agents/`](agents/), playbooks in [`skills/`](skills/)); the Next.js app in [`web/`](web/) owns the workflow, the approvals and every integration. See [docs/architecture.md](docs/architecture.md).
+
+## Principles
+
+- **Never invents contacts.** Sends are blocked until a real address exists.
+- **You approve every real action.** A kill switch is always one click away.
+- **Proof, not status codes.** Every send stores the provider's message id or live URL.
+- **Your keys, your data.** Kami runs on your machine against your Supabase project.
 
 ## Requirements
 
-| Requirement | Notes |
-|-------------|--------|
-| **Node.js 20+** and npm | Required for `web/` |
-| **Git** | Clone the repo |
-| **[Hermes Agent](https://hermes-agent.nousresearch.com/docs/)** | Local gateway on `127.0.0.1:8642` |
-| **Model API key** | For Hermes (OpenAI, OpenRouter, etc.) |
-| **Supabase project** | Your own; apply migrations `001`–`010` in order |
-| Research provider (Linkup / Exa / Tavily) | Optional |
-| AgentMail | Optional — drafts work without send |
-| X OAuth app | Optional — Post to X when connected |
-| Chrome CDP | Optional — browser research |
-
-Kami is **not** a hosted SaaS in Community Edition. You run Hermes + the Next.js app on your machine.
+| | |
+|---|---|
+| Node.js **22+** | for `web/` |
+| [Hermes Agent](https://hermes-agent.nousresearch.com/docs/) | with its API server enabled |
+| A model API key | used by Hermes (OpenAI, OpenRouter, Anthropic, …) |
+| A Supabase project | free tier is fine; or run it locally with the Supabase CLI |
+| Optional | Linkup / Exa / Tavily · AgentMail · X developer app · Instagram app · Google Calendar · Langfuse |
 
 ## Quick start
 
-Full detail: **[SETUP.md](SETUP.md)**.
-
-1. **Clone**
-   ```bash
-   git clone https://github.com/saranambiar/kami.git
-   cd kami
-   ```
-
-2. **Install web deps**
-   ```bash
-   cd web
-   npm install
-   ```
-
-3. **Configure Hermes** — install Hermes if needed; copy root [`.env.example`](.env.example) into Hermes home (`%LOCALAPPDATA%\hermes\.env` on Windows, `~/.hermes/.env` on macOS/Linux). Set your model key, `API_SERVER_ENABLED=true`, port **8642**, and a long `API_SERVER_KEY`.
-
-4. **Configure the web app** — from `web/`, copy [`web/.env.example`](web/.env.example) (not the root Hermes file) and fill Hermes + Supabase:
-   ```bash
-   cp .env.example .env.local
-   ```
-   Windows: `copy .env.example .env.local`. Required keys are listed in [SETUP.md](SETUP.md).
-
-5. **Apply Supabase migrations** — run `web/supabase/migrations/001`–`012` in order. See [SETUP.md](SETUP.md) § Database.
-
-6. **Sync skills + readiness** (repo root):
-   ```bash
-   cd ..
-   npm run sync:skills
-   npm run readiness
-   ```
-
-7. **Start Hermes** (terminal A) — gateway with API server on `:8642` (see SETUP.md).
-
-8. **Start the app** (terminal B):
-   ```bash
-   cd web
-   npm run dev
-   ```
-
-9. Open **http://localhost:3000** → enter your domain → confirm dossier → Find customers or Create distribution.
-
-### Agent setup prompt
-
-Paste into Cursor / Claude / Codex (full version also in [docs/community-edition.md](docs/community-edition.md)):
-
-```text
-Set up Kami Community Edition on this machine end-to-end.
-
-Product: self-hosted BYOK GTM app. Hermes is the agent backend (gateway :8642). Next.js UI is in web/. Clone https://github.com/saranambiar/kami.git (branch main) and open it as the workspace.
-
-Read first: README.md, SETUP.md, docs/community-edition.md, web/.env.example, root .env.example.
-
-Do:
-1) Install Hermes if missing. Enable API server on 127.0.0.1:8642. Windows Hermes home = %LOCALAPPDATA%\hermes (not ~/.hermes). Ask me for the model key and API_SERVER_KEY; never print or commit secrets.
-2) Create or connect my Supabase project. Apply migrations in web/supabase/migrations/ in order: 001–012. Confirm before running SQL.
-3) Write web/.env.local from web/.env.example (not root .env.example) with HERMES_GATEWAY_URL=http://127.0.0.1:8642/v1/chat/completions, HERMES_API_KEY matching API_SERVER_KEY, NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY. Leave AgentMail, X, Linkup/Exa/Tavily, CDP unset unless I provide them.
-4) npm install in web/. From repo root: npm run sync:skills && npm run readiness.
-5) Start Hermes gateway, then npm run dev in web/ (prefer next dev --webpack if Turbopack fails on Windows/WSL).
-6) Verify GET http://localhost:3000/api/capabilities has hermes + database (+ modelConfigured when possible). Fix blockers until true.
-7) Report what is unlocked vs optional, and the first click path: domain → That’s us → Find customers or Create distribution.
-
-Rules: Community Edition is local only — do not require trykami.app. Never invent emails, auto-send, or publish. Ask before writing config, applying SQL, CDP, or external APIs.
+```bash
+git clone https://github.com/kami-community/kami.git
+cd kami/web
+npm install
+cp .env.example .env.local          # fill in the Required block
+cd ..
+npm run sync:skills                 # copy playbooks into Hermes
+npm run readiness                   # checks config without printing secrets
 ```
+
+Set `DATABASE_URL` in `web/.env.local` to your Postgres connection string. The app applies `web/supabase/migrations/` on startup (`npm run db:migrate` does the same thing). A local Supabase API on `127.0.0.1` is detected automatically.
+
+Then run Hermes' gateway and the app in two terminals:
+
+```bash
+hermes gateway run                  # terminal A
+cd web && npm run dev               # terminal B → http://localhost:3000
+```
+
+Full walkthrough, optional integrations and troubleshooting: **[SETUP.md](SETUP.md)**.
 
 ## Docs
 
-| Doc | Purpose |
-|-----|---------|
-| [SETUP.md](SETUP.md) | Full local setup |
-| [docs/architecture.md](docs/architecture.md) | Hermes agent orchestration & decisions |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | PRs, branches (`dev` base), roadmap |
-| [docs/product-loops.md](docs/product-loops.md) | Product / UX contract |
-| [docs/community-edition.md](docs/community-edition.md) | BYOK detail + agent prompts |
-| [SECURITY.md](SECURITY.md) | Secrets & privacy |
-| [LICENSE](LICENSE) | MIT (+ Remotion exception) |
-| [docs/trademark-clearance-notes.md](docs/trademark-clearance-notes.md) | Informal “Kami” name collision notes |
-| [web/evals/e2e/fixtures/NOTICE.md](web/evals/e2e/fixtures/NOTICE.md) | Eval domains are not partners |
-| [NOTICE](NOTICE) | Copyright + pointer to third-party notices |
-| [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md) | Remotion, LGPL, MPL, CC-BY, OFL |
-| [assets/README.md](assets/README.md) | Logo provenance / brand rights |
-| [video/README.md](video/README.md) | Optional Remotion demo tooling |
+| | |
+|---|---|
+| [SETUP.md](SETUP.md) | Local setup, integrations, troubleshooting |
+| [docs/architecture.md](docs/architecture.md) | How the workflow, agents and gates fit together |
+| [docs/product-loops.md](docs/product-loops.md) | The product contract |
+| [docs/community-edition.md](docs/community-edition.md) | What self-hosting means; agent-assisted setup prompts |
+| [docs/marketing-credentials.md](docs/marketing-credentials.md) | X and Instagram apps, step by step |
+| [AGENTS.md](AGENTS.md) | Rules for contributors and coding agents |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Branches, PRs, what to work on |
+| [SECURITY.md](SECURITY.md) | Security model and reporting |
+| [CHANGELOG.md](CHANGELOG.md) | What changed |
+| [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | How we work together |
 
 ## License
 
-MIT for Kami-authored source — see [LICENSE](LICENSE).  
-Remotion under `video/` is **not** MIT — see [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
+MIT — see [LICENSE](LICENSE). Third-party components (including the Remotion-based `video/`) keep their own licences: [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).

@@ -50,8 +50,21 @@ for (const [label, ok] of checks) {
   console.log(`${ok ? "OK " : "-- "} ${label}`);
 }
 
+// Live gateway probe (never prints key)
+const gateway = env.HERMES_GATEWAY_URL || "http://127.0.0.1:8642/v1/chat/completions";
+const healthBase = gateway.replace(/\/v1\/chat\/completions\/?$/, "");
+let gatewayReachable = false;
+try {
+  const res = await fetch(`${healthBase}/health`, { signal: AbortSignal.timeout(3000) });
+  gatewayReachable = res.ok;
+  console.log(res.ok ? "\nHermes /health: reachable" : `\nHermes /health: HTTP ${res.status}`);
+} catch {
+  console.log("\nHermes /health: not reachable (start local gateway on :8642)");
+}
+
 const unlocked = [];
-if (has("HERMES_API_KEY")) unlocked.push("Hermes agent runs");
+if (has("HERMES_API_KEY") && gatewayReachable) unlocked.push("Hermes agent runs");
+else if (has("HERMES_API_KEY")) unlocked.push("Hermes configured (gateway not reachable)");
 if (has("NEXT_PUBLIC_SUPABASE_URL") && has("SUPABASE_SERVICE_ROLE_KEY")) unlocked.push("Persistence");
 if (has("HERMES_BROWSER_CDP_URL")) unlocked.push("Browser research");
 if (has("LINKUP_API_KEY") || has("EXA_API_KEY") || has("TAVILY_API_KEY")) unlocked.push("Provider research");
@@ -73,15 +86,5 @@ if (!requiredOk) {
   console.log("\nMissing required keys — see web/.env.example and SETUP.md");
   process.exitCode = 1;
 } else {
-  console.log("\nRequired local config present. Apply SQL migrations, start Hermes on :8642, then npm run dev.");
-}
-
-// Optional live gateway probe (never prints key)
-const gateway = env.HERMES_GATEWAY_URL || "http://127.0.0.1:8642/v1/chat/completions";
-const healthBase = gateway.replace(/\/v1\/chat\/completions\/?$/, "");
-try {
-  const res = await fetch(`${healthBase}/health`, { signal: AbortSignal.timeout(3000) });
-  console.log(res.ok ? "\nHermes /health: reachable" : `\nHermes /health: HTTP ${res.status}`);
-} catch {
-  console.log("\nHermes /health: not reachable (start local gateway on :8642)");
+  console.log("\nRequired local config present. Set DATABASE_URL so tables are created on startup, start Hermes, then npm run dev.");
 }

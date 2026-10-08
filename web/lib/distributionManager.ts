@@ -11,8 +11,9 @@ import type {
   DistributionPlanSource,
 } from "@/lib/distributionTypes";
 import { DISTRIBUTION_PLATFORMS, normalizeSurfaces } from "@/lib/distributionTypes";
-import type { Dossier } from "@/lib/hermes";
-import { hermesChatOnce, hermesGatewayConfigured, parseLastJsonBlock } from "@/lib/hermesServer";
+import type { Dossier } from "@/lib/domain/dossier";
+import { completeOrNull, hermesConfigured, hermesSessionIdFor } from "@/lib/hermes/client";
+import { parseLastJsonBlock } from "@/lib/hermes/json";
 
 export type OpportunityDraft = Omit<
   DistributionOpportunity,
@@ -31,9 +32,13 @@ export interface ResearchResult {
   note?: string;
 }
 
-function managerSessionId(kamiSessionId: string, hermesSessionId?: string): string {
-  if (hermesSessionId?.trim()) return `kami-dist-mgr-${hermesSessionId.trim()}`;
-  return `kami-dist-mgr-${kamiSessionId}`;
+/** The manager keeps one Hermes session per campaign so research builds on the approved plan. */
+function managerSessionId(kamiSessionId: string): string {
+  return hermesSessionIdFor({
+    agent: "distribution-manager",
+    kamiSessionId,
+    continuity: "campaign",
+  });
 }
 
 function planSurfaces(plan: DistributionPlan): DistributionPlatform[] {
@@ -41,9 +46,20 @@ function planSurfaces(plan: DistributionPlan): DistributionPlatform[] {
   return surfaces.length ? surfaces : ["x", "reddit", "linkedin"];
 }
 
-function fallbackPlan(domain: string, dossier: Dossier | null, reviseNote?: string): RecommendPlanResult["plan"] {
+/** First sentence of the positioning, cut at a word boundary, without trailing punctuation. */
+function topicOf(positioning: string | undefined): string {
+  const sentence = (positioning ?? "").trim().split(/(?<=[.!?])\s/)[0] ?? "";
+  const clipped = sentence.length > 120 ? sentence.slice(0, 120).replace(/\s+\S*$/, "") : sentence;
+  return clipped.replace(/[\s.;,:!?]+$/, "");
+}
+
+function fallbackPlan(
+  domain: string,
+  dossier: Dossier | null,
+  reviseNote?: string,
+): RecommendPlanResult["plan"] {
   const company = dossier?.company || domain;
-  const positioning = dossier?.positioning?.slice(0, 120) || `what ${company} helps people do`;
+  const positioning = topicOf(dossier?.positioning) || `what ${company} helps people do`;
   return {
     goal: "early_users",
     goal_label: "Find conversations where people need this product",
@@ -51,8 +67,7 @@ function fallbackPlan(domain: string, dossier: Dossier | null, reviseNote?: stri
       ? `Revised direction: ${reviseNote.trim().slice(0, 200)}. Lead with a useful take on ${positioning}.`
       : `Join conversations about ${positioning}; answer usefully before any product mention.`,
     surfaces: ["x", "reddit", "linkedin"],
-    rationale:
-      "[Offline fallback] Hermes unavailable — starter plan only. Confirm or edit before researching.",
+    rationale: "Starter plan from your dossier — confirm or edit it before researching.",
     why_these_surfaces:
       "X and Reddit for live conversations; LinkedIn for a founder-native credibility post.",
     status: "proposed",
@@ -81,20 +96,19 @@ function parsePlanJson(
     angle,
     surfaces,
     rationale: typeof o.rationale === "string" ? o.rationale.trim() : "",
-    why_these_surfaces:
-      typeof o.why_these_surfaces === "string" ? o.why_these_surfaces.trim() : "",
+    why_these_surfaces: typeof o.why_these_surfaces === "string" ? o.why_these_surfaces.trim() : "",
     status: "proposed",
     source: "hermes",
     revise_note: reviseNote?.trim() || undefined,
   };
 }
 
-function recommendPrompt(input: {
+async function recommendPrompt(input: {
   domain: string;
   dossier: Dossier | null;
   reviseNote?: string;
-}): string {
-  const caps = detectCapabilities();
+}): Promise<string> {
+  const caps = await detectCapabilities();
   const lines = [
     "You are Kami's Distribution Manager (see agents/distribution-manager.md Mode A).",
     "Recommend ONE distribution plan from the dossier. Do not ask the founder to pick from a chip list.",
@@ -131,12 +145,12 @@ function recommendPrompt(input: {
   return lines.join("\n");
 }
 
-function researchPrompt(input: {
+async function researchPrompt(input: {
   domain: string;
   dossier: Dossier | null;
   plan: DistributionPlan;
-}): string {
-  const caps = detectCapabilities();
+}): Promise<string> {
+  const caps = await detectCapabilities();
   const surfaces = planSurfaces(input.plan);
   const tasksHint = surfaces.map((platform) => ({
     goal: `Research 1 evidence-backed ${platform} opportunity for ${input.domain} using viral_formats + ${platform}_distribution`,
@@ -206,6 +220,8 @@ function researchPrompt(input: {
   ].join("\n");
 }
 
+export const SCAFFOLD_SKILL = "scaffold";
+
 function scaffoldCard(
   platform: DistributionPlatform,
   angle: string,
@@ -217,7 +233,8 @@ function scaffoldCard(
     approval_status: "needs_review" as const,
     action_status: "draft" as const,
     outcome: "none" as const,
-    agent_skill: `${platform}_distribution`,
+    /** Marks a template row: not researched, shown behind a toggle in the UI. */
+    agent_skill: SCAFFOLD_SKILL,
     format_used: "[scaffold] pending live format research",
     format_why: "Starter row — Hermes will pick a current format on a successful research run.",
   };
@@ -242,8 +259,7 @@ function scaffoldCard(
         ...base,
         platform,
         source_url: "manual://paste-thread-url",
-        evidence:
-          "[needs_url][source=scaffold] Paste a real Reddit thread URL after you find one",
+        evidence: "[needs_url][source=scaffold] Paste a real Reddit thread URL after you find one",
         why_now: `[FALLBACK] Reddit discussions about ${problem} reward value-first comments.`,
         suggested_action:
           "Answer the question helpfully; mention the product only if rules allow and it fits.",
@@ -311,8 +327,7 @@ function scaffoldOpportunities(
   surfaces: DistributionPlatform[],
 ): OpportunityDraft[] {
   const company = dossier?.company || domain;
-  const problem =
-    dossier?.positioning?.slice(0, 160) || `what ${company} helps people do`;
+  const problem = dossier?.positioning?.slice(0, 160) || `what ${company} helps people do`;
   const list: DistributionPlatform[] = surfaces.length
     ? surfaces.slice(0, 3)
     : ["x", "reddit", "linkedin"];
@@ -339,13 +354,11 @@ function parseOpportunities(
   const arr = Array.isArray(raw)
     ? raw
     : Array.isArray((raw as { opportunities?: unknown })?.opportunities)
-      ? ((raw as { opportunities: unknown[] }).opportunities)
+      ? (raw as { opportunities: unknown[] }).opportunities
       : null;
   if (!arr?.length) return [];
 
-  const allowed = new Set(
-    allowedSurfaces.length ? allowedSurfaces : DISTRIBUTION_PLATFORMS,
-  );
+  const allowed = new Set(allowedSurfaces.length ? allowedSurfaces : DISTRIBUTION_PLATFORMS);
   const opportunities: OpportunityDraft[] = [];
   const seenPlatform = new Set<DistributionPlatform>();
 
@@ -395,10 +408,9 @@ export async function recommendDistributionPlan(input: {
   domain: string;
   dossier: Dossier | null;
   reviseNote?: string;
-  hermesSessionId?: string;
 }): Promise<RecommendPlanResult> {
   const offline = fallbackPlan(input.domain, input.dossier, input.reviseNote);
-  if (!hermesGatewayConfigured()) {
+  if (!hermesConfigured()) {
     return {
       plan: offline,
       source: "fallback",
@@ -406,16 +418,16 @@ export async function recommendDistributionPlan(input: {
     };
   }
 
-  const text = await hermesChatOnce({
-    content: recommendPrompt({
+  const text = await completeOrNull({
+    agent: "distribution-manager",
+    kind: "distribution_plan",
+    continuity: "campaign",
+    input: await recommendPrompt({
       domain: input.domain,
       dossier: input.dossier,
       reviseNote: input.reviseNote,
     }),
-    sessionId: managerSessionId(input.sessionId, input.hermesSessionId),
     kamiSessionId: input.sessionId,
-    kind: "distribution_plan",
-    agent: "distribution_manager",
     timeoutMs: 90_000,
     meta: { reviseNote: input.reviseNote ?? null },
   });
@@ -426,7 +438,7 @@ export async function recommendDistributionPlan(input: {
       return {
         plan: {
           ...parsed,
-          hermes_session_id: managerSessionId(input.sessionId, input.hermesSessionId),
+          hermes_session_id: managerSessionId(input.sessionId),
         },
         source: "hermes",
       };
@@ -434,10 +446,7 @@ export async function recommendDistributionPlan(input: {
   }
 
   return {
-    plan: {
-      ...offline,
-      rationale: `[Offline fallback — Hermes parse failed] ${offline.rationale}`,
-    },
+    plan: offline,
     source: "fallback",
     note: "Hermes returned no parseable plan — showing starter plan.",
   };
@@ -448,7 +457,6 @@ export async function researchViaManager(input: {
   plan: DistributionPlan;
   domain: string;
   dossier: Dossier | null;
-  hermesSessionId?: string;
 }): Promise<ResearchResult> {
   const angle = input.plan.angle || "";
   const surfaces = planSurfaces(input.plan);
@@ -456,7 +464,7 @@ export async function researchViaManager(input: {
   const scaffoldNote = (reason: string) =>
     `${reason} Starter queue matches your approved surfaces (${surfaces.join(", ")}) only — not live Hermes research.`;
 
-  if (!hermesGatewayConfigured()) {
+  if (!hermesConfigured()) {
     return {
       opportunities: scaffold,
       source: "scaffold",
@@ -464,21 +472,17 @@ export async function researchViaManager(input: {
     };
   }
 
-  const session =
-    input.plan.hermes_session_id ||
-    managerSessionId(input.sessionId, input.hermesSessionId);
-
   try {
-    const text = await hermesChatOnce({
-      content: researchPrompt({
+    const text = await completeOrNull({
+      agent: "distribution-manager",
+      kind: "distribution_research",
+      continuity: "campaign",
+      input: await researchPrompt({
         domain: input.domain,
         dossier: input.dossier,
         plan: input.plan,
       }),
-      sessionId: session,
       kamiSessionId: input.sessionId,
-      kind: "distribution_research",
-      agent: "distribution_manager",
       timeoutMs: 240_000,
       meta: {
         goal: input.plan.goal,

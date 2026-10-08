@@ -8,11 +8,10 @@ Those domains appear **only** because we run automated **test cases / evals**: t
 
 They are **not**:
 
-- Kami customers  
-- Kami partners or affiliates  
-- Endorsements  
+- Kami customers
+- Kami partners or affiliates
+- Endorsements
 
 Do **not** use these names or logos in marketing, landing pages, pitch decks, or “customers include…” claims.
 
 Replacing them with fake domains would invalidate live research evals. See [e2e README](../README.md).
-

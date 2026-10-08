@@ -1,6 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useCampaign } from "@/components/campaign/CampaignProvider";
+import TaskRows from "@/components/bui/TaskRows";
+import Button, { IconButton } from "@/components/ui/Button";
+import Callout from "@/components/ui/Callout";
+import { IconArrowUpRight, IconClose } from "@/components/ui/icons";
+import { humanize, Monogram, StatusPill, statusTone } from "@/components/ui/Pills";
+import Skeleton from "@/components/ui/Skeleton";
+import { api, errorMessage, withQuery } from "@/lib/client/api";
+import { useApi } from "@/lib/client/useApi";
 import type {
   AccountSignal,
   LeadScore,
@@ -16,128 +25,225 @@ interface AccountDrawerProps {
   onUpdated?: () => void;
 }
 
+interface AccountDetail {
+  account: SalesAccount;
+  signals: AccountSignal[];
+  contacts: SalesContact[];
+  lead_score: LeadScore | null;
+}
+
+const STAGE_ACTIONS: { stage: PipelineStage; label: string }[] = [
+  { stage: "engaged", label: "Replied" },
+  { stage: "qualified", label: "Interested" },
+  { stage: "closed_lost", label: "Lost" },
+  { stage: "suppressed", label: "Do not contact" },
+];
+
+/** Account detail in a side sheet (native <dialog>: focus trap, Esc closes). */
 export default function AccountDrawer({ accountId, onClose, onUpdated }: AccountDrawerProps) {
-  const [account, setAccount] = useState<SalesAccount | null>(null);
-  const [signals, setSignals] = useState<AccountSignal[]>([]);
-  const [contacts, setContacts] = useState<SalesContact[]>([]);
-  const [leadScore, setLeadScore] = useState<LeadScore | null>(null);
-  const [tasks, setTasks] = useState<SalesTask[]>([]);
+  const { sessionId } = useCampaign();
+  const ref = useRef<HTMLDialogElement>(null);
+  const detail = useApi<AccountDetail>(
+    withQuery(`/api/sales/accounts/${accountId}`, { session_id: sessionId }),
+  );
+  const tasksQuery = useApi<{ tasks: SalesTask[] }>(
+    withQuery("/api/sales/tasks", { session_id: sessionId, account_id: accountId }),
+  );
+  const [stageError, setStageError] = useState<string | null>(null);
+  const [saving, setSaving] = useState<PipelineStage | null>(null);
 
-  const fetchDetail = useCallback(() => {
-    fetch(`/api/sales/accounts/${accountId}`)
-      .then((r) => r.json())
-      .then((j) => {
-        setAccount(j.account ?? null);
-        setSignals(j.signals ?? []);
-        setContacts(j.contacts ?? []);
-        setLeadScore(j.lead_score ?? null);
-        const sessionId = j.account?.session_id;
-        if (sessionId) {
-          fetch(`/api/sales/tasks?session_id=${sessionId}`)
-            .then((r) => r.json())
-            .then((t) => setTasks((t.tasks ?? []).filter((task: SalesTask) => task.account_id === accountId)))
-            .catch(() => {});
-        }
-      })
-      .catch(() => {});
-  }, [accountId]);
-
-  useEffect(() => { fetchDetail(); }, [fetchDetail]);
+  useEffect(() => {
+    const d = ref.current;
+    if (d && !d.open) d.showModal();
+  }, []);
 
   async function updateStage(stage: PipelineStage) {
-    const res = await fetch(`/api/sales/accounts/${accountId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pipeline_stage: stage }),
-    });
-    if (res.ok) {
-      fetchDetail();
+    setSaving(stage);
+    setStageError(null);
+    try {
+      await api.patch(`/api/sales/accounts/${accountId}`, {
+        session_id: sessionId,
+        pipeline_stage: stage,
+      });
+      detail.reload();
       onUpdated?.();
+    } catch (err) {
+      setStageError(errorMessage(err, "Could not move the account"));
+    } finally {
+      setSaving(null);
     }
   }
 
-  if (!account) {
-    return (
-      <div className="kraft-card" style={{ marginTop: "var(--stack-sm)", padding: "var(--stack-sm)" }}>
-        <p className="mono" style={{ color: "var(--ink-soft)" }}>Loading account…</p>
-      </div>
-    );
-  }
+  const data = detail.data;
+  const tasks = (tasksQuery.data?.tasks ?? []).filter((t) => t.account_id === accountId);
 
   return (
-    <div className="kraft-card" style={{ marginTop: "var(--stack-sm)", padding: "var(--stack-sm)" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div>
-          <p style={{ fontFamily: "var(--font-display)", fontSize: 18, margin: 0 }}>{account.name}</p>
-          <p className="mono" style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: "0.25rem" }}>
-            {account.domain ?? account.industry ?? "—"} · {account.pipeline_stage.replace(/_/g, " ")}
-            {account.tier ? ` · Tier ${account.tier}` : ""}
-          </p>
-        </div>
-        <button type="button" className="mono" onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer" }}>
-          ✕
-        </button>
-      </div>
-
-      <hr className="crease" style={{ margin: "var(--stack-sm) 0" }} />
-
-      {leadScore && (
-        <div style={{ marginBottom: "var(--stack-sm)" }}>
-          <p className="label-caps" style={{ marginBottom: "0.25rem" }}>Score</p>
-          <p className="mono" style={{ fontSize: 12 }}>
-            fit {leadScore.factors.fit} · intent {leadScore.factors.intent} · priority {leadScore.factors.priority}
-          </p>
-          <p style={{ fontSize: 13, marginTop: "0.25rem" }}>{leadScore.explanation}</p>
-        </div>
-      )}
-
-      {signals.length > 0 && (
-        <div style={{ marginBottom: "var(--stack-sm)" }}>
-          <p className="label-caps" style={{ marginBottom: "0.25rem" }}>Signals</p>
-          {signals.slice(0, 5).map((s) => (
-            <div key={s.id} style={{ marginBottom: "0.35rem" }}>
-              <span className="mono" style={{ fontSize: 11, color: "var(--moss)" }}>{s.signal_type}</span>
-              <p style={{ fontSize: 13, margin: "0.1rem 0 0" }}>{s.detail}</p>
+    <dialog
+      ref={ref}
+      className="sheet"
+      aria-label="Account details"
+      onCancel={(e) => {
+        e.preventDefault();
+        onClose();
+      }}
+      onClick={(e) => {
+        if (e.target === ref.current) onClose();
+      }}
+    >
+      <div className="sheet__head">
+        {data ? (
+          <div className="row sheet__who">
+            <Monogram name={data.account.name} shape="square" size="lg" />
+            <div className="sheet__who-text">
+              <p className="sheet__title truncate">{data.account.name}</p>
+              <p className="text-3 text-xs truncate">
+                {data.account.domain ?? data.account.industry ?? "—"}
+              </p>
             </div>
-          ))}
-        </div>
-      )}
-
-      {contacts.length > 0 && (
-        <div style={{ marginBottom: "var(--stack-sm)" }}>
-          <p className="label-caps" style={{ marginBottom: "0.25rem" }}>Contacts</p>
-          {contacts.map((c) => (
-            <p key={c.id} className="mono" style={{ fontSize: 12, margin: "0.15rem 0" }}>
-              {c.name ?? c.email ?? c.handle} {c.title ? `· ${c.title}` : ""}
-            </p>
-          ))}
-        </div>
-      )}
-
-      {tasks.length > 0 && (
-        <div style={{ marginBottom: "var(--stack-sm)" }}>
-          <p className="label-caps" style={{ marginBottom: "0.25rem" }}>Tasks</p>
-          {tasks.slice(0, 3).map((t) => (
-            <p key={t.id} className="mono" style={{ fontSize: 12, margin: "0.15rem 0" }}>
-              {t.status === "done" ? "✓" : "○"} {t.title}
-            </p>
-          ))}
-        </div>
-      )}
-
-      <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
-        {(["engaged", "qualified", "closed_lost", "suppressed"] as PipelineStage[]).map((stage) => (
-          <button
-            key={stage}
-            type="button"
-            className="mono"
-            onClick={() => updateStage(stage)}
-            style={{ border: "1px solid var(--ink)", background: "transparent", padding: "0.2rem 0.5rem", fontSize: 11, cursor: "pointer" }}
-          >
-            → {stage.replace(/_/g, " ")}
-          </button>
-        ))}
+          </div>
+        ) : (
+          <span />
+        )}
+        <IconButton label="Close account details" onClick={onClose}>
+          <IconClose size={15} />
+        </IconButton>
       </div>
-    </div>
+
+      <div className="sheet__body">
+        {!data ? (
+          detail.error ? (
+            <Callout tone="error">{detail.error}</Callout>
+          ) : (
+            <Skeleton title lines={6} />
+          )
+        ) : (
+          <>
+            <div className="row row--wrap">
+              <StatusPill tone={statusTone(data.account.pipeline_stage)}>
+                {humanize(data.account.pipeline_stage)}
+              </StatusPill>
+              {data.account.domain && (
+                <a
+                  className="records-link"
+                  href={`https://${data.account.domain}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {data.account.domain} <IconArrowUpRight size={11} />
+                </a>
+              )}
+            </div>
+
+            {data.lead_score && (
+              <section className="sheet__section">
+                <p className="sheet__label">Why this company</p>
+                <div className="score-bars">
+                  {(["fit", "intent", "priority"] as const).map((k) => (
+                    <div key={k} className="score-bar">
+                      <span className="score-bar__name">
+                        {k === "intent" ? "Timing" : humanize(k)}
+                      </span>
+                      <span className="score-bar__track">
+                        {/* the bar width is data, not styling */}
+                        <span
+                          style={{ width: `${Math.round(data.lead_score!.factors[k] * 100)}%` }}
+                        />
+                      </span>
+                      <span className="score-bar__value tabular">
+                        {Math.round(data.lead_score!.factors[k] * 100)}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-2 text-sm">{data.lead_score.explanation}</p>
+              </section>
+            )}
+
+            {data.signals.length > 0 && (
+              <section className="sheet__section">
+                <p className="sheet__label">Signals</p>
+                <ul className="signal-list">
+                  {data.signals.slice(0, 6).map((s) => (
+                    <li key={s.id ?? s.detail}>
+                      <StatusPill dot={false}>{humanize(s.signal_type)}</StatusPill>
+                      <span className="text-2 text-sm">{s.detail}</span>
+                      {s.source_url && (
+                        <a
+                          className="records-link"
+                          href={s.source_url}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          source <IconArrowUpRight size={11} />
+                        </a>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            {data.contacts.length > 0 && (
+              <section className="sheet__section">
+                <p className="sheet__label">Contacts</p>
+                <ul className="contact-list">
+                  {data.contacts.map((c) => (
+                    <li key={c.id}>
+                      <Monogram name={c.name ?? c.email ?? "?"} />
+                      <span className="truncate">{c.name ?? c.email ?? c.handle}</span>
+                      {c.title && <span className="text-3 text-xs truncate">{c.title}</span>}
+                      {c.email && c.name && (
+                        <span className="text-3 text-xs mono truncate">{c.email}</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            {tasks.length > 0 && (
+              <section className="sheet__section">
+                <p className="sheet__label">Tasks</p>
+                <TaskRows
+                  variant="List"
+                  rows={tasks.slice(0, 5).map((t, i) => ({
+                    key: t.id ?? `t-${i}`,
+                    label: t.title,
+                    status: t.status === "done" ? "done" : "pending",
+                    step: i + 1,
+                    amount: humanize(t.priority),
+                    pill: null,
+                  }))}
+                />
+              </section>
+            )}
+
+            {stageError && <Callout tone="error">{stageError}</Callout>}
+          </>
+        )}
+      </div>
+
+      {data && (
+        <div className="sheet__footer">
+          <span className="text-3 text-xs">Move to</span>
+          <span className="row row--wrap sheet__moves">
+            {STAGE_ACTIONS.filter((s) => s.stage !== data.account.pipeline_stage).map(
+              ({ stage, label }) => (
+                <Button
+                  key={stage}
+                  size="xs"
+                  variant="secondary"
+                  busy={saving === stage}
+                  disabled={saving !== null}
+                  onClick={() => void updateStage(stage)}
+                >
+                  {label}
+                </Button>
+              ),
+            )}
+          </span>
+        </div>
+      )}
+    </dialog>
   );
 }

@@ -51,10 +51,7 @@ function formatGapMarkdown(date: string, g: GapEntry, sc: Scorecard): string {
 `;
 }
 
-export function writeAggregateReport(
-  outPath: string,
-  cards: Scorecard[],
-): void {
+export function writeAggregateReport(outPath: string, cards: Scorecard[]): void {
   const passed = cards.filter((c) => c.passed).length;
   const lines = [
     `# E2E corpus report`,
@@ -82,9 +79,7 @@ export function writeAggregateReport(
     lines.push(``);
     lines.push(`- Session: \`${c.session_id ?? "n/a"}\``);
     lines.push(`- Expected job: ${c.route.expected} → actual ${c.route.actual}`);
-    lines.push(
-      `- Steps: ${c.steps.filter((s) => s.ok).length}/${c.steps.length} ok`,
-    );
+    lines.push(`- Steps: ${c.steps.filter((s) => s.ok).length}/${c.steps.length} ok`);
     if (c.gaps.length) {
       lines.push(`- Gaps:`);
       for (const g of c.gaps) {

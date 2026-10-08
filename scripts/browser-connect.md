@@ -24,5 +24,13 @@ mkdir -p "$HOME/Library/Application Support/kami-chrome-debug"
   --user-data-dir="$HOME/Library/Application Support/kami-chrome-debug"
 ```
 
+## Linux
+
+```bash
+mkdir -p "$HOME/.config/kami-chrome-debug"
+google-chrome --remote-debugging-port=9222 --user-data-dir="$HOME/.config/kami-chrome-debug"
+# Chromium: chromium --remote-debugging-port=9222 --user-data-dir="$HOME/.config/kami-chrome-debug"
+```
+
 ## Consent
 Kami readiness and UI must show browser connected only after you opt in. Never auto-attach.

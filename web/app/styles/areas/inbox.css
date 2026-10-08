@@ -1,0 +1,259 @@
+/* inbox — see docs/product-experience.md §2.3 */
+
+.inbox__filters {
+  margin-bottom: 14px;
+  overflow-x: auto;
+}
+
+.inbox {
+  display: grid;
+  align-items: start;
+  gap: 16px;
+  grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+}
+
+.inbox__list {
+  position: sticky;
+  top: 12px;
+  max-height: calc(100dvh - 160px);
+  padding: 4px;
+  overflow-y: auto;
+}
+
+.inbox__group + .inbox__group {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.inbox__group-label {
+  padding: 6px 10px 4px;
+  color: var(--ink-3);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.inbox__none {
+  padding: 16px 10px;
+}
+
+.inbox__detail {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* narrow screens: the list, or the open item with a way back */
+@media (max-width: 960px) {
+  .inbox {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .inbox__list {
+    position: static;
+    max-height: none;
+  }
+
+  .inbox:not(.inbox--detail-open) .inbox__detail,
+  .inbox--detail-open .inbox__list {
+    display: none;
+  }
+}
+
+/* ── Row (shared with Home → Waiting on you) ───────────── */
+
+.inbox-row {
+  display: flex;
+  width: 100%;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px;
+  border-radius: var(--radius-control);
+  text-align: left;
+  transition: background-color 150ms var(--ease-out-strong);
+}
+
+.inbox-row:hover {
+  background: var(--hover);
+}
+
+.inbox-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.inbox-row[aria-current="true"] {
+  background: var(--accent-tint);
+}
+
+.inbox-row__icon {
+  display: flex;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-control);
+  background: var(--inset);
+  box-shadow: var(--shadow-hairline);
+  color: var(--ink-2);
+}
+
+.inbox-row--alert .inbox-row__icon {
+  background: var(--red-tint);
+  color: var(--red);
+}
+
+.inbox-row__icon--draft {
+  background: var(--accent-tint);
+  color: var(--accent-ink);
+}
+
+.inbox-row__icon--reply {
+  background: var(--orange-tint);
+  color: var(--orange);
+}
+
+.inbox-row__icon--meeting {
+  background: var(--inset);
+  color: var(--ink);
+}
+
+.inbox-row__icon--opportunity {
+  background: var(--green-tint);
+  color: var(--green);
+}
+
+.inbox-row__icon--task {
+  background: var(--canvas);
+  color: var(--ink-2);
+}
+
+.inbox-row__copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.inbox-row__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inbox-row__kind {
+  color: var(--ink-3);
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.inbox-row__at {
+  margin-left: auto;
+  color: var(--ink-3);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+.inbox-row__title,
+.inbox-row__context {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inbox-row__title {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.inbox-row__context {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.inbox-row__action {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  align-self: center;
+  gap: 2px;
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.inbox-row:hover .inbox-row__action,
+.inbox-row[aria-current="true"] .inbox-row__action {
+  color: var(--accent-ink);
+}
+
+/* inside the narrow list column, the action word is redundant with the selection */
+.inbox__list .inbox-row__action {
+  display: none;
+}
+
+/* ── Detail ────────────────────────────────────────────── */
+
+.inbox-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.inbox-detail__head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.inbox-detail__title-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+}
+
+.inbox-detail__titles {
+  min-width: 0;
+  flex: 1;
+}
+
+.inbox-detail__kind {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.inbox-detail__title {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inbox-detail__actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.inbox-detail__body {
+  color: var(--ink-2);
+  font-size: 13.5px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inbox-row {
+    transition: none;
+  }
+}

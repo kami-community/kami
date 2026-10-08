@@ -65,13 +65,23 @@ Attribution: browser compatibility data from [Can I Use](https://caniuse.com/) /
 
 ---
 
+## Beautiful UI (MIT)
+
+| | |
+|--|--|
+| **What** | UI primitives and design tokens ported (Tailwind → plain CSS) from [beautifului.dev](https://www.beautifului.dev) |
+| **Where** | [`web/components/bui/`](web/components/bui/), [`web/app/styles/foundation.css`](web/app/styles/foundation.css), [`web/app/styles/bui/`](web/app/styles/bui/) |
+| **License** | MIT — Copyright (c) 2026 Shane Levine — full text in [`web/components/bui/LICENSE`](web/components/bui/LICENSE) |
+
+---
+
 ## Google Fonts (SIL OFL 1.1)
 
 | Family | How loaded |
 |--------|------------|
-| Domine | `next/font/google`, `@remotion/google-fonts` |
-| Source Sans 3 | same |
-| Space Mono | same |
+| Inter | `next/font/google` (web UI) |
+| JetBrains Mono | `next/font/google` (web UI) |
+| Domine, Source Sans 3, Space Mono | `@remotion/google-fonts` (video only) |
 
 These families are typically under the **SIL Open Font License 1.1**. Kami does not vendor `.woff` / `.ttf` files in git; fonts are fetched at build/runtime via Google Fonts / Next font tooling.
 

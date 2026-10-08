@@ -27,14 +27,14 @@ From repo root:
 npm run eval:e2e -- --fixture cal
 ```
 
-| Flag | Meaning |
-|------|---------|
-| `--all` | All fixtures in `fixtures/companies.json` (default) |
-| `--fixture id[,id…]` | Subset |
-| `--base-url` | Target Kami origin (local or staging) |
-| `--environment` | Label written into scorecards (`local` / `staging`) |
-| `--preflight` | Capabilities check only |
-| `--no-keep-results` | Skip writing `results/*.json` |
+| Flag                 | Meaning                                             |
+| -------------------- | --------------------------------------------------- |
+| `--all`              | All fixtures in `fixtures/companies.json` (default) |
+| `--fixture id[,id…]` | Subset                                              |
+| `--base-url`         | Target Kami origin (local or staging)               |
+| `--environment`      | Label written into scorecards (`local` / `staging`) |
+| `--preflight`        | Capabilities check only                             |
+| `--no-keep-results`  | Skip writing `results/*.json`                       |
 
 ## Path & safety boundary
 
@@ -48,11 +48,11 @@ Never calls `drafts` send, `/api/email/send`, or distribution publish actions.
 
 ## Artifacts
 
-| Path | Purpose |
-|------|---------|
-| `results/<fixture>-<ts>.json` | Per-run scorecard (gitignored) |
-| `results/summary-<ts>.md` | Aggregate pass rate |
-| `GAPLOG.md` | Durable failures + RCA fields (committed) |
+| Path                          | Purpose                                           |
+| ----------------------------- | ------------------------------------------------- |
+| `results/<fixture>-<ts>.json` | Per-run scorecard (gitignored)                    |
+| `results/summary-<ts>.md`     | Aggregate pass rate                               |
+| `GAPLOG.md`                   | Durable failures + RCA fields (local, gitignored) |
 
 ## Scoring
 
