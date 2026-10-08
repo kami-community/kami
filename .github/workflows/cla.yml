@@ -6,7 +6,9 @@ on:
   pull_request_target:
     types: [opened, closed, synchronize]
 
-# Needs repo Settings → Actions → General → Workflow permissions = Read and write.
+# Requests write below. The org locks the repo default to read-only; if signature
+# commits fail, an org admin must allow Read and write under Organization →
+# Settings → Actions → General → Workflow permissions.
 permissions:
   actions: write
   contents: write
