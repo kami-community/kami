@@ -1,3 +1,12 @@
 {
-   "signedContributors": []
+  "signedContributors": [
+    {
+      "name": "VaradDurge",
+      "id": 194697254,
+      "comment_id": 6067234221,
+      "created_at": "2026-10-08T19:15:01Z",
+      "repoId": 1297996943,
+      "pullRequestNo": 16
+    }
+  ]
 }
